@@ -1,0 +1,141 @@
+Probing POST endpoint variants on http://localhost:11434
+\n=== Testing POST http://localhost:11434/api/chat ===
+-- Variant: openai_chat --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:19.6680465Z","message":{"role":"assistant","content":"Ping! Response time: 200ms"},"done":true,"done_reason":"stop","total_duration":5318967700,"load_duration":4774786400,"prompt_eval_count":31,"prompt_eval_duration":260101500,"eval_count":9,"eval_duration":265294000}
+-- Variant: prompt_simple --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:19.8080824Z","message":{"role":"assistant","content":""},"done":true,"done_reason":"load"}
+-- Variant: ollama_generate --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:19.9266392Z","message":{"role":"assistant","content":""},"done":true,"done_reason":"load"}
+-- Variant: input_field --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:20.0285757Z","message":{"role":"assistant","content":""},"done":true,"done_reason":"load"}
+-- Variant: model_only --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:20.1433698Z","message":{"role":"assistant","content":""},"done":true,"done_reason":"load"}
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 400 (Bad Request).
+\n=== Testing POST http://localhost:11434/api/generate ===
+-- Variant: openai_chat --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:20.2710269Z","response":"","done":true,"done_reason":"load"}
+-- Variant: prompt_simple --
+Status: 200
+Error: Method invocation failed because [System.Byte] does not contain a method named 'Substring'.
+-- Variant: ollama_generate --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:20.8409441Z","response":"","done":true,"done_reason":"load"}
+-- Variant: input_field --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:20.9500966Z","response":"","done":true,"done_reason":"load"}
+-- Variant: model_only --
+Status: 200
+{"model":"llama3.2:3b","created_at":"2025-11-10T01:30:21.0582821Z","response":"","done":true,"done_reason":"load"}
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+\n=== Testing POST http://localhost:11434/v1/chat/completions ===
+-- Variant: openai_chat --
+Status: 200
+{"id":"chatcmpl-422","object":"chat.completion","created":1762738221,"model":"llama3.2:3b","system_fingerprint":"fp_ollama","choices":[{"index":0,"message":{"role":"assistant","content":"Ping received. How can I assist you today?"},"finish_reason":"stop"}],"usage":{"prompt_tokens":31,"completion_tokens":11,"total_tokens":42}}
+
+-- Variant: prompt_simple --
+Error: Response status code does not indicate success: 400 (Bad Request).
+-- Variant: ollama_generate --
+Error: Response status code does not indicate success: 400 (Bad Request).
+-- Variant: input_field --
+Error: Response status code does not indicate success: 400 (Bad Request).
+-- Variant: model_only --
+Error: Response status code does not indicate success: 400 (Bad Request).
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 400 (Bad Request).
+\n=== Testing POST http://localhost:11434/v1/completions ===
+-- Variant: openai_chat --
+Status: 200
+{"id":"cmpl-197","object":"text_completion","created":1762738221,"model":"llama3.2:3b","system_fingerprint":"fp_ollama","choices":[{"text":"","index":0,"finish_reason":"load"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}
+
+-- Variant: prompt_simple --
+Status: 200
+{"id":"cmpl-430","object":"text_completion","created":1762738222,"model":"llama3.2:3b","system_fingerprint":"fp_ollama","choices":[{"text":"pong","index":0,"finish_reason":"stop"}],"usage":{"prompt_tokens":26,"completion_tokens":2,"total_tokens":28}}
+
+-- Variant: ollama_generate --
+Status: 200
+{"id":"cmpl-234","object":"text_completion","created":1762738222,"model":"llama3.2:3b","system_fingerprint":"fp_ollama","choices":[{"text":"","index":0,"finish_reason":"load"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}
+
+-- Variant: input_field --
+Status: 200
+{"id":"cmpl-947","object":"text_completion","created":1762738222,"model":"llama3.2:3b","system_fingerprint":"fp_ollama","choices":[{"text":"","index":0,"finish_reason":"load"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}
+
+-- Variant: model_only --
+Status: 200
+{"id":"cmpl-833","object":"text_completion","created":1762738222,"model":"llama3.2:3b","system_fingerprint":"fp_ollama","choices":[{"text":"","index":0,"finish_reason":"load"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}
+
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+\n=== Testing POST http://localhost:11434/v1/generate ===
+-- Variant: openai_chat --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: prompt_simple --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: ollama_generate --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: input_field --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: model_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+\n=== Testing POST http://localhost:11434/v1/llm/generate ===
+-- Variant: openai_chat --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: prompt_simple --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: ollama_generate --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: input_field --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: model_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+\n=== Testing POST http://localhost:11434/v1/llm/chat ===
+-- Variant: openai_chat --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: prompt_simple --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: ollama_generate --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: input_field --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: model_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+\n=== Testing POST http://localhost:11434/api/ollama/generate ===
+-- Variant: openai_chat --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: prompt_simple --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: ollama_generate --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: input_field --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: model_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+\n=== Testing POST http://localhost:11434/generate ===
+-- Variant: openai_chat --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: prompt_simple --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: ollama_generate --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: input_field --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: model_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+-- Variant: messages_only --
+Error: Response status code does not indicate success: 404 (Not Found).
+Probe complete. Results saved to: C:\Users\bcmad\Downloads\StatMusePicksv2\probe_results_variants.txt

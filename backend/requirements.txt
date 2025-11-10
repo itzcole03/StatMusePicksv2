@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+nba_api
+cachetools
+pydantic
+requests
+redis

@@ -1,0 +1,38 @@
+Probing endpoints on http://localhost:11434
+\n=== GET http://localhost:11434/ ===
+Status: 200
+Ollama is running
+\n=== GET http://localhost:11434/api/chat ===
+GET error: Response status code does not indicate success: 405 (Method Not Allowed).
+\n=== GET http://localhost:11434/api/generate ===
+GET error: Response status code does not indicate success: 405 (Method Not Allowed).
+\n=== GET http://localhost:11434/v1/chat/completions ===
+GET error: Response status code does not indicate success: 405 (Method Not Allowed).
+\n=== GET http://localhost:11434/v1/completions ===
+GET error: Response status code does not indicate success: 405 (Method Not Allowed).
+\n=== GET http://localhost:11434/models ===
+GET error: Response status code does not indicate success: 404 (Not Found).
+\n=== GET http://localhost:11434/v1/models ===
+Status: 200
+{"object":"list","data":[{"id":"llama3.2:3b","object":"model","created":1762734337,"owned_by":"library"}]}
+
+\n=== GET http://localhost:11434/models/list ===
+GET error: Response status code does not indicate success: 404 (Not Found).
+\nProbing POST endpoints with a lightweight payload...
+\n=== POST http://localhost:11434/ ===
+POST error: Response status code does not indicate success: 405 (Method Not Allowed).
+\n=== POST http://localhost:11434/api/chat ===
+POST error: Response status code does not indicate success: 404 (Not Found).
+\n=== POST http://localhost:11434/api/generate ===
+POST error: Response status code does not indicate success: 404 (Not Found).
+\n=== POST http://localhost:11434/v1/chat/completions ===
+POST error: Response status code does not indicate success: 404 (Not Found).
+\n=== POST http://localhost:11434/v1/completions ===
+POST error: Response status code does not indicate success: 404 (Not Found).
+\n=== POST http://localhost:11434/models ===
+POST error: Response status code does not indicate success: 404 (Not Found).
+\n=== POST http://localhost:11434/v1/models ===
+POST error: Response status code does not indicate success: 405 (Method Not Allowed).
+\n=== POST http://localhost:11434/models/list ===
+POST error: Response status code does not indicate success: 404 (Not Found).
+\nProbe complete. Results saved to: C:\Users\bcmad\Downloads\StatMusePicksv2\probe_results.txt

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "p1",
+    "player": "LeBron James",
+    "team": "LAL",
+    "league": "nba",
+    "stat": "points",
+    "line": 27.5,
+    "startTime": "2025-11-09T02:00:00Z"
+  },
+  {
+    "id": "p2",
+    "player": "Stephen Curry",
+    "team": "GSW",
+    "league": "nba",
+    "stat": "points",
+    "line": 30.5,
+    "startTime": "2025-11-09T03:30:00Z"
+  }
+]

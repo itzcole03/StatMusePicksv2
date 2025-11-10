@@ -1,0 +1,10 @@
+""" Proxy removed; this file kept as a note.
+If you later create a Python backend using `nba_api`, typical dependencies include:
+
+- flask
+- flask-cors
+- cachetools
+- nba_api
+- requests
+- redis (optional)
+"""
