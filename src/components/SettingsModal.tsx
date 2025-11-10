@@ -17,9 +17,13 @@ export default function SettingsModal({ isOpen, settings, onClose, onSave }: Set
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [requireExternal, setRequireExternal] = useState<boolean>(!!settings.requireExternalData);
+  const [reviewThreshold, setReviewThreshold] = useState<number>(settings.reviewThreshold ?? 60);
+  const [modelHeuristicDelta, setModelHeuristicDelta] = useState<number>(settings.modelHeuristicDelta ?? 20);
 
   useEffect(() => {
     setLocalSettings(settings);
+    setReviewThreshold(settings.reviewThreshold ?? 60);
+    setModelHeuristicDelta(settings.modelHeuristicDelta ?? 20);
     if (!isOpen) return;
     (async () => {
       setIsDiscovering(true);
@@ -81,7 +85,7 @@ export default function SettingsModal({ isOpen, settings, onClose, onSave }: Set
   };
 
   const handleSave = () => {
-    const s = { ...localSettings, requireExternalData: requireExternal } as Settings;
+    const s = { ...localSettings, requireExternalData: requireExternal, reviewThreshold, modelHeuristicDelta } as Settings;
     if (!saveAsDefault) s.llmModel = settings.llmModel;
     onSave(s);
     onClose();
@@ -156,6 +160,34 @@ export default function SettingsModal({ isOpen, settings, onClose, onSave }: Set
           <div className="flex items-center gap-2">
             <input id="requireExternal" type="checkbox" checked={requireExternal} onChange={(e) => setRequireExternal(e.target.checked)} className="w-4 h-4" />
             <label htmlFor="requireExternal" className="text-sm text-gray-600 dark:text-gray-300">Require external numeric data for analysis</label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1">Review Threshold (%)</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={reviewThreshold}
+                onChange={(e) => setReviewThreshold(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              />
+              <p className="text-xs text-gray-500 mt-1">If model vs heuristic agreement is below this percent, flag for review.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Model-Heuristic Delta</label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={modelHeuristicDelta}
+                onChange={(e) => setModelHeuristicDelta(Number(e.target.value))}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
+              />
+              <p className="text-xs text-gray-500 mt-1">Allowed difference (0-100) before marking strong disagreement.</p>
+            </div>
           </div>
         </div>
 

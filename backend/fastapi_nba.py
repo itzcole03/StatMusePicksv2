@@ -238,3 +238,129 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
             pass
 
     return out
+
+
+class PlayerContextRequest(BaseModel):
+    player: str
+    stat: Optional[str] = 'points'
+    limit: Optional[int] = 8
+
+
+@app.post('/api/player_context', response_model=PlayerSummary)
+def api_player_context(req: PlayerContextRequest):
+    """POST wrapper for client usage. Accepts JSON body and returns the same
+    structured PlayerSummary as `/player_summary` but avoids CORS/query-string
+    related issues for some clients."""
+    return player_summary(player=req.player, stat=req.stat or 'points', limit=req.limit or 8)
+
+
+@app.post('/api/batch_player_context')
+def api_batch_player_context(requests: List[PlayerContextRequest]):
+    """Accepts a list of player context requests and returns an array of
+    player summaries. If an individual request fails (player not found), the
+    response will include an object with `error` for that entry to enable
+    partial results handling on the client."""
+    results = []
+    for r in requests:
+        try:
+            res = player_summary(player=r.player, stat=r.stat or 'points', limit=r.limit or 8)
+            results.append(res)
+        except HTTPException as he:
+            results.append({'player': r.player, 'error': he.detail})
+        except Exception as e:
+            results.append({'player': r.player, 'error': str(e)})
+    return results
+
+
+# --- ML prediction endpoints (scaffold) ---------------------------------
+try:
+    from .services import MLPredictionService
+except Exception:
+    MLPredictionService = None
+
+
+ml_service = MLPredictionService() if MLPredictionService is not None else None
+
+
+# Model registry endpoints (optional)
+try:
+    from backend.services.model_registry import ModelRegistry
+except Exception:
+    ModelRegistry = None
+
+registry = ModelRegistry() if ModelRegistry is not None else None
+
+
+class PredictionRequest(BaseModel):
+    player: str
+    stat: str = 'points'
+    line: float
+    player_data: Optional[dict] = None
+    opponent_data: Optional[dict] = None
+
+
+@app.post('/api/predict')
+async def api_predict(req: PredictionRequest):
+    if ml_service is None:
+        raise HTTPException(status_code=503, detail='ML service unavailable')
+    result = await ml_service.predict(
+        player_name=req.player,
+        stat_type=req.stat,
+        line=req.line,
+        player_data=req.player_data or {},
+        opponent_data=req.opponent_data or {}
+    )
+    return result
+
+
+@app.post('/api/batch_predict')
+async def api_batch_predict(requests: List[PredictionRequest]):
+    results = []
+    for r in requests:
+        try:
+            if ml_service is None:
+                results.append({'player': r.player, 'error': 'ML service unavailable'})
+            else:
+                res = await ml_service.predict(
+                    player_name=r.player,
+                    stat_type=r.stat,
+                    line=r.line,
+                    player_data=r.player_data or {},
+                    opponent_data=r.opponent_data or {}
+                )
+                results.append(res)
+        except Exception as e:
+            results.append({'player': r.player, 'error': str(e)})
+    return {'predictions': results}
+
+
+# Model management API
+@app.get('/api/models')
+def api_list_models():
+    """List available model files in the model registry directory."""
+    if registry is None:
+        raise HTTPException(status_code=503, detail='Model registry unavailable')
+
+    try:
+        files = []
+        for fname in sorted(os.listdir(registry.model_dir)):
+            if fname.endswith('.pkl'):
+                files.append(fname)
+        return {'models': files, 'model_dir': registry.model_dir}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post('/api/models/load')
+def api_load_model(player: str):
+    """Attempt to load a model for a player into the registry (no-op if missing)."""
+    if registry is None:
+        raise HTTPException(status_code=503, detail='Model registry unavailable')
+
+    try:
+        loaded = registry.load_model(player)
+        return {'player': player, 'loaded': bool(loaded)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+

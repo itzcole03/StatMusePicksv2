@@ -61,4 +61,10 @@ export interface Settings {
   nbaApiKey?: string;
   // If true, analysis will require external numeric context for all selected projections and fail otherwise
   requireExternalData?: boolean;
+  // Percentage threshold (0-100). If model vs heuristic agreement is below this,
+  // the projection will be flagged for review and recommendation nullified.
+  reviewThreshold?: number;
+  // Allowed absolute difference between model confidence and heuristic score
+  // before considering them in strong disagreement (0-100 scale).
+  modelHeuristicDelta?: number;
 }

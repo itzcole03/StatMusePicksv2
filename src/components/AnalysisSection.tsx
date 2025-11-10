@@ -1,8 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { marked } from 'marked';
 import { ParsedProjection, Settings } from '../types';
-import { analyzeWithLocalLLM, buildAnalysisPromptAsync } from '../services/aiService';
+import { analyzeWithLocalLLM, buildAnalysisPromptAsync, scoreModelOutput } from '../services/aiService';
+import { buildPredictionFromFeatures } from '../services/aiService.v2';
 import { validateOutput } from '../services/analysisValidator';
+import { buildExternalContextForProjections } from '../services/nbaService';
+import { saveNbaContexts } from '../services/indexedDBService';
 
 interface AnalysisSectionProps {
   projections: ParsedProjection[];
@@ -16,13 +19,17 @@ export default function AnalysisSection({ projections, settings }: AnalysisSecti
   const [error, setError] = useState<string | null>(null);
   const [externalContexts, setExternalContexts] = useState<Record<string, any> | null>(null);
   const [showExternalDetails, setShowExternalDetails] = useState(false);
+  const [refetchingIds, setRefetchingIds] = useState<Set<string>>(new Set());
   const sectionRef = useRef<HTMLDivElement>(null);
   const [rawOutput, setRawOutput] = useState<string | null>(null);
   const [validationReasons, setValidationReasons] = useState<string[] | null>(null);
+  const [agreementSummary, setAgreementSummary] = useState<{ agreement: number; items: any[] } | null>(null);
+  const [v2Predictions, setV2Predictions] = useState<any[] | null>(null);
+  const [v2Agreement, setV2Agreement] = useState<number | null>(null);
 
   useEffect(() => {
-    if (sectionRef.current) {
-      sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (sectionRef.current && typeof (sectionRef.current as any).scrollIntoView === 'function') {
+      (sectionRef.current as any).scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     const runAnalysis = async () => {
@@ -71,6 +78,23 @@ export default function AnalysisSection({ projections, settings }: AnalysisSecti
         // use external validator helper
         // import dynamically to avoid top-level circular imports in test env
         // (module import at top of file is fine; here we call the helper below)
+
+        // Build aiService.v2 statistical predictions from trusted contexts so we can compare later
+        try {
+          const preds = projections.map((p) => {
+            const ctx = (contexts || {})[p.id] || null;
+            let recentVals: number[] | null = null;
+            if (ctx && Array.isArray(ctx.recentGames) && ctx.recentGames.length > 0) {
+              recentVals = ctx.recentGames.map((g: any) => Number(g.statValue)).filter((v: any) => !isNaN(v));
+            } else if (ctx && ctx.seasonAvg != null) {
+              recentVals = [Number(ctx.seasonAvg)];
+            }
+            return buildPredictionFromFeatures(p.player, p.stat, Number(p.line), recentVals, null);
+          });
+          setV2Predictions(preds);
+        } catch (e) {
+          setV2Predictions(null);
+        }
 
         // Run LLM and capture output
         let full = '';
@@ -123,9 +147,62 @@ export default function AnalysisSection({ projections, settings }: AnalysisSecti
           valid = valid2;
         }
 
-        // At this point parsed is valid - store structured results and pretty JSON
-        setParsedResults(parsed);
-        setContent(JSON.stringify(parsed, null, 2));
+        // Post-process: score model output vs trusted numeric context and apply deterministic reviewer flags
+        const score = scoreModelOutput(parsed, projections, externalUsed ? externalContexts : null);
+        setAgreementSummary({ agreement: score.agreement, items: score.items });
+
+        // Compare LLM parsed recommendations with aiService.v2 statistical predictions
+        if (v2Predictions && Array.isArray(v2Predictions)) {
+          const v2Items = score.items.map((it: any, idx: number) => {
+            const v2 = v2Predictions[idx];
+            const modelRec = parsed[idx]?.recommendation || null;
+            const v2Rec = v2?.recommendation || null;
+            return { index: idx, modelRec, v2Rec, match: modelRec === v2Rec, v2 };
+          });
+          const matches = v2Items.filter((i:any)=>i.match).length;
+          const agreementPct = Math.round((matches / v2Items.length) * 100);
+          setV2Agreement(agreementPct);
+
+          // Apply deterministic flagging using v2: if LLM recommendation disagrees with v2
+          // and v2 calibratedConfidence >= threshold, null the recommendation and flag for review.
+          const V2_CONF_THRESHOLD = typeof settings.v2ConfidenceThreshold === 'number' ? settings.v2ConfidenceThreshold : 60;
+          const updatedParsed = parsed.map((it: any, idx: number) => {
+            const v2 = v2Predictions[idx];
+            if (!v2) return it;
+            const v2Conf = typeof v2.calibratedConfidence === 'number' ? Number(v2.calibratedConfidence) : 0;
+            const modelRec = it.recommendation || null;
+            const v2Rec = v2.recommendation || null;
+            // If there's a conflict and v2 has sufficient confidence, flag
+            if (modelRec && v2Rec && modelRec !== v2Rec && v2Conf >= V2_CONF_THRESHOLD) {
+              return { ...it, originalRecommendation: it.recommendation, recommendation: null, confidence: 'Low', flaggedForReview: true, v2Recommendation: v2Rec };
+            }
+            return it;
+          });
+
+          parsed = updatedParsed;
+        }
+
+        // Use thresholds from settings (with sensible defaults) to apply deterministic safety
+        const REVIEW_THRESHOLD = typeof settings.reviewThreshold === 'number' ? settings.reviewThreshold : 60;
+        const MODEL_HEURISTIC_DELTA = typeof settings.modelHeuristicDelta === 'number' ? settings.modelHeuristicDelta : 20;
+
+        const flaggedParsed = parsed.map((it: any, idx: number) => {
+          const info = score.items[idx];
+          const needsReview = !info.match && score.agreement < REVIEW_THRESHOLD;
+          if (needsReview) {
+            return { ...it, originalRecommendation: it.recommendation, recommendation: null, confidence: 'Low', flaggedForReview: true };
+          }
+          // also flag single-item large disagreement if modelConfidenceScore wildly differs from heuristic
+          const modelScore = typeof it.modelConfidenceScore === 'number' ? Number(it.modelConfidenceScore) : null;
+          const heuristicScore = info.heuristicScore || 0;
+          if (modelScore != null && Math.abs(modelScore - heuristicScore) > MODEL_HEURISTIC_DELTA) {
+            return { ...it, originalRecommendation: it.recommendation, flaggedForReview: true };
+          }
+          return it;
+        });
+
+        setParsedResults(flaggedParsed);
+        setContent(JSON.stringify(flaggedParsed, null, 2));
         setIsLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -192,6 +269,28 @@ export default function AnalysisSection({ projections, settings }: AnalysisSecti
                                 {ctx.lastGameDate && <div>Last known game date: <span className="italic">{ctx.lastGameDate}</span></div>}
                               </div>
                             )}
+                            <div className="mt-2 flex items-center gap-2">
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    setRefetchingIds(prev => new Set(prev).add(p.id));
+                                    const contexts = await buildExternalContextForProjections([p], settings);
+                                    await saveNbaContexts(contexts);
+                                    // merge into existing externalContexts state
+                                    setExternalContexts(prev => ({ ...(prev || {}), ...contexts }));
+                                  } catch (e) {
+                                    // ignore; UI will still show existing context
+                                  } finally {
+                                    setRefetchingIds(prev => { const s = new Set(prev); s.delete(p.id); return s; });
+                                  }
+                                }}
+                                className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
+                                disabled={refetchingIds.has(p.id)}
+                              >
+                                {refetchingIds.has(p.id) ? 'Refreshing…' : 'Refetch context'}
+                              </button>
+                              <div className="text-xs text-gray-500">Click to refresh numeric context for this player.</div>
+                            </div>
                             <div className="mt-2 text-xs">
                               {ctx.recentSource && (
                                 <a className="text-blue-600 dark:text-blue-300 underline mr-3" href={ctx.recentSource} target="_blank" rel="noreferrer">Recent Source</a>
@@ -226,6 +325,13 @@ export default function AnalysisSection({ projections, settings }: AnalysisSecti
               <div className="prose dark:prose-invert max-w-none">
                 {parsedResults ? (
                   <div className="space-y-3">
+                      {agreementSummary && (
+                          <div className="p-3 mb-2 rounded bg-gray-50 dark:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 border border-gray-100 dark:border-gray-800">
+                            <div>Model/Heuristic agreement: <strong>{agreementSummary.agreement}%</strong>.</div>
+                            {v2Agreement != null && (<div>Statistical model agreement: <strong>{v2Agreement}%</strong>.</div>)}
+                            <div>Items flagged for review are highlighted.</div>
+                          </div>
+                        )}
                     {parsedResults.map((r, idx) => (
                       <div key={idx} className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
                         <div className="flex items-start justify-between">
@@ -248,6 +354,17 @@ export default function AnalysisSection({ projections, settings }: AnalysisSecti
                               <div>opponent: {r.numericEvidence.opponent.name ?? 'null'} — DRtg: {r.numericEvidence.opponent.defensiveRating ?? 'null'} | Pace: {r.numericEvidence.opponent.pace ?? 'null'}</div>
                             )}
                             <div>projectedMinutes: {r.numericEvidence.projectedMinutes ?? 'null'}</div>
+                          </div>
+                        )}
+                        
+                        {v2Predictions && v2Predictions[idx] && (
+                          <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
+                            <div><strong>Statistical model:</strong> {v2Predictions[idx].recommendation ?? 'NO LEAN'} — Prob(OVER): {(v2Predictions[idx].overProbability ?? 0).toFixed(2)}</div>
+                          </div>
+                        )}
+                        {r.flaggedForReview && (
+                          <div className="mt-3 text-xs text-yellow-700 dark:text-yellow-300">
+                            <strong>Flagged for review:</strong> The model's recommendation disagrees with the trusted numeric evidence. Recommendation has been nulled to avoid unsafe advice.
                           </div>
                         )}
 

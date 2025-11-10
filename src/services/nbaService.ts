@@ -84,7 +84,14 @@ export async function fetchPlayerContextFromNBA(
   const base = (settings?.nbaEndpoint && settings.nbaEndpoint.length > 0) ? settings.nbaEndpoint : defaultEndpoint;
 
   // Try a list of candidate paths derived from the provided endpoint to be resilient across backends
-  const candidates = [base, base + '/player_summary', base + '/api/player_summary', base + '/player/context'];
+  const candidates = [
+    base,
+    base + '/player_summary',
+    base + '/api/player_summary',
+    base + '/player/context',
+    base + '/api/player_context',
+    base + '/api/batch_player_context'
+  ];
 
   const headersBase: Record<string, string> = { Accept: 'application/json' };
   if (settings?.nbaApiKey) headersBase['Authorization'] = `Bearer ${settings.nbaApiKey}`;

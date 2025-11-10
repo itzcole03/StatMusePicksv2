@@ -42,4 +42,10 @@
     "@testing-library/jest-dom": "^6.0.0",
     "jsdom": "^23.0.0"
   }
+  ,
+  "vitest": {
+    "setupFiles": ["./vitest.setup.ts"],
+    "environment": "jsdom",
+    "globals": true
+  }
 }
