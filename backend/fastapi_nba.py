@@ -11,25 +11,31 @@ import re
 # Caching
 from cachetools import TTLCache
 
-# Optional Redis support
+# Optional Redis support via the shared cache helper
 redis_client = None
-REDIS_URL = os.environ.get('REDIS_URL')
-if REDIS_URL:
-    try:
-        import redis as _redis
-        redis_client = _redis.from_url(REDIS_URL)
-    except Exception:
-        redis_client = None
+try:
+    from .services.cache import get_redis
+    redis_client = get_redis()
+except Exception:
+    redis_client = None
 
 # NOTE: `nba_api` is an optional dependency. Install it in the backend venv.
 try:
-    from nba_api.stats.static import players
-    from nba_api.stats.endpoints import playergamelog
-    from nba_api.stats.endpoints import playercareerstats
-except Exception:
+    # Prefer using the centralized client which encapsulates imports and caching
+    from .services.nba_stats_client import find_player_id_by_name, fetch_recent_games
     players = None
     playergamelog = None
     playercareerstats = None
+except Exception:
+    # Fall back to direct `nba_api` imports (older setups)
+    try:
+        from nba_api.stats.static import players
+        from nba_api.stats.endpoints import playergamelog
+        from nba_api.stats.endpoints import playercareerstats
+    except Exception:
+        players = None
+        playergamelog = None
+        playercareerstats = None
 
 app = FastAPI(title="NBA Data Backend (example)")
 
@@ -45,6 +51,65 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def _startup_models():
+    """Load persisted models into the ML service registry at startup to
+    avoid lazy loads and improve readiness for external requests.
+    """
+    try:
+        # Ensure registry exists and ml_service is initialized
+        global registry, ml_service
+        if registry is None:
+            try:
+                from backend.services.model_registry import ModelRegistry as _MR
+                registry = _MR()
+            except Exception:
+                registry = None
+
+        if ml_service is None:
+            try:
+                from .services import MLPredictionService as _MS
+                ml_service = _MS()
+            except Exception:
+                ml_service = None
+
+        model_dir = None
+        if registry is not None:
+            model_dir = registry.model_dir
+        elif ml_service is not None and hasattr(ml_service, 'registry'):
+            try:
+                model_dir = ml_service.registry.model_dir
+            except Exception:
+                model_dir = None
+
+        if model_dir:
+            # load all .pkl models found in the dir
+            for fname in sorted(os.listdir(model_dir)):
+                if not fname.endswith('.pkl') or fname.endswith('_calibrator.pkl'):
+                    continue
+                player = fname[:-4].replace('_', ' ')
+                try:
+                    # prefer loading into the ml_service registry if available
+                    if ml_service is not None and hasattr(ml_service, 'registry'):
+                        ml_service.registry.load_model(player)
+                    elif registry is not None:
+                        registry.load_model(player)
+                except Exception:
+                    logger.exception('Failed to preload model %s', fname)
+    except Exception:
+        logger.exception('Error during startup model preload')
+
+
+@app.exception_handler(Exception)
+async def _global_exception_handler(request, exc):
+    """Catch-all exception handler to return 500 JSON and log the error
+    without bringing down the server process.
+    """
+    logger.exception('Unhandled exception: %s', exc)
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=500, content={"error": "internal_server_error"})
 
 class GameItem(BaseModel):
     gameDate: str
@@ -76,6 +141,14 @@ STAT_MAP = {
 
 
 def find_player_id_by_name(name: str):
+    # If central client available, use it
+    try:
+        from .services.nba_stats_client import find_player_id_by_name as _client_fn
+
+        return _client_fn(name)
+    except Exception:
+        pass
+
     if players is None:
         return None
     # Try exact lookup
@@ -114,6 +187,14 @@ def find_player_id_by_name(name: str):
 
 
 def fetch_recent_games(player_id: int, limit: int = 8):
+    # Prefer centralized client
+    try:
+        from .services.nba_stats_client import fetch_recent_games as _client_fn
+
+        return _client_fn(player_id, limit)
+    except Exception:
+        pass
+
     if playergamelog is None:
         return []
     # `nba_api` PlayerGameLog signature varies between versions; use the simple
@@ -233,7 +314,8 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
     cache[cache_key] = out
     if redis_client:
         try:
-            redis_client.setex(cache_key, 60 * 10, json.dumps(out))
+            # persist player context longer (6 hours) per roadmap guidance
+            redis_client.setex(cache_key, 60 * 60 * 6, json.dumps(out))
         except Exception:
             pass
 
@@ -303,6 +385,18 @@ class PredictionRequest(BaseModel):
 async def api_predict(req: PredictionRequest):
     if ml_service is None:
         raise HTTPException(status_code=503, detail='ML service unavailable')
+    # Simple caching by player|stat|line when Redis is available.
+    cache_key = f"predict:{req.player}:{req.stat}:{req.line}"
+    if redis_client:
+        try:
+            raw = redis_client.get(cache_key)
+            if raw:
+                # stored as JSON string
+                import json
+                return json.loads(raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw)
+        except Exception:
+            pass
+
     result = await ml_service.predict(
         player_name=req.player,
         stat_type=req.stat,
@@ -310,6 +404,15 @@ async def api_predict(req: PredictionRequest):
         player_data=req.player_data or {},
         opponent_data=req.opponent_data or {}
     )
+
+    # store in redis for 1 hour
+    if redis_client:
+        try:
+            import json
+            redis_client.setex(cache_key, 60 * 60, json.dumps(result))
+        except Exception:
+            pass
+
     return result
 
 

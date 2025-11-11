@@ -1,16 +1,8 @@
-"""Player model registry: save/load per-player models and calibrators.
-
-This registry persists model artifacts to disk and additionally records
-`ModelMetadata` rows into the database so models are discoverable and
-auditable. The DB insert uses a synchronous SQLAlchemy engine created from
-the environment `DATABASE_URL` (async URL patterns are converted to the
-corresponding sync driver when possible).
-"""
 from __future__ import annotations
 import os
-from typing import Optional
 import joblib
 import logging
+from typing import Optional
 
 from sqlalchemy import create_engine
 

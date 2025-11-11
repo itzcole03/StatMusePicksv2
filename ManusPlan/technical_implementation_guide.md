@@ -29,14 +29,14 @@ interface PredictionResult {
   player: string;
   stat: string;
   line: number;
-  
+
   // Probability-based predictions
-  overProbability: number;  // 0-1 probability of going OVER
+  overProbability: number; // 0-1 probability of going OVER
   underProbability: number; // 0-1 probability of going UNDER
-  
+
   // Calibrated confidence
   calibratedConfidence: number; // 0-100, calibrated score
-  
+
   // Model ensemble
   modelPredictions: {
     randomForest: number;
@@ -44,19 +44,19 @@ interface PredictionResult {
     elasticNet: number;
     llmQualitative: number;
   };
-  
+
   // Statistical evidence
   evidence: {
     mean: number;
     median: number;
     std: number;
-    trendSlope: number;  // Linear regression slope of recent games
+    trendSlope: number; // Linear regression slope of recent games
     confidenceInterval: [number, number]; // 95% CI
     sampleSize: number;
   };
-  
+
   // Final recommendation
-  recommendation: 'OVER' | 'UNDER' | null;
+  recommendation: "OVER" | "UNDER" | null;
   expectedValue: number; // EV calculation
 }
 
@@ -64,43 +64,48 @@ interface PredictionResult {
 export function calculateStatisticalEvidence(
   recentGames: number[],
   seasonAvg: number | null
-): PredictionResult['evidence'] {
+): PredictionResult["evidence"] {
   if (!recentGames || recentGames.length === 0) {
     return null;
   }
-  
+
   const mean = recentGames.reduce((a, b) => a + b, 0) / recentGames.length;
   const sortedGames = [...recentGames].sort((a, b) => a - b);
   const median = sortedGames[Math.floor(sortedGames.length / 2)];
-  
+
   // Calculate standard deviation
-  const variance = recentGames.reduce((sum, val) => 
-    sum + Math.pow(val - mean, 2), 0) / recentGames.length;
+  const variance =
+    recentGames.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) /
+    recentGames.length;
   const std = Math.sqrt(variance);
-  
+
   // Calculate trend using simple linear regression
   const n = recentGames.length;
   const xMean = (n - 1) / 2;
-  const numerator = recentGames.reduce((sum, y, x) => 
-    sum + (x - xMean) * (y - mean), 0);
-  const denominator = recentGames.reduce((sum, _, x) => 
-    sum + Math.pow(x - xMean, 2), 0);
+  const numerator = recentGames.reduce(
+    (sum, y, x) => sum + (x - xMean) * (y - mean),
+    0
+  );
+  const denominator = recentGames.reduce(
+    (sum, _, x) => sum + Math.pow(x - xMean, 2),
+    0
+  );
   const trendSlope = numerator / denominator;
-  
+
   // 95% confidence interval (assuming normal distribution)
   const marginOfError = 1.96 * (std / Math.sqrt(n));
   const confidenceInterval: [number, number] = [
     mean - marginOfError,
-    mean + marginOfError
+    mean + marginOfError,
   ];
-  
+
   return {
     mean,
     median,
     std,
     trendSlope,
     confidenceInterval,
-    sampleSize: n
+    sampleSize: n,
   };
 }
 
@@ -108,24 +113,22 @@ export function calculateStatisticalEvidence(
 export function calculateExpectedValue(
   overProbability: number,
   line: number,
-  oddsOver: number = -110,  // Standard American odds
+  oddsOver: number = -110, // Standard American odds
   oddsUnder: number = -110
 ): number {
   // Convert American odds to decimal
-  const decimalOddsOver = oddsOver > 0 
-    ? (oddsOver / 100) + 1 
-    : (100 / Math.abs(oddsOver)) + 1;
-  const decimalOddsUnder = oddsUnder > 0 
-    ? (oddsUnder / 100) + 1 
-    : (100 / Math.abs(oddsUnder)) + 1;
-  
+  const decimalOddsOver =
+    oddsOver > 0 ? oddsOver / 100 + 1 : 100 / Math.abs(oddsOver) + 1;
+  const decimalOddsUnder =
+    oddsUnder > 0 ? oddsUnder / 100 + 1 : 100 / Math.abs(oddsUnder) + 1;
+
   // Calculate EV for betting OVER
-  const evOver = (overProbability * decimalOddsOver) - 1;
-  
+  const evOver = overProbability * decimalOddsOver - 1;
+
   // Calculate EV for betting UNDER
   const underProbability = 1 - overProbability;
-  const evUnder = (underProbability * decimalOddsUnder) - 1;
-  
+  const evUnder = underProbability * decimalOddsUnder - 1;
+
   // Return the better EV
   return Math.max(evOver, evUnder);
 }
@@ -142,14 +145,14 @@ The current `nbaService.ts` is a stub that needs to be replaced with a robust da
 export interface EnhancedPlayerContext extends NBAPlayerContext {
   // Advanced metrics
   advancedMetrics: {
-    per: number | null;           // Player Efficiency Rating
-    ts_pct: number | null;        // True Shooting %
-    usg_pct: number | null;       // Usage Rate %
-    pie: number | null;           // Player Impact Estimate
-    offRating: number | null;     // Offensive Rating
-    defRating: number | null;     // Defensive Rating
+    per: number | null; // Player Efficiency Rating
+    ts_pct: number | null; // True Shooting %
+    usg_pct: number | null; // Usage Rate %
+    pie: number | null; // Player Impact Estimate
+    offRating: number | null; // Offensive Rating
+    defRating: number | null; // Defensive Rating
   };
-  
+
   // Rolling averages
   rollingAverages: {
     last3Games: number | null;
@@ -157,22 +160,22 @@ export interface EnhancedPlayerContext extends NBAPlayerContext {
     last10Games: number | null;
     exponentialMovingAvg: number | null;
   };
-  
+
   // Contextual factors
   contextualFactors: {
-    homeAway: 'home' | 'away' | null;
+    homeAway: "home" | "away" | null;
     daysRest: number | null;
     isBackToBack: boolean;
     travelDistance: number | null;
   };
-  
+
   // Opponent-adjusted stats
   opponentAdjusted: {
     avgVsTop10Defenses: number | null;
     avgVsBottom10Defenses: number | null;
     avgVsSimilarOpponent: number | null;
   };
-  
+
   // Historical matchup data
   historicalMatchup: {
     gamesVsOpponent: number;
@@ -190,31 +193,25 @@ export async function buildEnhancedFeatures(
   settings: Settings
 ): Promise<EnhancedPlayerContext | null> {
   // Fetch raw data from multiple sources
-  const [
-    basicContext,
-    advancedStats,
-    opponentData,
-    matchupHistory
-  ] = await Promise.all([
-    fetchPlayerContextFromNBA(proj, settings),
-    fetchAdvancedPlayerStats(proj.player, settings),
-    fetchOpponentDefensiveStats(proj.team, settings),
-    fetchHistoricalMatchup(proj.player, proj.team, settings)
-  ]);
-  
+  const [basicContext, advancedStats, opponentData, matchupHistory] =
+    await Promise.all([
+      fetchPlayerContextFromNBA(proj, settings),
+      fetchAdvancedPlayerStats(proj.player, settings),
+      fetchOpponentDefensiveStats(proj.team, settings),
+      fetchHistoricalMatchup(proj.player, proj.team, settings),
+    ]);
+
   if (!basicContext) return null;
-  
+
   // Calculate rolling averages
-  const rollingAverages = calculateRollingAverages(
-    basicContext.recentGames
-  );
-  
+  const rollingAverages = calculateRollingAverages(basicContext.recentGames);
+
   // Calculate opponent-adjusted stats
   const opponentAdjusted = calculateOpponentAdjustedStats(
     basicContext.recentGames,
     opponentData
   );
-  
+
   return {
     ...basicContext,
     advancedMetrics: advancedStats,
@@ -223,49 +220,52 @@ export async function buildEnhancedFeatures(
       homeAway: determineHomeAway(proj),
       daysRest: calculateDaysRest(basicContext.recentGames),
       isBackToBack: isBackToBackGame(basicContext.recentGames),
-      travelDistance: null // Requires additional data source
+      travelDistance: null, // Requires additional data source
     },
     opponentAdjusted,
-    historicalMatchup: matchupHistory
+    historicalMatchup: matchupHistory,
   };
 }
 
 function calculateRollingAverages(
-  recentGames: Array<{date: string, statValue: number}>
-): EnhancedPlayerContext['rollingAverages'] {
+  recentGames: Array<{ date: string; statValue: number }>
+): EnhancedPlayerContext["rollingAverages"] {
   if (!recentGames || recentGames.length === 0) {
     return {
       last3Games: null,
       last5Games: null,
       last10Games: null,
-      exponentialMovingAvg: null
+      exponentialMovingAvg: null,
     };
   }
-  
-  const values = recentGames.map(g => g.statValue);
-  
+
+  const values = recentGames.map((g) => g.statValue);
+
   const last3 = values.slice(0, 3);
   const last5 = values.slice(0, 5);
   const last10 = values.slice(0, 10);
-  
+
   // Exponential moving average with alpha = 0.3
   const alpha = 0.3;
   let ema = values[0];
   for (let i = 1; i < values.length; i++) {
     ema = alpha * values[i] + (1 - alpha) * ema;
   }
-  
+
   return {
-    last3Games: last3.length >= 3 
-      ? last3.reduce((a, b) => a + b, 0) / last3.length 
-      : null,
-    last5Games: last5.length >= 5 
-      ? last5.reduce((a, b) => a + b, 0) / last5.length 
-      : null,
-    last10Games: last10.length >= 10 
-      ? last10.reduce((a, b) => a + b, 0) / last10.length 
-      : null,
-    exponentialMovingAvg: ema
+    last3Games:
+      last3.length >= 3
+        ? last3.reduce((a, b) => a + b, 0) / last3.length
+        : null,
+    last5Games:
+      last5.length >= 5
+        ? last5.reduce((a, b) => a + b, 0) / last5.length
+        : null,
+    last10Games:
+      last10.length >= 10
+        ? last10.reduce((a, b) => a + b, 0) / last10.length
+        : null,
+    exponentialMovingAvg: ema,
   };
 }
 ```
@@ -299,10 +299,10 @@ class PlayerModelRegistry:
         self.model_dir = model_dir
         self.player_models: Dict[str, VotingRegressor] = {}
         self.calibrators: Dict[str, IsotonicRegression] = {}
-        
+
     def get_or_train_model(
-        self, 
-        player_name: str, 
+        self,
+        player_name: str,
         training_data: pd.DataFrame
     ) -> VotingRegressor:
         """
@@ -310,19 +310,19 @@ class PlayerModelRegistry:
         """
         if player_name in self.player_models:
             return self.player_models[player_name]
-        
+
         # Train new ensemble model
         model = self._train_ensemble_model(training_data)
         self.player_models[player_name] = model
-        
+
         # Save model to disk
         model_path = f"{self.model_dir}/{player_name.replace(' ', '_')}.pkl"
         joblib.dump(model, model_path)
-        
+
         return model
-    
+
     def _train_ensemble_model(
-        self, 
+        self,
         training_data: pd.DataFrame
     ) -> VotingRegressor:
         """
@@ -330,7 +330,7 @@ class PlayerModelRegistry:
         """
         X = training_data.drop(['target', 'player'], axis=1)
         y = training_data['target']
-        
+
         # Define base models
         rf = RandomForestRegressor(
             n_estimators=100,
@@ -338,20 +338,20 @@ class PlayerModelRegistry:
             min_samples_split=5,
             random_state=42
         )
-        
+
         xgb = XGBRegressor(
             n_estimators=100,
             max_depth=6,
             learning_rate=0.1,
             random_state=42
         )
-        
+
         elastic = ElasticNet(
             alpha=0.1,
             l1_ratio=0.5,
             random_state=42
         )
-        
+
         # Create voting ensemble
         ensemble = VotingRegressor(
             estimators=[
@@ -361,11 +361,11 @@ class PlayerModelRegistry:
             ],
             weights=[0.4, 0.4, 0.2]  # Weight XGBoost and RF higher
         )
-        
+
         ensemble.fit(X, y)
-        
+
         return ensemble
-    
+
     def calibrate_model(
         self,
         player_name: str,
@@ -377,19 +377,19 @@ class PlayerModelRegistry:
         model = self.player_models.get(player_name)
         if not model:
             raise ValueError(f"No model found for {player_name}")
-        
+
         X_val = validation_data.drop(['target', 'player'], axis=1)
         y_val = validation_data['target']
-        
+
         # Get raw predictions
         raw_predictions = model.predict(X_val)
-        
+
         # Fit isotonic regression
         calibrator = IsotonicRegression(out_of_bounds='clip')
         calibrator.fit(raw_predictions, y_val)
-        
+
         self.calibrators[player_name] = calibrator
-        
+
         # Save calibrator
         calibrator_path = f"{self.model_dir}/{player_name.replace(' ', '_')}_calibrator.pkl"
         joblib.dump(calibrator, calibrator_path)
@@ -398,7 +398,7 @@ class FeatureEngineering:
     """
     Feature engineering pipeline for NBA player predictions.
     """
-    
+
     @staticmethod
     def engineer_features(
         player_data: Dict,
@@ -408,63 +408,63 @@ class FeatureEngineering:
         Transform raw player and opponent data into ML features.
         """
         features = {}
-        
+
         # Recent performance features
         recent_games = player_data.get('recentGames', [])
         if recent_games:
             values = [g['statValue'] for g in recent_games if g.get('statValue') is not None]
-            
+
             if values:
                 features['recent_mean'] = np.mean(values)
                 features['recent_median'] = np.median(values)
                 features['recent_std'] = np.std(values)
                 features['recent_min'] = np.min(values)
                 features['recent_max'] = np.max(values)
-                
+
                 # Rolling averages
                 features['last_3_avg'] = np.mean(values[:3]) if len(values) >= 3 else None
                 features['last_5_avg'] = np.mean(values[:5]) if len(values) >= 5 else None
                 features['last_10_avg'] = np.mean(values[:10]) if len(values) >= 10 else None
-                
+
                 # Trend (linear regression slope)
                 if len(values) >= 3:
                     x = np.arange(len(values))
                     slope, _ = np.polyfit(x, values, 1)
                     features['trend_slope'] = slope
-                
+
                 # Volatility (coefficient of variation)
                 features['volatility'] = np.std(values) / np.mean(values) if np.mean(values) > 0 else 0
-        
+
         # Season average
         features['season_avg'] = player_data.get('seasonAvg')
-        
+
         # Advanced metrics
         adv_metrics = player_data.get('advancedMetrics', {})
         features['per'] = adv_metrics.get('per')
         features['ts_pct'] = adv_metrics.get('ts_pct')
         features['usg_pct'] = adv_metrics.get('usg_pct')
         features['pie'] = adv_metrics.get('pie')
-        
+
         # Opponent features
         opponent = opponent_data or {}
         features['opp_def_rating'] = opponent.get('defensiveRating')
         features['opp_pace'] = opponent.get('pace')
-        
+
         # Projected minutes
         features['projected_minutes'] = player_data.get('projectedMinutes')
-        
+
         # Contextual features
         context = player_data.get('contextualFactors', {})
         features['is_home'] = 1 if context.get('homeAway') == 'home' else 0
         features['days_rest'] = context.get('daysRest')
         features['is_back_to_back'] = 1 if context.get('isBackToBack') else 0
-        
+
         # Convert to DataFrame
         df = pd.DataFrame([features])
-        
+
         # Fill missing values with median (or 0 for now)
         df = df.fillna(0)
-        
+
         return df
 
 class MLPredictionService:
@@ -474,7 +474,7 @@ class MLPredictionService:
     def __init__(self):
         self.model_registry = PlayerModelRegistry()
         self.feature_engineer = FeatureEngineering()
-    
+
     async def predict(
         self,
         player_name: str,
@@ -489,38 +489,38 @@ class MLPredictionService:
         try:
             # Engineer features
             features = self.feature_engineer.engineer_features(
-                player_data, 
+                player_data,
                 opponent_data
             )
-            
+
             # Get player model
             model = self.model_registry.player_models.get(player_name)
             if not model:
                 logger.warning(f"No trained model for {player_name}, using fallback")
                 return self._fallback_prediction(player_data, line)
-            
+
             # Make raw prediction
             raw_prediction = model.predict(features)[0]
-            
+
             # Apply calibration if available
             calibrator = self.model_registry.calibrators.get(player_name)
             if calibrator:
                 calibrated_prediction = calibrator.predict([raw_prediction])[0]
             else:
                 calibrated_prediction = raw_prediction
-            
+
             # Calculate probability of going OVER
             # Using a simple logistic transformation
             over_probability = 1 / (1 + np.exp(-(calibrated_prediction - line)))
-            
+
             # Calculate expected value (assuming -110 odds)
             ev = self._calculate_ev(over_probability, -110, -110)
-            
+
             # Determine recommendation
             recommendation = 'OVER' if over_probability > 0.55 else 'UNDER'
             if 0.45 <= over_probability <= 0.55:
                 recommendation = None  # No clear edge
-            
+
             return {
                 'player': player_name,
                 'stat': stat_type,
@@ -532,11 +532,11 @@ class MLPredictionService:
                 'expected_value': ev,
                 'confidence': abs(over_probability - 0.5) * 200  # 0-100 scale
             }
-            
+
         except Exception as e:
             logger.error(f"Error in ML prediction for {player_name}: {e}")
             return self._fallback_prediction(player_data, line)
-    
+
     def _fallback_prediction(self, player_data: Dict, line: float) -> Dict:
         """
         Simple fallback when ML model is unavailable.
@@ -544,24 +544,24 @@ class MLPredictionService:
         recent_avg = player_data.get('rollingAverages', {}).get('last5Games')
         if recent_avg is None:
             recent_avg = player_data.get('seasonAvg')
-        
+
         if recent_avg is None:
             return {
                 'recommendation': None,
                 'confidence': 0,
                 'over_probability': 0.5
             }
-        
+
         over_prob = 0.5 + (recent_avg - line) * 0.05  # Simple heuristic
         over_prob = max(0.1, min(0.9, over_prob))  # Clip to [0.1, 0.9]
-        
+
         return {
             'predicted_value': recent_avg,
             'over_probability': over_prob,
             'recommendation': 'OVER' if over_prob > 0.55 else 'UNDER',
             'confidence': abs(over_prob - 0.5) * 100
         }
-    
+
     @staticmethod
     def _calculate_ev(
         over_probability: float,
@@ -574,10 +574,10 @@ class MLPredictionService:
         # Convert American odds to decimal
         decimal_over = (100 / abs(odds_over)) + 1 if odds_over < 0 else (odds_over / 100) + 1
         decimal_under = (100 / abs(odds_under)) + 1 if odds_under < 0 else (odds_under / 100) + 1
-        
+
         ev_over = (over_probability * decimal_over) - 1
         ev_under = ((1 - over_probability) * decimal_under) - 1
-        
+
         return max(ev_over, ev_under)
 ```
 
@@ -658,7 +658,7 @@ async def batch_predict(requests: List[PredictionRequest]):
                 'error': str(e),
                 'recommendation': None
             })
-    
+
     return {'predictions': results}
 
 @app.get("/health")
@@ -673,11 +673,13 @@ async def health_check():
 **Primary Data Sources:**
 
 1. **NBA Stats API** (free, rate-limited)
+
    - Basic player stats
    - Team stats
    - Game logs
 
 2. **Commercial Sports Data Provider** (paid, recommended)
+
    - Sportradar
    - Stats Perform
    - Comprehensive coverage, advanced metrics, real-time updates
@@ -699,7 +701,7 @@ async def health_check():
 ### 2.3. Data Pipeline Flow
 
 ```
-[Data Sources] 
+[Data Sources]
     ↓
 [Data Ingestion Service] (Python/Airflow)
     ↓
@@ -723,11 +725,13 @@ async def health_check():
 ### 3.1. Training Data Requirements
 
 **Minimum Requirements:**
+
 - 2-3 seasons of historical data per player
 - At least 50 games per player for individual models
 - For players with < 50 games, use a global model or ensemble
 
 **Optimal:**
+
 - 5+ seasons of data
 - 100+ games per player
 - Include playoff games (weighted differently)
@@ -747,14 +751,14 @@ def time_series_cv_split(data, n_splits=5):
     data = data.sort_values('date')
     total_size = len(data)
     fold_size = total_size // (n_splits + 1)
-    
+
     for i in range(n_splits):
         train_end = fold_size * (i + 1)
         val_end = train_end + fold_size
-        
+
         train = data.iloc[:train_end]
         val = data.iloc[train_end:val_end]
-        
+
         yield train, val
 ```
 
@@ -763,10 +767,12 @@ def time_series_cv_split(data, n_splits=5):
 **Primary Metrics:**
 
 1. **Brier Score** (lower is better)
+
    - Measures accuracy of probabilistic predictions
    - Formula: `(1/N) * Σ(predicted_prob - actual_outcome)²`
 
 2. **Expected Calibration Error (ECE)**
+
    - Measures calibration quality
    - Bins predictions and compares expected vs actual accuracy
 
@@ -794,10 +800,10 @@ def objective(trial):
         'max_depth': trial.suggest_int('max_depth', 3, 15),
         'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3),
     }
-    
+
     model = XGBRegressor(**params)
     score = cross_val_score(model, X_train, y_train, cv=5, scoring='neg_brier_score')
-    
+
     return score.mean()
 
 study = optuna.create_study(direction='maximize')
@@ -841,17 +847,17 @@ class ABTestingService:
         self.model_v1 = load_model('v1')
         self.model_v2 = load_model('v2')
         self.results = {'v1': [], 'v2': []}
-    
+
     def predict(self, player, features):
         # Randomly assign to model version
         version = 'v1' if random.random() < 0.5 else 'v2'
         model = self.model_v1 if version == 'v1' else self.model_v2
-        
+
         prediction = model.predict(features)
-        
+
         # Log for later analysis
         self.log_prediction(version, player, prediction)
-        
+
         return prediction
 ```
 
@@ -912,9 +918,9 @@ def test_feature_engineering():
         ],
         'seasonAvg': 27.5
     }
-    
+
     features = FeatureEngineering.engineer_features(player_data, {})
-    
+
     assert features['recent_mean'] == pytest.approx(27.67, 0.01)
     assert features['recent_std'] > 0
     assert features['last_3_avg'] == pytest.approx(27.67, 0.01)
@@ -936,9 +942,9 @@ async def test_prediction_endpoint():
         player_data={...},
         opponent_data={...}
     )
-    
+
     response = await predict_prop(request)
-    
+
     assert response.player == 'LeBron James'
     assert 0 <= response.over_probability <= 1
     assert response.recommendation in ['OVER', 'UNDER', None]
@@ -955,33 +961,33 @@ def backtest_strategy(predictions, actual_results, initial_bankroll=1000):
     """
     bankroll = initial_bankroll
     bets = []
-    
+
     for pred, actual in zip(predictions, actual_results):
         # Only bet if EV > 0 and confidence > 60
         if pred['expected_value'] > 0 and pred['confidence'] > 60:
             stake = bankroll * 0.02  # 2% Kelly
-            
+
             # Determine if bet won
             if pred['recommendation'] == 'OVER':
                 won = actual['stat_value'] > pred['line']
             else:
                 won = actual['stat_value'] < pred['line']
-            
+
             # Update bankroll
             if won:
                 bankroll += stake * 0.91  # -110 odds = 0.91 profit
             else:
                 bankroll -= stake
-            
+
             bets.append({
                 'stake': stake,
                 'won': won,
                 'bankroll': bankroll
             })
-    
+
     roi = (bankroll - initial_bankroll) / initial_bankroll * 100
     win_rate = sum(b['won'] for b in bets) / len(bets) * 100
-    
+
     return {
         'final_bankroll': bankroll,
         'roi': roi,

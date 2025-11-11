@@ -1,11 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
-import { Info, TestTube } from 'lucide-react';
-import { getSampleData } from '../utils/sampleData';
-import { saveBatch, clearDB, countAll, rebuildPlayersIndex } from '../services/indexedDBService';
+import { useEffect, useRef, useState } from "react";
+import { Info, TestTube } from "lucide-react";
+import { getSampleData } from "../utils/sampleData";
+import {
+  saveBatch,
+  clearDB,
+  countAll,
+  rebuildPlayersIndex,
+} from "../services/indexedDBService";
 
 export default function DataLoader() {
-  const [dataInput, setDataInput] = useState('');
-  const [status, setStatus] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+  const [dataInput, setDataInput] = useState("");
+  const [status, setStatus] = useState<{
+    message: string;
+    type: "error" | "success" | "info";
+  } | null>(null);
   const [progress, setProgress] = useState(0);
   const [parsedCount, setParsedCount] = useState(0);
   const workerRef = useRef<Worker | null>(null);
@@ -29,14 +37,17 @@ export default function DataLoader() {
 
   const handleLoadData = () => {
     if (!dataInput.trim()) {
-      setStatus({ message: 'Please paste JSON data or load sample data first.', type: 'error' });
+      setStatus({
+        message: "Please paste JSON data or load sample data first.",
+        type: "error",
+      });
       return;
     }
     handleLoadDataWithString(dataInput);
   };
 
   const handleLoadDataWithString = (raw: string) => {
-    setStatus({ message: 'Parsing and saving data...', type: 'info' });
+    setStatus({ message: "Parsing and saving data...", type: "info" });
     setProgress(0);
     setParsedCount(0);
 
@@ -45,35 +56,44 @@ export default function DataLoader() {
       workerRef.current = null;
     }
 
-    const worker = new Worker(new URL('../workers/parser.worker.ts', import.meta.url), { type: 'module' });
+    const worker = new Worker(
+      new URL("../workers/parser.worker.ts", import.meta.url),
+      { type: "module" }
+    );
     workerRef.current = worker;
 
     worker.onmessage = async (ev) => {
       const msg = ev.data as any;
-      if (msg.type === 'chunk') {
+      if (msg.type === "chunk") {
         const chunk = msg.chunk as any[];
         try {
           await saveBatch(chunk);
           setParsedCount((p) => p + chunk.length);
           setProgress(msg.progress ?? 0);
         } catch (err) {
-          console.error('saveBatch error', err);
-          setStatus({ message: 'Error saving data. See console.', type: 'error' });
+          console.error("saveBatch error", err);
+          setStatus({
+            message: "Error saving data. See console.",
+            type: "error",
+          });
         }
-      } else if (msg.type === 'done') {
+      } else if (msg.type === "done") {
         const total = await countAll();
-        setStatus({ message: `Data parsed and saved (${total} items).`, type: 'success' });
+        setStatus({
+          message: `Data parsed and saved (${total} items).`,
+          type: "success",
+        });
         setProgress(1);
         worker.terminate();
         workerRef.current = null;
         try {
           // notify app that DB was updated
-          window.dispatchEvent(new CustomEvent('db-updated', { detail: { total } }));
-        } catch (e) {
+          window.dispatchEvent(new CustomEvent("db-updated", { detail: { total } }));
+        } catch {
           // ignore
         }
-      } else if (msg.type === 'error') {
-        setStatus({ message: `Parse error: ${msg.message}`, type: 'error' });
+      } else if (msg.type === "error") {
+        setStatus({ message: `Parse error: ${msg.message}`, type: "error" });
         worker.terminate();
         workerRef.current = null;
       }
@@ -84,26 +104,29 @@ export default function DataLoader() {
 
   const handleClear = async () => {
     await clearDB();
-    setStatus({ message: 'Stored data cleared.', type: 'success' });
+    setStatus({ message: "Stored data cleared.", type: "success" });
     setProgress(0);
     setParsedCount(0);
   };
 
   const handleRebuildIndex = async () => {
-    setStatus({ message: 'Rebuilding player index...', type: 'info' });
+    setStatus({ message: "Rebuilding player index...", type: "info" });
     try {
       const res = await rebuildPlayersIndex();
-      setStatus({ message: `Rebuilt player index: ${res.players} players, ${res.mappings} mappings.`, type: 'success' });
-    } catch (e) {
-      console.error('rebuildPlayersIndex error', e);
-      setStatus({ message: 'Failed to rebuild player index.', type: 'error' });
+      setStatus({
+        message: `Rebuilt player index: ${res.players} players, ${res.mappings} mappings.`,
+        type: "success",
+      });
+    } catch (err) {
+      console.error("rebuildPlayersIndex error", err);
+      setStatus({ message: "Failed to rebuild player index.", type: "error" });
     }
   };
 
   const statusColors = {
-    error: 'text-red-500',
-    success: 'text-green-500',
-    info: 'text-blue-500'
+    error: "text-red-500",
+    success: "text-green-500",
+    info: "text-blue-500",
   };
 
   return (
@@ -117,7 +140,7 @@ export default function DataLoader() {
         </h3>
         <ol className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-6 list-decimal">
           <li>
-            Open{' '}
+            Open{" "}
             <a
               href="https://partner-api.prizepicks.com/projections"
               target="_blank"
@@ -125,7 +148,7 @@ export default function DataLoader() {
               className="underline hover:text-blue-600"
             >
               partner-api.prizepicks.com/projections
-            </a>{' '}
+            </a>{" "}
             in a new tab
           </li>
           <li>Copy all the JSON data (Ctrl+A, Ctrl+C)</li>
@@ -179,7 +202,10 @@ export default function DataLoader() {
       {progress > 0 && (
         <div className="mt-3">
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-            <div style={{ width: `${Math.round(progress * 100)}%` }} className="h-2 bg-[#5D5CDE]" />
+            <div
+              style={{ width: `${Math.round(progress * 100)}%` }}
+              className="h-2 bg-[#5D5CDE]"
+            />
           </div>
           <div className="text-sm mt-1">Saved: {parsedCount}</div>
         </div>

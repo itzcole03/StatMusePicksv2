@@ -49,7 +49,7 @@ export interface ParsedProjection {
 }
 
 export interface Settings {
-  aiProvider: 'local';
+  aiProvider: "local";
   llmEndpoint: string;
   llmModel: string;
   // Optional human-friendly name for a chosen local model directory

@@ -1,33 +1,40 @@
-import { useCallback, useEffect, useState } from 'react';
-import Header from './components/Header';
-import DataLoader from './components/DataLoader';
-import Filters from './components/Filters';
-import StatsSection from './components/StatsSection';
-import ProjectionsTable from './components/ProjectionsTable';
-import AnalysisSection from './components/AnalysisSection';
-import SettingsModal from './components/SettingsModal';
-import { ParsedProjection, Settings } from './types';
-import { queryProjections, countAll, getDistinctValues, getProjectionsByIds, saveNbaContexts } from './services/indexedDBService';
-import { buildExternalContextForProjections } from './services/nbaService';
-import { findWorkingEndpoint } from './services/aiService';
+import { useCallback, useEffect, useState } from "react";
+import Header from "./components/Header";
+import DataLoader from "./components/DataLoader";
+import Filters from "./components/Filters";
+import StatsSection from "./components/StatsSection";
+import ProjectionsTable from "./components/ProjectionsTable";
+import AnalysisSection from "./components/AnalysisSection";
+import SettingsModal from "./components/SettingsModal";
+import { ParsedProjection, Settings } from "./types";
+import {
+  queryProjections,
+  countAll,
+  getDistinctValues,
+  getProjectionsByIds,
+  saveNbaContexts,
+} from "./services/indexedDBService";
+import { buildExternalContextForProjections } from "./services/nbaService";
+import { findWorkingEndpoint } from "./services/aiService";
 
 function App() {
-  const [projectionsData, setProjectionsData] = useState<ParsedProjection[]>([]);
-  const [selectedProjections, setSelectedProjections] = useState<Set<string>>(new Set());
+  const [projectionsData, setProjectionsData] = useState<ParsedProjection[]>(
+    []
+  );
+  const [selectedProjections, setSelectedProjections] = useState<Set<string>>(
+    new Set()
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({
-    aiProvider: 'local',
-    llmEndpoint: 'http://localhost:11434/api/chat',
-    llmModel: 'llama3.2:latest'
+    aiProvider: "local",
+    llmEndpoint: "http://localhost:11434/api/chat",
+    llmModel: "llama3.2:latest",
+    requireExternalData: false,
   });
-  // ensure requireExternalData defaults to false when not provided
-  useEffect(() => {
-    if (settings.requireExternalData === undefined) setSettings(s => ({ ...s, requireExternalData: false }));
-  }, []);
   const [filters, setFilters] = useState({
-    league: '',
-    stat: '',
-    search: ''
+    league: "",
+    stat: "",
+    search: "",
   });
   const [totalMatched, setTotalMatched] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -35,7 +42,9 @@ function App() {
   const [totalProjectionsCount, setTotalProjectionsCount] = useState(0);
   const [totalPlayersCount, setTotalPlayersCount] = useState(0);
   const [totalLeaguesCount, setTotalLeaguesCount] = useState(0);
-  const [analysisProjections, setAnalysisProjections] = useState<ParsedProjection[]>([]);
+  const [analysisProjections, setAnalysisProjections] = useState<
+    ParsedProjection[]
+  >([]);
   const [analysisVisible, setAnalysisVisible] = useState(false);
   // session-level override for selected model (applies immediately but not persisted)
   const [sessionModel, setSessionModel] = useState<string | null>(null);
@@ -43,7 +52,7 @@ function App() {
   // DataLoader writes to IndexedDB directly; App will query DB when filters change
 
   const handleProjectionToggle = (id: string, checked: boolean) => {
-    setSelectedProjections(prev => {
+    setSelectedProjections((prev) => {
       const newSet = new Set(prev);
       if (checked) {
         newSet.add(id);
@@ -56,11 +65,13 @@ function App() {
 
   const handleAnalyze = async () => {
     if (selectedProjections.size === 0) {
-      alert('Please select at least one projection to analyze.');
+      alert("Please select at least one projection to analyze.");
       return;
     }
     if (selectedProjections.size > 10) {
-      alert('Please select no more than 10 projections at a time for optimal analysis.');
+      alert(
+        "Please select no more than 10 projections at a time for optimal analysis."
+      );
       return;
     }
 
@@ -68,11 +79,21 @@ function App() {
     try {
       const probe = await findWorkingEndpoint(settings.llmEndpoint);
       if (probe) {
-        const updated = { ...settings, llmEndpoint: probe.endpoint, llmModel: (probe.models && probe.models[0]) || settings.llmModel };
+        const updated = {
+          ...settings,
+          llmEndpoint: probe.endpoint,
+          llmModel: (probe.models && probe.models[0]) || settings.llmModel,
+        };
         setSettings(updated);
-        try { window.dispatchEvent(new CustomEvent('llm-model-applied', { detail: { model: updated.llmModel } })); } catch (e) {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("llm-model-applied", {
+              detail: { model: updated.llmModel },
+            })
+          );
+        } catch {}
       }
-    } catch (e) {
+    } catch {
       // ignore detection errors; analysis will proceed and may fail with diagnostics shown in UI
     }
 
@@ -91,38 +112,59 @@ function App() {
       // have the freshest available numeric context and the UI shows badges quickly.
       const items = await getProjectionsByIds(ids);
       try {
-        const contexts = await buildExternalContextForProjections(items, settings);
+        const contexts = await buildExternalContextForProjections(
+          items,
+          settings
+        );
         // persist contexts into IndexedDB so subsequent UI renders pick them up
         await saveNbaContexts(contexts);
         // merge contexts into the in-memory items for immediate use
-        const merged = items.map((it) => ({ ...it, nbaContext: contexts[it.id] || it.nbaContext || null }));
+        const merged = items.map((it) => ({
+          ...it,
+          nbaContext: contexts[it.id] || it.nbaContext || null,
+        }));
         setAnalysisProjections(merged);
-      } catch (e) {
+      } catch {
         // if pre-warm fails, fall back to items without contexts
         setAnalysisProjections(items);
       }
     })();
-  }, [analysisVisible, selectedProjections]);
-
-  const hasFilters = !!(filters.league || filters.stat || filters.search);
+  }, [analysisVisible, selectedProjections, settings]);
 
   const loadFirstPage = useCallback(async () => {
     setOffset(0);
-    if (!hasFilters) {
+    const hasFiltersLocal = !!(filters.league || filters.stat || filters.search);
+    if (!hasFiltersLocal) {
       setProjectionsData([]);
       setTotalMatched(0);
       return;
     }
-    const res = await queryProjections({ league: filters.league || undefined, stat: filters.stat || undefined, playerName: filters.search || undefined }, 0, PAGE_SIZE);
+    const res = await queryProjections(
+      {
+        league: filters.league || undefined,
+        stat: filters.stat || undefined,
+        playerName: filters.search || undefined,
+      },
+      0,
+      PAGE_SIZE
+    );
     setProjectionsData(res.items);
     setTotalMatched(res.totalMatched);
     setOffset(res.items.length);
   }, [filters]);
 
   const loadMore = useCallback(async () => {
-    const res = await queryProjections({ league: filters.league || undefined, stat: filters.stat || undefined, playerName: filters.search || undefined }, offset, PAGE_SIZE);
-    setProjectionsData(prev => [...prev, ...res.items]);
-    setOffset(prev => prev + res.items.length);
+    const res = await queryProjections(
+      {
+        league: filters.league || undefined,
+        stat: filters.stat || undefined,
+        playerName: filters.search || undefined,
+      },
+      offset,
+      PAGE_SIZE
+    );
+    setProjectionsData((prev) => [...prev, ...res.items]);
+    setOffset((prev) => prev + res.items.length);
   }, [filters, offset]);
 
   // Results are loaded explicitly via the Filters "Show Results" button (onSearch)
@@ -131,9 +173,9 @@ function App() {
     const refreshCounts = async () => {
       const total = await countAll();
       setTotalProjectionsCount(total);
-      const players = await getDistinctValues('player');
+      const players = await getDistinctValues("player");
       setTotalPlayersCount(players.length);
-      const leagues = await getDistinctValues('league');
+      const leagues = await getDistinctValues("league");
       setTotalLeaguesCount(leagues.length);
     };
 
@@ -144,20 +186,23 @@ function App() {
     const handler = () => {
       refreshCounts();
     };
-    window.addEventListener('db-updated', handler as EventListener);
+    window.addEventListener("db-updated", handler as EventListener);
     // listen for model-applied events from SettingsModal (applies for this session only)
     const modelHandler = (e: any) => {
       try {
         const m = e?.detail?.model;
         if (m) setSessionModel(m);
-      } catch (err) {
+      } catch {
         // ignore
       }
     };
-    window.addEventListener('llm-model-applied', modelHandler as EventListener);
+    window.addEventListener("llm-model-applied", modelHandler as EventListener);
     return () => {
-      window.removeEventListener('db-updated', handler as EventListener);
-      window.removeEventListener('llm-model-applied', modelHandler as EventListener);
+      window.removeEventListener("db-updated", handler as EventListener);
+      window.removeEventListener(
+        "llm-model-applied",
+        modelHandler as EventListener
+      );
     };
   }, []);
 
@@ -193,12 +238,15 @@ function App() {
               settings={settings}
             />
 
-                    {analysisVisible && (
-                      <AnalysisSection
-                        projections={analysisProjections}
-                        settings={{ ...settings, llmModel: sessionModel || settings.llmModel }}
-                      />
-                    )}
+            {analysisVisible && (
+              <AnalysisSection
+                projections={analysisProjections}
+                settings={{
+                  ...settings,
+                  llmModel: sessionModel || settings.llmModel,
+                }}
+              />
+            )}
           </>
         )}
 

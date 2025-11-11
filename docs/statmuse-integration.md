@@ -47,8 +47,8 @@ curl "http://localhost:3001/statmuse?player=LeBron%20James&stat=points&league=nb
 ```
 
 - The front-end will call `buildAnalysisPromptAsync(...)` which will call the configured `statmuseEndpoint` (or default proxy) and append any returned `recent`, `season`, and `notes` text to the LLM prompt. The UI shows when external data was included and provides links to the extraction sources.
- - The front-end will call `buildAnalysisPromptAsync(...)` which will call the configured `nbaEndpoint` (preferred) or `statmuseEndpoint` (fallback) and append any returned `recent`, `season`, `recentGames` and `seasonAvg` data to the LLM prompt. The UI shows when external data was included and provides links to the extraction sources.
- - You can protect proxies by setting API keys: set `NBA_PROXY_API_KEY` for the Python NBA proxy and `PROXY_API_KEY` for the Node StatMuse proxy. Provide keys in the app Settings to use authenticated calls.
+- The front-end will call `buildAnalysisPromptAsync(...)` which will call the configured `nbaEndpoint` (preferred) or `statmuseEndpoint` (fallback) and append any returned `recent`, `season`, `recentGames` and `seasonAvg` data to the LLM prompt. The UI shows when external data was included and provides links to the extraction sources.
+- You can protect proxies by setting API keys: set `NBA_PROXY_API_KEY` for the Python NBA proxy and `PROXY_API_KEY` for the Node StatMuse proxy. Provide keys in the app Settings to use authenticated calls.
 
 Caveats, ethics, and legal
 
@@ -63,6 +63,7 @@ Production recommendations
 - Consider building a formal data agreement or licensed data ingestion to avoid scraping.
 
 If you want, I can:
+
 - Add Redis support to the proxy and configuration for Redis URL, TTL, and cache keys.
 - Add a UI panel to `AnalysisSection` that displays full fetched summaries and source links (already implemented in basic form).
 - Add end-to-end tests to ensure the proxy extracts expected fields for a set of sample players.

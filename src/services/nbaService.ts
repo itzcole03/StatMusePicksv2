@@ -1,5 +1,5 @@
-import { ParsedProjection, Settings } from '../types';
-import { getProjectionsByIds } from './indexedDBService';
+import { ParsedProjection, Settings } from "../types";
+import { getProjectionsByIds } from "./indexedDBService";
 
 /*
   NOTE: The frontend should not run `nba_api` directly — `nba_api` is a Python
@@ -61,7 +61,11 @@ export interface NBAPlayerContext {
   seasonAvg?: number | null;
   notes?: string | null;
   // Opponent and matchup metrics
-  opponent?: { name?: string | null; defensiveRating?: number | null; pace?: number | null } | null;
+  opponent?: {
+    name?: string | null;
+    defensiveRating?: number | null;
+    pace?: number | null;
+  } | null;
   // Projected minutes for the player in the upcoming game
   projectedMinutes?: number | null;
   // Additional optional metadata returned by the backend
@@ -80,41 +84,71 @@ export async function fetchPlayerContextFromNBA(
   settings: Settings,
   limit = 8
 ): Promise<NBAPlayerContext | null> {
-  const defaultEndpoint = 'http://localhost:3002/player_summary';
-  const base = (settings?.nbaEndpoint && settings.nbaEndpoint.length > 0) ? settings.nbaEndpoint : defaultEndpoint;
+  // Prefer Vite env var `VITE_NBA_ENDPOINT`, then local FastAPI backend on port 8000 (dev); fall back to 3002 if needed
+  // This allows using e.g. .env: VITE_NBA_ENDPOINT=http://localhost:8001
+   
+  // @ts-ignore
+  const viteEnvEndpoint =
+    typeof import.meta !== "undefined" &&
+    import.meta.env &&
+    import.meta.env.VITE_NBA_ENDPOINT
+      ? String(import.meta.env.VITE_NBA_ENDPOINT)
+      : undefined;
+  const defaultEndpoint = viteEnvEndpoint || "http://localhost:8000";
+  const base =
+    settings?.nbaEndpoint && settings.nbaEndpoint.length > 0
+      ? settings.nbaEndpoint
+      : defaultEndpoint;
 
   // Try a list of candidate paths derived from the provided endpoint to be resilient across backends
   const candidates = [
     base,
-    base + '/player_summary',
-    base + '/api/player_summary',
-    base + '/player/context',
-    base + '/api/player_context',
-    base + '/api/batch_player_context'
+    base + "/player_summary",
+    base + "/api/player_summary",
+    base + "/player/context",
+    base + "/api/player_context",
+    base + "/api/batch_player_context",
   ];
 
-  const headersBase: Record<string, string> = { Accept: 'application/json' };
-  if (settings?.nbaApiKey) headersBase['Authorization'] = `Bearer ${settings.nbaApiKey}`;
+  const headersBase: Record<string, string> = { Accept: "application/json" };
+  if (settings?.nbaApiKey)
+    headersBase["Authorization"] = `Bearer ${settings.nbaApiKey}`;
 
   // Helper to validate and normalize backend response
   const normalize = (json: any): NBAPlayerContext | null => {
     if (!json) return null;
-    const recentGames = Array.isArray(json.recentGames) ? json.recentGames.map((g: any) => ({ date: g.date || g.gameDate || null, statValue: g.statValue != null ? Number(g.statValue) : null })) : null;
+    const recentGames = Array.isArray(json.recentGames)
+      ? json.recentGames.map((g: any) => ({
+          date: g.date || g.gameDate || null,
+          statValue: g.statValue != null ? Number(g.statValue) : null,
+        }))
+      : null;
     const seasonAvg = json.seasonAvg != null ? Number(json.seasonAvg) : null;
-    const recent = typeof json.recent === 'string' ? json.recent : null;
+    const recent = typeof json.recent === "string" ? json.recent : null;
     const notes = json.notes || null;
     const noGamesThisSeason = !!json.noGamesThisSeason;
     const recentSource = json.recentSource || null;
     const seasonSource = json.seasonSource || null;
-    const opponent = json.opponent ? {
-      name: json.opponent.name || null,
-      defensiveRating: json.opponent.defensiveRating != null ? Number(json.opponent.defensiveRating) : null,
-      pace: json.opponent.pace != null ? Number(json.opponent.pace) : null
-    } : null;
-    const projectedMinutes = json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
+    const opponent = json.opponent
+      ? {
+          name: json.opponent.name || null,
+          defensiveRating:
+            json.opponent.defensiveRating != null
+              ? Number(json.opponent.defensiveRating)
+              : null,
+          pace: json.opponent.pace != null ? Number(json.opponent.pace) : null,
+        }
+      : null;
+    const projectedMinutes =
+      json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
 
     // Accept only if we have at least some numeric evidence or explicit noGamesThisSeason flag
-    if ((!recentGames || recentGames.length === 0) && seasonAvg == null && !noGamesThisSeason) return null;
+    if (
+      (!recentGames || recentGames.length === 0) &&
+      seasonAvg == null &&
+      !noGamesThisSeason
+    )
+      return null;
 
     return {
       player: proj.player,
@@ -139,24 +173,35 @@ export async function fetchPlayerContextFromNBA(
   // Try each candidate with retries/backoff
   for (const candidate of candidates) {
     try {
-      const url = `${candidate}${candidate.includes('?') ? '&' : '?'}player=${encodeURIComponent(proj.player)}&stat=${encodeURIComponent(proj.stat)}&limit=${limit}`;
+      const url = `${candidate}${
+        candidate.includes("?") ? "&" : "?"
+      }player=${encodeURIComponent(proj.player)}&stat=${encodeURIComponent(
+        proj.stat
+      )}&limit=${limit}`;
       let attempt = 0;
       while (attempt < 3) {
         try {
-          const resp = await fetch(url, { method: 'GET', headers: headersBase });
-          if (!resp.ok) { attempt++; await new Promise(r => setTimeout(r, 200 * attempt)); continue; }
+          const resp = await fetch(url, {
+            method: "GET",
+            headers: headersBase,
+          });
+          if (!resp.ok) {
+            attempt++;
+            await new Promise((r) => setTimeout(r, 200 * attempt));
+            continue;
+          }
           const json = await resp.json();
           const ctx = normalize(json);
           if (ctx) return ctx;
           // if normalization failed, stop trying this candidate and move to next
           break;
-        } catch (e) {
+        } catch {
           attempt++;
-          await new Promise(r => setTimeout(r, 200 * attempt));
+          await new Promise((r) => setTimeout(r, 200 * attempt));
           continue;
         }
       }
-    } catch (e) {
+    } catch {
       // continue to next candidate
     }
   }
@@ -164,7 +209,10 @@ export async function fetchPlayerContextFromNBA(
   return null;
 }
 
-export async function buildExternalContextForProjections(projections: ParsedProjection[], settings: Settings) {
+export async function buildExternalContextForProjections(
+  projections: ParsedProjection[],
+  settings: Settings
+) {
   // Default TTL: 6 hours
   const TTL_MS = 6 * 60 * 60 * 1000;
   const contexts: Record<string, NBAPlayerContext | null> = {};
@@ -193,7 +241,11 @@ export async function buildExternalContextForProjections(projections: ParsedProj
         if (!c) {
           // attempt an extended fetch by toggling an `extended` query param (some backends support richer responses)
           const extSettings = { ...settings } as any;
-          if (typeof extSettings.nbaEndpoint === 'string') extSettings.nbaEndpoint = String(extSettings.nbaEndpoint) + (String(extSettings.nbaEndpoint).includes('?') ? '&' : '?') + 'extended=1';
+          if (typeof extSettings.nbaEndpoint === "string")
+            extSettings.nbaEndpoint =
+              String(extSettings.nbaEndpoint) +
+              (String(extSettings.nbaEndpoint).includes("?") ? "&" : "?") +
+              "extended=1";
           c = await fetchPlayerContextFromNBA(p, extSettings);
         }
         if (c) {
@@ -201,19 +253,19 @@ export async function buildExternalContextForProjections(projections: ParsedProj
           c.fetchedAt = c.fetchedAt || new Date().toISOString();
         }
         contexts[p.id] = c;
-      } catch (e) {
-        contexts[p.id] = null;
-      }
+      } catch {
+          contexts[p.id] = null;
+        }
     }
     return contexts;
-  } catch (err) {
+  } catch {
     // If DB read fails for any reason, fall back to fetching all from backend
     for (const p of projections) {
       try {
         const c = await fetchPlayerContextFromNBA(p, settings);
         if (c) c.fetchedAt = c.fetchedAt || new Date().toISOString();
         contexts[p.id] = c;
-      } catch (e) {
+      } catch {
         contexts[p.id] = null;
       }
     }

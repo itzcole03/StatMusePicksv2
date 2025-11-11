@@ -1,4 +1,4 @@
-import { Settings } from 'lucide-react';
+import { Settings } from "lucide-react";
 
 interface HeaderProps {
   onOpenSettings: () => void;
@@ -12,7 +12,8 @@ export default function Header({ onOpenSettings }: HeaderProps) {
           PrizePicks Analyzer
         </h1>
         <p className="text-gray-600 dark:text-gray-400 text-lg">
-          AI-powered analysis using real-time data to find the best over/under picks
+          AI-powered analysis using real-time data to find the best over/under
+          picks
         </p>
       </div>
       <button
