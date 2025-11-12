@@ -215,12 +215,7 @@ def redis_delete_prefix_sync(prefix: str) -> int:
     except Exception:
         sync_redis = None
 
-    # DEBUG: trace execution path
-    try:
-        import sys as _sys
-        _sys.stdout.write(f"redis_delete_prefix_sync called prefix={prefix} sync_redis={'present' if sync_redis is not None else 'absent'}\n")
-    except Exception:
-        pass
+    _logger.debug("redis_delete_prefix_sync called prefix=%s sync_redis=%s", prefix, 'present' if sync_redis is not None else 'absent')
 
     if sync_redis is None:
         # operate on fallback directly
@@ -271,41 +266,32 @@ def redis_delete_prefix_sync(prefix: str) -> int:
     url = os.environ.get("REDIS_URL") or "redis://127.0.0.1:6379/0"
     try:
         client = sync_redis.from_url(url, decode_responses=True)
+        # If Redis server isn't responsive fall back to in-memory mirror
+        _logger.debug("redis client created, pinging...")
         try:
-            # If Redis server isn't responsive fall back to in-memory mirror
-            try:
-                _sys.stdout.write("redis client created, pinging...\n")
-            except Exception:
-                pass
-            try:
-                if not client.ping():
-                    raise Exception("redis ping failed")
-            except Exception as e:
+            if not client.ping():
+                raise Exception("redis ping failed")
+        except Exception as e:
+            _logger.debug("redis ping failed: %s", e)
+            # fallback to deleting from the in-process fallback store
+            keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
+            for k in keys:
                 try:
-                    _sys.stdout.write(f"redis ping failed: {e}\n")
+                    del _fallback_store[k]
+                    deleted += 1
                 except Exception:
                     pass
-                # fallback to deleting from the in-process fallback store
-                keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
-                for k in keys:
-                    try:
-                        del _fallback_store[k]
-                        deleted += 1
-                    except Exception:
-                        pass
-                _inc_metric("deletes", deleted)
-                return deleted
+            _inc_metric("deletes", deleted)
+            return deleted
 
+        try:
             for k in client.scan_iter(match=prefix + "*"):
                 client.delete(k)
                 deleted += 1
             _inc_metric("deletes", deleted)
             return deleted
         except Exception as e:
-            try:
-                _sys.stdout.write(f"redis scan/delete failed: {e}\n")
-            except Exception:
-                pass
+            _logger.debug("redis scan/delete failed: %s", e)
             # Connection/scan failed; fall back to deleting from in-process store
             keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
             for k in keys:
@@ -318,6 +304,7 @@ def redis_delete_prefix_sync(prefix: str) -> int:
             return deleted
     except Exception:
         # If creating client failed, also fall back to deleting from in-process store
+        _logger.debug('Failed to create sync redis client, falling back to in-memory deletion')
         keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
         for k in keys:
             try:

@@ -24,12 +24,19 @@ def upgrade() -> None:
 
     # Convert existing `player_stats` table to a TimescaleDB hypertable if the extension is available.
     # NOTE: Installing the extension in production may require DBA privileges; ensure it's enabled before running.
+    # Check whether the TimescaleDB helper function exists before calling it. Some test/dev Postgres
+    # instances won't have Timescale installed, so skip gracefully when absent.
+    check_sql = sa.text("SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname='create_hypertable');")
     try:
+        exists = bool(bind.execute(check_sql).scalar())
+    except Exception:
+        exists = False
+
+    if not exists:
+        print('TimescaleDB create_hypertable not available; skipping hypertable creation')
+    else:
         # Use `created_at` as the hypertable time column (existing timestamp on player_stats).
         op.execute("SELECT create_hypertable('player_stats','created_at', if_not_exists => TRUE);")
-    except Exception:
-        # If create_hypertable fails (extension not present) bubble the error to the operator.
-        raise
 
     # Create production-grade indexes concurrently to avoid locking large tables.
     # Use autocommit_block so CONCURRENTLY index creation is executed outside a transaction.

@@ -11,7 +11,7 @@
 
 | Phase                          | Status         | Progress | Start Date | End Date | Notes                           |
 | ------------------------------ | -------------- | -------- | ---------- | -------- | ------------------------------- |
-| **Phase 1: Foundation**        | 🟡 In Progress | 8%       | -          | -        | Backend & Data Infrastructure   |
+| **Phase 1: Foundation**        | 🟡 In Progress | 56%      | -          | -        | Backend & Data Infrastructure   |
 | **Phase 2: Core ML**           | 🔴 Not Started | 0%       | -          | -        | Per-Player Models & Calibration |
 | **Phase 3: Advanced Features** | 🔴 Not Started | 0%       | -          | -        | Feature Engineering & Ensemble  |
 | **Phase 4: Production**        | 🔴 Not Started | 0%       | -          | -        | MLOps & Automation              |
@@ -157,24 +157,32 @@ These updates maintain fidelity to the technical guide: migrations were applied,
 
 ### Task 1.1.3: Set Up Redis Cache
 
-- [ ] Install Redis locally or provision cloud instance
-- [ ] Configure Redis connection in backend
-- [ ] Implement caching layer for:
-  - [ ] Player context data (TTL: 6 hours)
-  - [ ] Opponent stats (TTL: 24 hours)
-  - [ ] Model predictions (TTL: 1 hour)
-- [ ] Create cache invalidation logic
-- [ ] Test cache hit/miss scenarios
+- [x] Install Redis locally or provision cloud instance (dev via docker-compose)
+- [x] Configure Redis connection in backend (`REDIS_URL` support)
+- [x] Implement caching layer for:
+  - [x] Player context data (TTL: 6 hours)
+  - [x] Opponent stats (TTL: 24 hours)
+  - [x] Model predictions (TTL: 1 hour)
+- [x] Create cache invalidation logic and wire into model save/ingest flows
+- [x] Add robust in-process fallback for local/dev so tests run without Redis
+- [x] Test cache hit/miss scenarios (unit + integration tests added)
 
 **Acceptance Criteria:**
 
-- ✅ Redis accessible from backend
-- ✅ Cache stores and retrieves data correctly
-- ✅ TTL expiration works as expected
+- ✅ Redis accessible from backend (CI `redis-integration` job)
+- ✅ Cache stores and retrieves data correctly (Redis and fallback)
+- ✅ TTL expiration works as expected (unit tests)
+- ✅ Cache invalidation verified end-to-end (integration test)
 
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Status:** ✅ Completed (dev)
+**Assigned To:** Backend Team
+**Completion Date:** Nov 11, 2025
+
+**Notes:**
+- Implemented an async Redis-backed cache with an authoritative in-process fallback in `backend/services/cache.py`.
+- Added `redis_delete_prefix_sync` for synchronous callers and unit tests covering both no-loop and loop-running scenarios (`backend/tests/test_cache_sync_delete.py`).
+- Wired invalidation into `ModelRegistry.save_model()` and ingestion/backfill to invalidate only affected player keys when possible.
+- Added CI workflow `redis-integration` to run cache integration tests against a real Redis service.
 
 ---
 
