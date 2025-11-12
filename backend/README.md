@@ -34,6 +34,21 @@ Health check
 Invoke-RestMethod http://localhost:8000/health
 ```
 
+Running NBA client tests
+------------------------
+
+Unit and integration tests for the NBA client live under `backend/tests/`.
+Run only the NBA client tests locally with PowerShell (from repo root):
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+python -m pytest backend/tests/test_nba_stats_client.py -q
+python -m pytest backend/tests/test_nba_stats_client_integration.py -q
+```
+
+The integration test spins up a small local HTTP server that mimics a lightweight NBA proxy; it is deterministic and fast.
+
+
 Debug/status endpoint
 
 ```powershell

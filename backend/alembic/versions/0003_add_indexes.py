@@ -15,19 +15,36 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create composite index for fast player time-range queries (use game_date)
-    # Use existing columns on player_stats: player_id, game_id, created_at
-    op.create_index(
-        'ix_player_stats_player_id_game_id_created_at',
-        'player_stats',
-        ['player_id', 'game_id', 'created_at'],
-        unique=False,
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+
+    # Create composite index for player_stats only if table exists and index missing
+    if 'player_stats' in inspector.get_table_names():
+        existing = {idx['name'] for idx in inspector.get_indexes('player_stats')}
+        if 'ix_player_stats_player_id_game_id_created_at' not in existing:
+            op.create_index(
+                'ix_player_stats_player_id_game_id_created_at',
+                'player_stats',
+                ['player_id', 'game_id', 'created_at'],
+                unique=False,
+            )
 
     # Index predictions by player and creation timestamp for audit/history queries
-    op.create_index('ix_predictions_player_id_created_at', 'predictions', ['player_id', 'created_at'], unique=False)
+    if 'predictions' in inspector.get_table_names():
+        existing_pred = {idx['name'] for idx in inspector.get_indexes('predictions')}
+        if 'ix_predictions_player_id_created_at' not in existing_pred:
+            op.create_index('ix_predictions_player_id_created_at', 'predictions', ['player_id', 'created_at'], unique=False)
 
 
 def downgrade() -> None:
-    op.drop_index('ix_predictions_player_id_created_at', table_name='predictions')
-    op.drop_index('ix_player_stats_player_id_game_id_created_at', table_name='player_stats')
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if 'predictions' in inspector.get_table_names():
+        pred_indexes = {idx['name'] for idx in inspector.get_indexes('predictions')}
+        if 'ix_predictions_player_id_created_at' in pred_indexes:
+            op.drop_index('ix_predictions_player_id_created_at', table_name='predictions')
+
+    if 'player_stats' in inspector.get_table_names():
+        ps_indexes = {idx['name'] for idx in inspector.get_indexes('player_stats')}
+        if 'ix_player_stats_player_id_game_id_created_at' in ps_indexes:
+            op.drop_index('ix_player_stats_player_id_game_id_created_at', table_name='player_stats')

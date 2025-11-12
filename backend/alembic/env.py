@@ -29,6 +29,10 @@ if main_url and "${DATABASE_URL}" in main_url:
 # Ensure the env var is set so importing `backend.db` (which reads
 # `os.environ['DATABASE_URL']`) produces a valid engine URL.
 os.environ.setdefault("DATABASE_URL", db_url)
+# Mark that Alembic env is running so in-repo code can detect this and
+# avoid calling metadata.create_all() or performing DDL that conflicts
+# with migrations during import-time.
+os.environ.setdefault("ALEMBIC_RUNNING", "1")
 
 from backend.db import Base  # target metadata
 

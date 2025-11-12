@@ -544,7 +544,11 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
             # importing backend.models registers model classes with Base
             import backend.models  # noqa: F401
             from backend.db import Base
-            Base.metadata.create_all(engine)
+            # Avoid creating tables during Alembic runs (avoids duplicate DDL)
+            if not os.environ.get("ALEMBIC_RUNNING"):
+                Base.metadata.create_all(engine)
+            else:
+                logger.debug("Skipping metadata.create_all on sync engine because ALEMBIC_RUNNING is set")
         except Exception:
             # If this fails, we'll proceed and let subsequent DB ops raise
             # a clear error which will be logged.
@@ -659,7 +663,11 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
         try:
             import backend.models  # noqa: F401
             from backend.db import Base
-            Base.metadata.create_all(engine)
+            # Avoid creating tables during Alembic runs (avoids duplicate DDL)
+            if not os.environ.get("ALEMBIC_RUNNING"):
+                Base.metadata.create_all(engine)
+            else:
+                logger.debug("Skipping metadata.create_all on sync engine for team stats because ALEMBIC_RUNNING is set")
         except Exception:
             logger.debug("Could not ensure metadata.create_all on sync engine for team stats", exc_info=True)
     except Exception:
