@@ -149,7 +149,17 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         features["opp_pace"] = None
 
     df = pd.DataFrame([features])
-    return df.fillna(0)
+    # Fill missing values and ensure correct dtypes; call infer_objects to avoid
+    # future downcasting behavior changes in pandas.
+    df = df.fillna(0)
+    try:
+        # Non-fatal: infer_objects will attempt to downcast object dtypes safely.
+        df = df.infer_objects(copy=False)
+    except Exception:
+        # If pandas version doesn't support the option or it fails, continue.
+        pass
+
+    return df
 
 
 # Compatibility wrapper expected by training scripts

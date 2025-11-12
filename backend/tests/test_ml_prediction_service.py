@@ -17,9 +17,8 @@ def test_feature_engineering_and_predict():
         "contextualFactors": {"homeAway": "home", "daysRest": 2, "isBackToBack": False},
     }
 
-    # Run the async predict method
-    loop = asyncio.get_event_loop()
-    result = loop.run_until_complete(svc.predict("Test Player", "points", 21.5, player_data, None))
+    # Run the async predict method using asyncio.run for modern event loop handling
+    result = asyncio.run(svc.predict("Test Player", "points", 21.5, player_data, None))
 
     assert isinstance(result, dict)
     assert "over_probability" in result
