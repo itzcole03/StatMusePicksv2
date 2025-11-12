@@ -51,9 +51,30 @@ def create_target_like_source(conn, source: str, target: str, convert_to_hyperta
 def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_column: str = 'id'):
     last_id = 0
     total_inserted = 0
+    # Determine if the source table contains a `player_id` column so we can
+    # perform narrow invalidation per affected player. This is best-effort and
+    # non-fatal.
+    def _has_player_id(cur):
+        try:
+            cur.execute(f"SELECT player_id FROM {source} LIMIT 0")
+            return True
+        except Exception:
+            return False
+
+    try:
+        with conn.cursor() as _cur:
+            _supports_player_id = _has_player_id(_cur)
+    except Exception:
+        _supports_player_id = False
     while True:
         with conn.cursor() as cur:
-            cur.execute(f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}", (last_id, batch))
+            # If the source contains player_id, return it so we can invalidate
+            # only the players affected by this batch. Otherwise return only the
+            # id column as before.
+            if _supports_player_id:
+                cur.execute(f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}, player_id", (last_id, batch))
+            else:
+                cur.execute(f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}", (last_id, batch))
             try:
                 rows = cur.fetchall()
             except psycopg2.ProgrammingError:
@@ -64,10 +85,51 @@ def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_colu
             break
         inserted = len(rows)
         total_inserted += inserted
+        # rows may be tuples of (id,) or (id, player_id)
         last_id = rows[-1][0]
         print(f"Inserted batch: {inserted} rows (last_id={last_id}). Total so far: {total_inserted}")
         # small sleep to yield
         time.sleep(0.1)
+        # Per-player narrow invalidation: if we returned player_ids, collect
+        # distinct player_ids and resolve them to player names using the
+        # `players` table, then call the ingestion helper to invalidate only
+        # those players' contexts. Fall back to invalidating all contexts if
+        # the mapping isn't possible.
+        try:
+            if _supports_player_id:
+                player_ids = set()
+                for r in rows:
+                    if len(r) >= 2 and r[1] is not None:
+                        player_ids.add(r[1])
+
+                if player_ids:
+                    try:
+                        # resolve ids -> names
+                        with conn.cursor(cursor_factory=RealDictCursor) as cur2:
+                            cur2.execute("SELECT id, name FROM players WHERE id = ANY(%s)", (list(player_ids),))
+                            res = cur2.fetchall()
+                        names = [row['name'] for row in res if row.get('name')]
+                        if names:
+                            from backend.services.data_ingestion_service import invalidate_player_contexts
+                            invalidate_player_contexts(names)
+                            continue  # invalidation done for this batch
+                    except Exception:
+                        # mapping failed; fall through to broad invalidation
+                        pass
+
+            # Broad fallback: invalidate all player_context keys (best-effort)
+            try:
+                from backend.services.data_ingestion_service import invalidate_all_player_contexts
+                invalidate_all_player_contexts()
+            except Exception:
+                try:
+                    from backend.services import cache as cache_module
+                    cache_module.redis_delete_prefix_sync("player_context:")
+                except Exception:
+                    pass
+        except Exception:
+            # Do not let cache invalidation failures stop the backfill
+            pass
     print(f"Backfill complete. Total rows inserted: {total_inserted}")
 
 

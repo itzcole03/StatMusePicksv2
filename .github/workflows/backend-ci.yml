@@ -131,4 +131,6 @@ jobs:
         run: |
           pytest -q \
             backend/tests/test_cache.py::test_redis_fallback_set_get_delete \
-            backend/tests/test_cache.py::test_redis_fallback_ttl_and_prefix_delete
+            backend/tests/test_cache.py::test_redis_fallback_ttl_and_prefix_delete \
+            backend/tests/test_cache_sync_delete.py::test_redis_delete_prefix_sync_no_loop \
+            backend/tests/test_cache_sync_delete.py::test_redis_delete_prefix_sync_with_loop_running

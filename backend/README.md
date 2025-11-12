@@ -121,3 +121,26 @@ Quick verification script (starts backend and runs prompt builder):
 
 If you want me to wire the frontend to call this service and verify end-to-end,
 I can update `src/services/nbaService.ts` and provide the exact commands to run both processes.
+
+## Prometheus metrics (multiprocess workers)
+
+If you run the backend with multiple worker processes (e.g., Gunicorn/Uvicorn with workers),
+Prometheus client library requires a multiprocess mode to correctly collect metrics across
+processes. The repository includes a helper `backend/services/metrics.py` that will
+automatically use `PROMETHEUS_MULTIPROC_DIR` when present.
+
+Quick setup (PowerShell):
+
+```pwsh
+# create a directory for multiprocess metrics files
+mkdir .\prom_metrics
+$env:PROMETHEUS_MULTIPROC_DIR = (Resolve-Path .\prom_metrics).Path
+# start uvicorn/gunicorn worker processes in the same environment
+uvicorn backend.main:app --host 127.0.0.1 --port 8000 --workers 4
+```
+
+Notes:
+- Ensure the directory is writable by all worker processes.
+- In CI or systemd setups, set `PROMETHEUS_MULTIPROC_DIR` in the unit/service environment and
+    ensure the directory is cleaned between runs (it accumulates temporary metric files).
+

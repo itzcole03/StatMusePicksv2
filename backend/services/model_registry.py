@@ -56,6 +56,66 @@ class ModelRegistry:
         joblib.dump(model, path)
         logger.info("Saved model for %s to %s", player_name, path)
 
+        # Invalidate any prediction/player-context caches related to this player.
+        try:
+            from backend.services import cache as cache_module
+
+            # FastAPI endpoint uses `predict:` prefix; keep `prediction:` as a fallback
+            try:
+                cache_module.redis_delete_prefix_sync(f"predict:{player_name}:")
+            except Exception:
+                logger.exception("Failed to delete predict cache prefix for %s", player_name)
+
+            # Best-effort: also remove keys from the in-process fallback store so
+            # invalidation is visible to async readers in environments without
+            # a real Redis server (useful for tests and local dev).
+            try:
+                prefix = f"predict:{player_name}:"
+                if hasattr(cache_module, '_fallback_store'):
+                    for k in list(cache_module._fallback_store.keys()):
+                        if k.startswith(prefix):
+                            try:
+                                del cache_module._fallback_store[k]
+                            except Exception:
+                                pass
+            except Exception:
+                logger.exception("Best-effort predict prefix cleanup failed for %s", player_name)
+
+            try:
+                cache_module.redis_delete_prefix_sync(f"prediction:{player_name}:")
+            except Exception:
+                logger.exception("Failed to delete prediction cache prefix for %s", player_name)
+
+            try:
+                prefix = f"prediction:{player_name}:"
+                if hasattr(cache_module, '_fallback_store'):
+                    for k in list(cache_module._fallback_store.keys()):
+                        if k.startswith(prefix):
+                            try:
+                                del cache_module._fallback_store[k]
+                            except Exception:
+                                pass
+            except Exception:
+                logger.exception("Best-effort prediction prefix cleanup failed for %s", player_name)
+
+            try:
+                cache_module.redis_delete_prefix_sync(f"player_context:{player_name}:")
+            except Exception:
+                logger.exception("Failed to delete player_context cache prefix for %s", player_name)
+            try:
+                prefix = f"player_context:{player_name}:"
+                if hasattr(cache_module, '_fallback_store'):
+                    for k in list(cache_module._fallback_store.keys()):
+                        if k.startswith(prefix):
+                            try:
+                                del cache_module._fallback_store[k]
+                            except Exception:
+                                pass
+            except Exception:
+                logger.exception("Best-effort player_context prefix cleanup failed for %s", player_name)
+        except Exception:
+            logger.exception("Cache module not available for invalidation")
+
         # Attempt to persist metadata into DB. Do this with a short-lived
         # synchronous engine so this function can be called from sync code.
         try:

@@ -3,7 +3,7 @@
 This file exposes `app` for tools that expect `backend.main:app` and
 provides minimal startup/shutdown hooks.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 import os
 import importlib
 import pathlib
@@ -12,6 +12,13 @@ import time
 
 from backend.services import nba_stats_client
 from backend.services.cache import redis_get_json, redis_set_json, get_redis
+from backend.services.cache import get_cache_metrics
+try:
+    # Prefer using our metrics helper which supports multiprocess mode.
+    from backend.services.metrics import generate_latest, CONTENT_TYPE_LATEST
+except Exception:
+    generate_latest = None
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
 import logging
 
 logger = logging.getLogger(__name__)
@@ -80,10 +87,30 @@ async def _debug_status():
         except Exception as e:
             redis_error = str(e)
 
+    try:
+        cache_metrics = get_cache_metrics()
+    except Exception:
+        cache_metrics = None
+
     return {
         'db': {'url': db_url, 'ok': db_ok, 'error': db_error},
-        'redis': {'installed': redis_installed, 'env': redis_url, 'can_connect': redis_can_connect, 'error': redis_error}
+        'redis': {'installed': redis_installed, 'env': redis_url, 'can_connect': redis_can_connect, 'error': redis_error},
+        'cache_metrics': cache_metrics,
     }
+
+
+
+@app.get('/metrics')
+async def _metrics():
+    """Expose Prometheus metrics if available (dev-only)."""
+    if generate_latest is None:
+        return {"error": "prometheus_client not installed"}
+    try:
+        data = generate_latest()
+        return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+    except Exception:
+        return {"error": "failed to render metrics"}
+    
 
 
 @app.get("/api/player_context")
