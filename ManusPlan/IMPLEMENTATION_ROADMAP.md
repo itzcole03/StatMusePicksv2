@@ -1,7 +1,7 @@
 # StatMusePicksV2 AI Service - Implementation Roadmap & Progress Tracker
 
 **Version:** 1.0  
-**Last Updated:** November 10, 2025  
+**Last Updated:** November 11, 2025
 **Estimated Timeline:** 6-9 months  
 **Status:** 🟡 In Progress
 
@@ -11,7 +11,7 @@
 
 | Phase                          | Status         | Progress | Start Date | End Date | Notes                           |
 | ------------------------------ | -------------- | -------- | ---------- | -------- | ------------------------------- |
-| **Phase 1: Foundation**        | 🟡 In Progress | 56%      | -          | -        | Backend & Data Infrastructure   |
+| **Phase 1: Foundation**        | 🟡 In Progress | 62%      | -          | -        | Backend & Data Infrastructure   |
 | **Phase 2: Core ML**           | 🔴 Not Started | 0%       | -          | -        | Per-Player Models & Calibration |
 | **Phase 3: Advanced Features** | 🔴 Not Started | 0%       | -          | -        | Feature Engineering & Ensemble  |
 | **Phase 4: Production**        | 🔴 Not Started | 0%       | -          | -        | MLOps & Automation              |
@@ -30,9 +30,9 @@
 
 **Objective:** Build core backend infrastructure and data pipeline  
 **Status:** 🟡 In Progress  
-**Progress:** 14/25 tasks completed
+**Progress:** 16/25 tasks completed
 
-### Recent Progress (Nov 10, 2025)
+### Recent Progress (Nov 10-11, 2025)
 
 - [x] Wired `aiService.v2` into the frontend analysis pipeline and UI.
 - [x] Added E2E component test comparing LLM output with statistical evidence (`src/components/__tests__/AnalysisSection.e2e.test.tsx`).
@@ -43,6 +43,14 @@
 - [x] Added integration test `tests/test_model_metadata.py` that runs migrations and training example to verify metadata insertion.
 - [x] Added deterministic disagreement handling using `aiService.v2` to flag and null LLM recommendations when v2 strongly disagrees.
 - [x] Added an E2E disagreement test `src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx` that verifies flagging behavior.
+
+Additional updates (Nov 11, 2025):
+
+- [x] Patched Alembic migrations to be tolerant of non-Timescale Postgres and fixed index migrations that referenced non-existent columns; added guards to skip Timescale-specific SQL when the extension isn't present.
+- [x] Implemented Redis-backed cache with authoritative in-memory fallback and added sync-delete helper; unit & integration tests added and passing.
+- [x] Created persisted toy model (`backend/models_store/LeBron_James.pkl`) for tests and updated tests to load it.
+- [x] Ran Alembic migrations and full backend test suite locally against a disposable Postgres (all backend tests passing).
+- [x] Ran TypeScript typecheck (`tsc --noEmit`) and ESLint across `src/` — no issues reported.
 
 ## 1.1 Backend Setup
 
@@ -190,53 +198,28 @@ These updates maintain fidelity to the technical guide: migrations were applied,
 
 ### Task 1.2.1: Integrate NBA Stats API
 
-- [ ] Research NBA Stats API endpoints
-- [ ] Create `backend/services/nba_stats_client.py`
-- [ ] Implement functions:
-  - [ ] `get_player_info(player_name)` → player ID, team, position
-  - [ ] `get_player_game_log(player_id, season)` → recent games
-  - [ ] `get_player_season_stats(player_id, season)` → season averages
-  - [ ] `get_team_stats(team_id)` → team offensive/defensive ratings
-- [ ] Add rate limiting (max 20 requests/minute)
-- [ ] Add retry logic with exponential backoff
-- [ ] Test with 5 different players
+- [x] Research NBA Stats API endpoints
+- [x] Create `backend/services/nba_stats_client.py`
+- [x] Implement functions (basic):
+  - [x] `find_player_id_by_name(player_name)` → player ID
+  - [x] `fetch_recent_games(player_id, limit)` → recent game logs
+  - [ ] `get_player_season_stats(player_id, season)` → season averages (todo)
+  - [ ] `get_team_stats(team_id)` → team offensive/defensive ratings (todo)
+- [x] Add rate limiting (simple token-bucket, configurable)
+- [x] Add retry logic with exponential backoff for upstream calls
+- [x] Add unit tests that mock `nba_api`/Redis for client and `nba_service`
 
 **Acceptance Criteria:**
 
-- ✅ Successfully fetches data for test players
-- ✅ Rate limiting prevents API abuse
-- ✅ Handles API errors gracefully
+- ✅ Basic player ID resolution and recent-games fetch implemented and tested (mocked)
+- ✅ Rate limiting and retries in place for upstream requests
+- ✅ Client handles API errors and falls back to best-effort logic
 
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Status:** 🟡 In Progress  
+**Assigned To:** Backend Team  
+**Completion Date:** in progress (Nov 11, 2025)
 
 ---
-
-### Task 1.2.2: Integrate Commercial Sports Data API (Optional but Recommended)
-
-- [ ] Evaluate sports data providers:
-  - [ ] Sportradar (recommended)
-  - [ ] Stats Perform
-  - [ ] The Odds API
-- [ ] Sign up for API access (may require paid plan)
-- [ ] Create `backend/services/sports_data_client.py`
-- [ ] Implement functions:
-  - [ ] `get_advanced_player_stats(player_id)` → PER, TS%, USG%, PIE
-  - [ ] `get_opponent_defensive_stats(team_id)` → defensive rating, pace
-  - [ ] `get_injury_reports()` → current injuries
-  - [ ] `get_betting_lines(game_id)` → current odds
-- [ ] Test with real API credentials
-
-**Acceptance Criteria:**
-
-- ✅ API credentials configured
-- ✅ Successfully fetches advanced metrics
-- ✅ Data format validated
-
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
 
 ---
 

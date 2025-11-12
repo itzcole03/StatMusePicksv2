@@ -1,87 +1,30 @@
-"""Lightweight wrapper around `nba_api` with caching and safe fallbacks.
+"""Synchronous NBA stats client helpers used by backend code.
 
-Provides:
-- `find_player_id_by_name(name)` -> int | None
-- `fetch_recent_games(player_id, limit=8)` -> list[dict]
+This module provides two helpers expected by `fastapi_nba.py` and other
+backend modules: `find_player_id_by_name(name)` and `fetch_recent_games(player_id, limit)`.
 
-If `nba_api` is missing, functions return `None` or empty lists and callers
-should handle those cases. Redis caching is used when available via
-`backend.services.cache` helpers.
+Behavior:
+- Prefer Redis caching via `backend.services.cache.get_redis()` when available.
+- Fall back to an in-process TTL cache for local dev/tests.
+- Use `nba_api` when installed; otherwise functions return `None` or []
+  so callers can handle missing data gracefully.
 """
 from __future__ import annotations
 
-import os
-import time
 import json
 import logging
-from typing import Optional, List
+import os
+import time
+import threading
+from typing import Optional, List, Dict
 
 from cachetools import TTLCache
 
-from backend.services.cache import get_redis, redis_get_json, redis_set_json
-import time
-import threading
-
-# Simple rate limiter: allow up to `MAX_REQUESTS_PER_MINUTE` calls to nba_api
-# across this process. Implemented with a thread-safe token bucket.
-MAX_REQUESTS_PER_MINUTE = int(os.environ.get('NBA_API_MAX_RPM', '20'))
-_tokens = MAX_REQUESTS_PER_MINUTE
-_last_refill = time.time()
-_lock = threading.Lock()
-
-
-def _acquire_token():
-    global _tokens, _last_refill
-    with _lock:
-        now = time.time()
-        elapsed = now - _last_refill
-        # refill tokens
-        if elapsed > 0:
-            refill = elapsed * (MAX_REQUESTS_PER_MINUTE / 60.0)
-            _tokens = min(MAX_REQUESTS_PER_MINUTE, _tokens + refill)
-            _last_refill = now
-        if _tokens >= 1:
-            _tokens -= 1
-            return True
-        return False
-
-
-def _wait_for_token(timeout: float = 10.0) -> bool:
-    start = time.time()
-    while time.time() - start < timeout:
-        if _acquire_token():
-            return True
-        time.sleep(0.1)
-    return False
-
-
-def _with_retries(fn, *args, retries=3, backoff=0.5, **kwargs):
-    """Helper to call `fn` with retries and exponential backoff."""
-    last_exc = None
-    for i in range(retries):
-        # respect rate limit
-        ok = _wait_for_token(timeout=5.0)
-        if not ok:
-            # failed to acquire token in time
-            time.sleep(backoff * (i + 1))
-            continue
-        try:
-            return fn(*args, **kwargs)
-        except Exception as e:
-            last_exc = e
-            time.sleep(backoff * (2 ** i))
-            continue
-    # final attempt without rate-limit block
-    try:
-        return fn(*args, **kwargs)
-    except Exception:
-        if last_exc:
-            raise last_exc
-        raise
+from backend.services.cache import get_redis
 
 logger = logging.getLogger(__name__)
 
-# Try importing nba_api; it's optional for local dev
+# Try importing nba_api optional dependency
 try:
     from nba_api.stats.static import players
     from nba_api.stats.endpoints import playergamelog
@@ -91,8 +34,55 @@ except Exception:  # pragma: no cover - optional dep
     playergamelog = None
     playercareerstats = None
 
-# in-memory TTL cache as fallback
-_local_cache = TTLCache(maxsize=1000, ttl=60 * 10)
+
+# In-process TTL cache as a fallback when Redis is unavailable
+_local_cache = TTLCache(maxsize=2000, ttl=60 * 10)
+
+# Simple token-bucket style rate limiter shared across sync calls
+MAX_REQUESTS_PER_MINUTE = int(os.environ.get("NBA_API_MAX_RPM", "20"))
+_tokens = float(MAX_REQUESTS_PER_MINUTE)
+_last_refill = time.time()
+_rl_lock = threading.Lock()
+
+
+def _acquire_token(timeout: float = 5.0) -> bool:
+    """Attempt to acquire a token within `timeout` seconds."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        with _rl_lock:
+            global _tokens, _last_refill
+            now = time.time()
+            elapsed = now - _last_refill
+            if elapsed > 0:
+                refill = elapsed * (MAX_REQUESTS_PER_MINUTE / 60.0)
+                _tokens = min(float(MAX_REQUESTS_PER_MINUTE), _tokens + refill)
+                _last_refill = now
+            if _tokens >= 1.0:
+                _tokens -= 1.0
+                return True
+        time.sleep(0.05)
+    return False
+
+
+def _with_retries(fn, *args, retries: int = 3, backoff: float = 0.5, **kwargs):
+    last_exc = None
+    for attempt in range(retries):
+        ok = _acquire_token(timeout=2.0)
+        if not ok:
+            time.sleep(backoff * (attempt + 1))
+            continue
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            last_exc = e
+            time.sleep(backoff * (2 ** attempt))
+    # final attempt without waiting for token
+    try:
+        return fn(*args, **kwargs)
+    except Exception:
+        if last_exc:
+            raise last_exc
+        raise
 
 
 def _redis_client():
@@ -100,25 +90,33 @@ def _redis_client():
 
 
 def find_player_id_by_name(name: str) -> Optional[int]:
-    """Resolve a player name to the NBA player id using `nba_api`.
+    """Resolve a player name to the NBA player id.
 
-    Returns `None` if not found or `nba_api` not installed.
+    Tries Redis -> in-process TTLCache -> `nba_api` calls (with retries/rate-limit).
+    Returns `None` if not resolvable.
     """
     if not name:
         return None
 
     cache_key = f"player_id:{name}"
-    # Try redis
+
+    # Redis cache
     try:
         rc = _redis_client()
         if rc:
-            cached = rc.get(cache_key)
-            if cached:
-                return int(cached)
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return int(raw)
+                except Exception:
+                    try:
+                        return int(raw.decode("utf-8"))
+                    except Exception:
+                        return None
     except Exception:
         pass
 
-    # In-memory
+    # in-memory cache
     if cache_key in _local_cache:
         return _local_cache[cache_key]
 
@@ -126,7 +124,6 @@ def find_player_id_by_name(name: str) -> Optional[int]:
         return None
 
     try:
-        # use retries + rate limiting
         def _lookup(n):
             return players.find_players_by_full_name(n)
 
@@ -142,9 +139,9 @@ def find_player_id_by_name(name: str) -> Optional[int]:
                 pass
             return pid
     except Exception:
-        pass
+        logger.debug("player id lookup failed for %s", name, exc_info=True)
 
-    # fallback: scan all players with simple normalization
+    # fallback: scan all players for a best-effort match
     def normalize(n: str) -> str:
         import re
 
@@ -178,16 +175,23 @@ def find_player_id_by_name(name: str) -> Optional[int]:
 def fetch_recent_games(player_id: int, limit: int = 8) -> List[dict]:
     """Fetch recent game logs for a player id. Returns list of raw game dicts.
 
-    If `nba_api` is missing returns an empty list.
+    Tries Redis -> in-process TTLCache -> `nba_api` PlayerGameLog.
+    Returns empty list when data isn't available.
     """
     if not player_id:
         return []
 
     cache_key = f"player_recent:{player_id}:{limit}"
+
     try:
-        cached = redis_get_json(cache_key) if _redis_client() else None
-        if cached:
-            return cached  # type: ignore
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                except Exception:
+                    pass
     except Exception:
         pass
 
@@ -212,63 +216,9 @@ def fetch_recent_games(player_id: int, limit: int = 8) -> List[dict]:
         except Exception:
             pass
         return recent
-    except Exception as e:
-        logger.exception("Error fetching recent games: %s", e)
-        return []
-"""Simple NBA stats client wrapper.
-
-This is a thin wrapper around the existing `fastapi_nba.py` logic and/or
-`nba_api` usage. It exposes helper functions used by other backend services.
-"""
-from typing import Optional, List, Dict
-import os
-import logging
-
-logger = logging.getLogger(__name__)
-
-try:
-    # prefer using nba_api when available
-    from nba_api.stats.static import players
-    from nba_api.stats.endpoints import playergamelog
-except Exception:
-    players = None
-    playergamelog = None
-
-
-def find_player_id(name: str) -> Optional[int]:
-    """Return player id or None if not found."""
-    if players is None:
-        logger.debug("nba_api not installed; cannot resolve player id")
-        return None
-    try:
-        matches = players.find_players_by_full_name(name)
-        if matches:
-            return matches[0].get("id")
     except Exception:
-        pass
-    return None
-
-
-def fetch_recent_games_by_id(player_id: int, limit: int = 8) -> List[Dict]:
-    """Fetch recent games for a player ID. Returns list of raw rows (dicts).
-
-    Falls back to empty list if `nba_api` not available.
-    """
-    if playergamelog is None:
-        logger.debug("playergamelog not available; returning empty recent games")
-        return []
-
-    try:
-        gl = playergamelog.PlayerGameLog(player_id=player_id)
-        df = gl.get_data_frames()[0]
-        return df.head(limit).to_dict(orient="records")
-    except Exception as e:
-        logger.exception("error fetching game log: %s", e)
+        logger.exception("Error fetching recent games for player_id=%s", player_id)
         return []
 
 
-def fetch_recent_games_by_name(name: str, limit: int = 8) -> List[Dict]:
-    pid = find_player_id(name)
-    if not pid:
-        return []
-    return fetch_recent_games_by_id(pid, limit=limit)
+__all__ = ["find_player_id_by_name", "fetch_recent_games"]
