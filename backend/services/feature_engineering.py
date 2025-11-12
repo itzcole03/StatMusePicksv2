@@ -98,6 +98,13 @@ from typing import List, Dict, Optional
 import numpy as np
 import pandas as pd
 
+# Opt-in to pandas future behavior to avoid the downcasting warning during fillna
+try:
+    pd.set_option('future.no_silent_downcasting', True)
+except Exception:
+    # Older pandas versions may not provide this option; ignore failures.
+    pass
+
 
 def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3, 5, 10]) -> Dict:
     values = [g.get("statValue") for g in recent_games if g.get("statValue") is not None]
