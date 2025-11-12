@@ -28,10 +28,12 @@ logger = logging.getLogger(__name__)
 try:
     from nba_api.stats.static import players
     from nba_api.stats.endpoints import playergamelog
+    from nba_api.stats.endpoints import teamgamelog
     from nba_api.stats.endpoints import playercareerstats
 except Exception:  # pragma: no cover - optional dep
     players = None
     playergamelog = None
+    teamgamelog = None
     playercareerstats = None
 
 
@@ -222,3 +224,183 @@ def fetch_recent_games(player_id: int, limit: int = 8) -> List[dict]:
 
 
 __all__ = ["find_player_id_by_name", "fetch_recent_games"]
+
+
+def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
+    """Return basic season averages for a player (PTS/AST/REB) for a given season id.
+
+    Tries Redis -> local cache -> `playercareerstats` endpoint. Returns an
+    empty dict when data is unavailable. The `season` string should match the
+    `SEASON_ID` values used by `nba_api` (e.g. '2024-25').
+    """
+    if not player_id or not season:
+        return {}
+
+    cache_key = f"player_season:{player_id}:{season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    # Try playercareerstats if available
+    if playercareerstats is not None:
+        try:
+            def _pcs(pid):
+                pcs = playercareerstats.PlayerCareerStats(player_id=pid)
+                return pcs.get_data_frames()[0]
+
+            df = _with_retries(_pcs, player_id)
+            # Expect df to be a DataFrame-like object
+            if df is None:
+                return {}
+
+            # Filter by season id
+            try:
+                season_rows = df[df['SEASON_ID'] == season]
+            except Exception:
+                # If df indexing fails, fall back to scanning rows
+                season_rows = []
+                try:
+                    for r in df.to_dict(orient='records'):
+                        if r.get('SEASON_ID') == season:
+                            season_rows.append(r)
+                except Exception:
+                    season_rows = []
+
+            # If season_rows is empty or DataFrame-like with no rows, return {}
+            if hasattr(season_rows, 'empty') and season_rows.empty:
+                stats = {}
+            else:
+                # Compute basic means
+                import pandas as _pd
+
+                if not hasattr(season_rows, 'to_dict'):
+                    # season_rows is a list of dicts
+                    df_season = _pd.DataFrame(season_rows)
+                else:
+                    df_season = season_rows if isinstance(season_rows, _pd.DataFrame) else _pd.DataFrame(season_rows)
+
+                if df_season.empty:
+                    stats = {}
+                else:
+                    stats = {}
+                    for k in ('PTS', 'AST', 'REB'):
+                        if k in df_season.columns:
+                            try:
+                                stats[k] = float(df_season[k].mean())
+                            except Exception:
+                                pass
+
+            # persist to caches
+            _local_cache[cache_key] = stats
+            try:
+                rc = _redis_client()
+                if rc:
+                    rc.setex(cache_key, 60 * 60 * 24, json.dumps(stats))
+            except Exception:
+                pass
+
+            return stats
+        except Exception:
+            logger.debug('player season stats lookup failed for %s %s', player_id, season, exc_info=True)
+
+    # Not available
+    return {}
+
+
+def get_team_stats(team_id: int) -> Dict[str, float]:
+    """Placeholder: return basic team-level metrics if available.
+
+    Currently returns an empty dict when data sources are not present.
+    This is a small helper to be expanded later to call `teamgamelog` or
+    other endpoints to compute offensive/defensive ratings.
+    """
+    if not team_id:
+        return {}
+
+    cache_key = f"team_stats:{team_id}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    # Try to fetch team game logs and compute simple averages (PTS / OPP)
+    if teamgamelog is None:
+        return {}
+
+    try:
+        def _fetch(tid):
+            tg = teamgamelog.TeamGameLog(team_id=tid)
+            return tg.get_data_frames()[0]
+
+        df = _with_retries(_fetch, team_id)
+        if df is None:
+            return {}
+
+        # Normalize column names - common variants for opponent points
+        opp_cols = [c for c in ("OPP_PTS", "PTS_OPP", "OPPPTS", "PTS_ALLOWED") if c in df.columns]
+        pts_col = "PTS" if "PTS" in df.columns else None
+
+        if pts_col is None:
+            return {}
+
+        import pandas as _pd
+
+        if isinstance(df, list):
+            df = _pd.DataFrame(df)
+
+        if df.empty:
+            return {}
+
+        stats: Dict[str, float] = {}
+        try:
+            stats["PTS_avg"] = float(df[pts_col].mean())
+        except Exception:
+            pass
+
+        if opp_cols:
+            try:
+                stats["OPP_PTS_avg"] = float(df[opp_cols[0]].mean())
+            except Exception:
+                pass
+
+        if "PTS_avg" in stats and "OPP_PTS_avg" in stats:
+            try:
+                stats["PTS_diff"] = float(stats["PTS_avg"] - stats["OPP_PTS_avg"])
+            except Exception:
+                pass
+
+        # persist to caches
+        _local_cache[cache_key] = stats
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 6, json.dumps(stats))
+        except Exception:
+            pass
+
+        return stats
+    except Exception:
+        logger.debug("team stats lookup failed for %s", team_id, exc_info=True)
+
+    return {}

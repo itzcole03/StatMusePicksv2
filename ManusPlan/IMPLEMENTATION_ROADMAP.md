@@ -203,7 +203,7 @@ These updates maintain fidelity to the technical guide: migrations were applied,
 - [x] Implement functions (basic):
   - [x] `find_player_id_by_name(player_name)` → player ID
   - [x] `fetch_recent_games(player_id, limit)` → recent game logs
-  - [ ] `get_player_season_stats(player_id, season)` → season averages (todo)
+  - [x] `get_player_season_stats(player_id, season)` → season averages (implemented)
   - [ ] `get_team_stats(team_id)` → team offensive/defensive ratings (todo)
 - [x] Add rate limiting (simple token-bucket, configurable)
 - [x] Add retry logic with exponential backoff for upstream calls
