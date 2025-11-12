@@ -1,0 +1,666 @@
+Backend tests	UNKNOWN STEP	﻿2025-11-12T01:01:34.1584491Z Current runner version: '2.329.0'
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1608912Z ##[group]Runner Image Provisioner
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1609684Z Hosted Compute Agent
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1610223Z Version: 20251016.436
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1610917Z Commit: 8ab8ac8bfd662a3739dab9fe09456aba92132568
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1611608Z Build Date: 2025-10-15T20:44:12Z
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1612201Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1612780Z ##[group]Operating System
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1613304Z Ubuntu
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1613783Z 24.04.3
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1614241Z LTS
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1614741Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1615183Z ##[group]Runner Image
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1615942Z Image: ubuntu-24.04
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1616439Z Version: 20251102.99.1
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1617481Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251102.99/images/ubuntu/Ubuntu2404-Readme.md
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1619010Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251102.99
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1620006Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1621115Z ##[group]GITHUB_TOKEN Permissions
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1622858Z Contents: read
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1623509Z Metadata: read
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1624120Z Packages: read
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1624660Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1626910Z Secret source: Actions
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1627640Z Prepare workflow directory
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1948679Z Prepare all required actions
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.1986531Z Getting action download info
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.5646915Z Download action repository 'actions/checkout@v4' (SHA:08eba0b27e820071cde6df949e0beb9ba4906955)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.6773955Z Download action repository 'actions/setup-python@v4' (SHA:7f4fc3e22c37d6ff65e88745f38bd3157c663f7c)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:34.8139124Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0125089Z Complete job name: Backend tests
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0855005Z ##[group]Run actions/checkout@v4
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0856179Z with:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0856662Z   repository: itzcole03/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0857410Z   token: ***
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0857820Z   ssh-strict: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0858236Z   ssh-user: git
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0858659Z   persist-credentials: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0859133Z   clean: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0859565Z   sparse-checkout-cone-mode: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0860228Z   fetch-depth: 1
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0860649Z   fetch-tags: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0861098Z   show-progress: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0861538Z   lfs: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0861927Z   submodules: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0862358Z   set-safe-directory: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.0863088Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.1941149Z Syncing repository: itzcole03/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.1942970Z ##[group]Getting Git version info
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.1943951Z Working directory is '/home/runner/work/StatMusePicksv2/StatMusePicksv2'
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.1945067Z [command]/usr/bin/git version
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2055543Z git version 2.51.2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2106041Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2116682Z Temporarily overriding HOME='/home/runner/work/_temp/e4307e81-bbfd-426c-8dab-cf0ec2161d0f' before making global git config changes
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2118291Z Adding repository directory to the temporary git global config as a safe directory
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2123912Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/StatMusePicksv2/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2164013Z Deleting the contents of '/home/runner/work/StatMusePicksv2/StatMusePicksv2'
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2167958Z ##[group]Initializing the repository
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2173076Z [command]/usr/bin/git init /home/runner/work/StatMusePicksv2/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2298954Z hint: Using 'master' as the name for the initial branch. This default branch name
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2300060Z hint: is subject to change. To configure the initial branch name to use in all
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2300987Z hint: of your new repositories, which will suppress this warning, call:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2301968Z hint:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2302554Z hint: 	git config --global init.defaultBranch <name>
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2303634Z hint:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2304353Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2305531Z hint: 'development'. The just-created branch can be renamed via this command:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2306299Z hint:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2306713Z hint: 	git branch -m <name>
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2307176Z hint:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2307801Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2309154Z Initialized empty Git repository in /home/runner/work/StatMusePicksv2/StatMusePicksv2/.git/
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2314491Z [command]/usr/bin/git remote add origin https://github.com/itzcole03/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2351346Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2352204Z ##[group]Disabling automatic garbage collection
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2357014Z [command]/usr/bin/git config --local gc.auto 0
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2390974Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2393762Z ##[group]Setting up auth
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2398286Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2429813Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2789941Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.2819437Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.3034431Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.3075515Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.3076620Z ##[group]Fetching the repository
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.3084229Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +2bf3d9a550844d9fb587fd3e193abe319c35271c:refs/remotes/pull/1/merge
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5477277Z From https://github.com/itzcole03/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5478419Z  * [new ref]         2bf3d9a550844d9fb587fd3e193abe319c35271c -> pull/1/merge
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5508558Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5509312Z ##[group]Determining the checkout info
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5510641Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5515918Z [command]/usr/bin/git sparse-checkout disable
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5557267Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5583745Z ##[group]Checking out the ref
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5587824Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/1/merge
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5906540Z Note: switching to 'refs/remotes/pull/1/merge'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5907572Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5908316Z You are in 'detached HEAD' state. You can look around, make experimental
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5910322Z changes and commit them, and you can discard any commits you make in this
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5912419Z state without impacting any branches by switching back to a branch.
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5913709Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5914463Z If you want to create a new branch to retain commits you create, you may
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5916116Z do so (now or later) by using -c with the switch command. Example:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5916833Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5917060Z   git switch -c <new-branch-name>
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5917535Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5917748Z Or undo this operation with:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5918157Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5918459Z   git switch -
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5918963Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5919842Z Turn off this advice by setting config variable advice.detachedHead to false
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5920725Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5921780Z HEAD is now at 2bf3d9a Merge 6d81cf288391616e7941e920f4c8826089b9cde2 into bebc9c8aad58083433c4a5311eed8ee3645cefd0
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5925443Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5954951Z [command]/usr/bin/git log -1 --format=%H
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.5977059Z 2bf3d9a550844d9fb587fd3e193abe319c35271c
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6248482Z ##[group]Run actions/setup-python@v4
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6249292Z with:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6249770Z   python-version: 3.11
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6250376Z   check-latest: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6251202Z   token: ***
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6251729Z   update-environment: true
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6252390Z   allow-prereleases: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.6253027Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.7935146Z ##[group]Installed versions
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8377631Z Successfully set up CPython (3.11.14)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8379925Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8524546Z ##[group]Run python -m pip install --upgrade pip
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8526439Z [36;1mpython -m pip install --upgrade pip[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8527990Z [36;1mpip install -r backend/requirements.txt[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8581136Z shell: /usr/bin/bash -e {0}
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8582284Z env:
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8583442Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8585516Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8587417Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8589134Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8590837Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8656489Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:35.8658069Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:38.1436421Z Requirement already satisfied: pip in /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages (25.3)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.3175982Z Collecting fastapi (from -r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.3856465Z   Downloading fastapi-0.121.1-py3-none-any.whl.metadata (28 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.5438165Z Collecting pydantic (from -r backend/requirements.txt (line 3))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.5515941Z   Downloading pydantic-2.12.4-py3-none-any.whl.metadata (89 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.5928742Z Collecting python-dotenv (from -r backend/requirements.txt (line 4))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.6006715Z   Downloading python_dotenv-1.2.1-py3-none-any.whl.metadata (25 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.8924063Z Collecting sqlalchemy (from -r backend/requirements.txt (line 5))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.9003124Z   Downloading sqlalchemy-2.0.44-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (9.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.9352616Z Collecting alembic (from -r backend/requirements.txt (line 6))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.9430536Z   Downloading alembic-1.17.1-py3-none-any.whl.metadata (7.2 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.9880516Z Collecting asyncpg (from -r backend/requirements.txt (line 7))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:39.9955500Z   Downloading asyncpg-0.30.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.0 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.0807335Z Collecting psycopg2-binary (from -r backend/requirements.txt (line 8))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.0885052Z   Downloading psycopg2_binary-2.9.11-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (4.9 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.1246335Z Collecting redis (from -r backend/requirements.txt (line 9))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.1324325Z   Downloading redis-7.0.1-py3-none-any.whl.metadata (12 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.1558252Z Collecting cachetools (from -r backend/requirements.txt (line 10))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.1631172Z   Downloading cachetools-6.2.1-py3-none-any.whl.metadata (5.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.1881747Z Collecting httpx (from -r backend/requirements.txt (line 11))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.1957548Z   Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.2289574Z Collecting requests (from -r backend/requirements.txt (line 12))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.2363783Z   Downloading requests-2.32.5-py3-none-any.whl.metadata (4.9 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.2587570Z Collecting nba_api (from -r backend/requirements.txt (line 13))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.3687351Z   Downloading nba_api-1.11.1-py3-none-any.whl.metadata (5.8 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.4872111Z Collecting pandas (from -r backend/requirements.txt (line 14))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.4948667Z   Downloading pandas-2.3.3-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (91 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.7138194Z Collecting numpy (from -r backend/requirements.txt (line 15))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.7217071Z   Downloading numpy-2.3.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl.metadata (62 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.8599303Z Collecting scikit-learn (from -r backend/requirements.txt (line 16))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.8676331Z   Downloading scikit_learn-1.7.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (11 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.9185672Z Collecting xgboost (from -r backend/requirements.txt (line 17))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.9260066Z   Downloading xgboost-3.1.1-py3-none-manylinux_2_28_x86_64.whl.metadata (2.1 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.9512644Z Collecting joblib (from -r backend/requirements.txt (line 18))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.9585533Z   Downloading joblib-1.5.2-py3-none-any.whl.metadata (5.6 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.9892314Z Collecting uvicorn[standard] (from -r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:40.9964625Z   Downloading uvicorn-0.38.0-py3-none-any.whl.metadata (6.8 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.0342505Z Collecting starlette<0.50.0,>=0.40.0 (from fastapi->-r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.0416309Z   Downloading starlette-0.49.3-py3-none-any.whl.metadata (6.4 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.1059808Z Collecting typing-extensions>=4.8.0 (from fastapi->-r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.1133602Z   Downloading typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.1277364Z Collecting annotated-doc>=0.0.2 (from fastapi->-r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.1351997Z   Downloading annotated_doc-0.0.4-py3-none-any.whl.metadata (6.6 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.1514697Z Collecting annotated-types>=0.6.0 (from pydantic->-r backend/requirements.txt (line 3))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.1591366Z   Downloading annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.8416360Z Collecting pydantic-core==2.41.5 (from pydantic->-r backend/requirements.txt (line 3))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.8493786Z   Downloading pydantic_core-2.41.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (7.3 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.8668181Z Collecting typing-inspection>=0.4.2 (from pydantic->-r backend/requirements.txt (line 3))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.8756150Z   Downloading typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9008874Z Collecting anyio<5,>=3.6.2 (from starlette<0.50.0,>=0.40.0->fastapi->-r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9086028Z   Downloading anyio-4.11.0-py3-none-any.whl.metadata (4.1 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9304459Z Collecting idna>=2.8 (from anyio<5,>=3.6.2->starlette<0.50.0,>=0.40.0->fastapi->-r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9380386Z   Downloading idna-3.11-py3-none-any.whl.metadata (8.4 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9530725Z Collecting sniffio>=1.1 (from anyio<5,>=3.6.2->starlette<0.50.0,>=0.40.0->fastapi->-r backend/requirements.txt (line 1))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9603661Z   Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9860228Z Collecting click>=7.0 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:41.9933089Z   Downloading click-8.3.0-py3-none-any.whl.metadata (2.6 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.0090498Z Collecting h11>=0.8 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.0164031Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.0507215Z Collecting httptools>=0.6.3 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.0587763Z   Downloading httptools-0.7.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl.metadata (3.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.1491331Z Collecting pyyaml>=5.1 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.1567603Z   Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.4 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.2000172Z Collecting uvloop>=0.15.1 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.2077490Z   Downloading uvloop-0.22.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (4.9 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.2861062Z Collecting watchfiles>=0.13 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.2945996Z   Downloading watchfiles-1.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.9 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.3806386Z Collecting websockets>=10.4 (from uvicorn[standard]->-r backend/requirements.txt (line 2))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.3884326Z   Downloading websockets-15.0.1-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.8 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.5113537Z Collecting greenlet>=1 (from sqlalchemy->-r backend/requirements.txt (line 5))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.5190005Z   Downloading greenlet-3.2.4-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl.metadata (4.1 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.5598151Z Collecting Mako (from alembic->-r backend/requirements.txt (line 6))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.5669605Z   Downloading mako-1.3.10-py3-none-any.whl.metadata (2.9 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.5980721Z Collecting certifi (from httpx->-r backend/requirements.txt (line 11))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.6053931Z   Downloading certifi-2025.10.5-py3-none-any.whl.metadata (2.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.6290064Z Collecting httpcore==1.* (from httpx->-r backend/requirements.txt (line 11))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.6362974Z   Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.7281264Z Collecting charset_normalizer<4,>=2 (from requests->-r backend/requirements.txt (line 12))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.7358765Z   Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (37 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.7729149Z Collecting urllib3<3,>=1.21.1 (from requests->-r backend/requirements.txt (line 12))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.7808131Z   Downloading urllib3-2.5.0-py3-none-any.whl.metadata (6.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.8294709Z Collecting python-dateutil>=2.8.2 (from pandas->-r backend/requirements.txt (line 14))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.8367866Z   Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.8771925Z Collecting pytz>=2020.1 (from pandas->-r backend/requirements.txt (line 14))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.8847402Z   Downloading pytz-2025.2-py2.py3-none-any.whl.metadata (22 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.9050249Z Collecting tzdata>=2022.7 (from pandas->-r backend/requirements.txt (line 14))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:42.9123899Z   Downloading tzdata-2025.2-py2.py3-none-any.whl.metadata (1.4 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.0960167Z Collecting scipy>=1.8.0 (from scikit-learn->-r backend/requirements.txt (line 16))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.1038993Z   Downloading scipy-1.16.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl.metadata (62 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.1415157Z Collecting threadpoolctl>=3.1.0 (from scikit-learn->-r backend/requirements.txt (line 16))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.1488419Z   Downloading threadpoolctl-3.6.0-py3-none-any.whl.metadata (13 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.1694135Z Collecting nvidia-nccl-cu12 (from xgboost->-r backend/requirements.txt (line 17))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.1770711Z   Downloading nvidia_nccl_cu12-2.28.7-py3-none-manylinux_2_18_x86_64.whl.metadata (2.0 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.2044922Z Collecting six>=1.5 (from python-dateutil>=2.8.2->pandas->-r backend/requirements.txt (line 14))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.2117235Z   Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.2982049Z Collecting MarkupSafe>=0.9.2 (from Mako->alembic->-r backend/requirements.txt (line 6))
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.3059032Z   Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (2.7 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.3204771Z Downloading fastapi-0.121.1-py3-none-any.whl (109 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.3415074Z Downloading pydantic-2.12.4-py3-none-any.whl (463 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.3862168Z Downloading pydantic_core-2.41.5-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.4837144Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 2.1/2.1 MB 22.8 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.4912823Z Downloading starlette-0.49.3-py3-none-any.whl (74 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.5013308Z Downloading anyio-4.11.0-py3-none-any.whl (109 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.5125574Z Downloading uvicorn-0.38.0-py3-none-any.whl (68 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.5233399Z Downloading python_dotenv-1.2.1-py3-none-any.whl (21 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.5328015Z Downloading sqlalchemy-2.0.44-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.3 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.6153623Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.3/3.3 MB 41.1 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.6226595Z Downloading alembic-1.17.1-py3-none-any.whl (247 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.6344774Z Downloading asyncpg-0.30.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (3.1 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.6864259Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.1/3.1 MB 59.8 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.6938287Z Downloading psycopg2_binary-2.9.11-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.7421228Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 4.2/4.2 MB 87.1 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.7497253Z Downloading redis-7.0.1-py3-none-any.whl (339 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.7615988Z Downloading cachetools-6.2.1-py3-none-any.whl (11 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.7708460Z Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.7808449Z Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.7915975Z Downloading requests-2.32.5-py3-none-any.whl (64 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.8014837Z Downloading charset_normalizer-3.4.4-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (151 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.8114052Z Downloading idna-3.11-py3-none-any.whl (71 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.8209256Z Downloading urllib3-2.5.0-py3-none-any.whl (129 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.8430143Z Downloading nba_api-1.11.1-py3-none-any.whl (316 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.8541865Z Downloading pandas-2.3.3-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (12.8 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.9472221Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 12.8/12.8 MB 139.3 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:43.9547616Z Downloading numpy-2.3.4-cp311-cp311-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.9 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.0354466Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.9/16.9 MB 213.0 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.0429174Z Downloading scikit_learn-1.7.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (9.7 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.0863582Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 9.7/9.7 MB 230.1 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.0939154Z Downloading xgboost-3.1.1-py3-none-manylinux_2_28_x86_64.whl (115.9 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.5440284Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 115.9/115.9 MB 258.6 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.5626231Z Downloading joblib-1.5.2-py3-none-any.whl (308 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.5736913Z Downloading annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.5830327Z Downloading annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.5927039Z Downloading certifi-2025.10.5-py3-none-any.whl (163 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6031514Z Downloading click-8.3.0-py3-none-any.whl (107 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6142214Z Downloading greenlet-3.2.4-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl (587 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6201256Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 587.7/587.7 kB 92.0 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6274872Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6371130Z Downloading httptools-0.7.1-cp311-cp311-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (456 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6481975Z Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6603370Z Downloading pytz-2025.2-py2.py3-none-any.whl (509 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6727564Z Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (806 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6797035Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 806.6/806.6 kB 112.0 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.6874505Z Downloading scipy-1.16.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (35.9 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8252325Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 35.9/35.9 MB 263.5 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8328839Z Downloading six-1.17.0-py2.py3-none-any.whl (11 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8421817Z Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8514985Z Downloading threadpoolctl-3.6.0-py3-none-any.whl (18 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8608804Z Downloading typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8702931Z Downloading typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8795765Z Downloading tzdata-2025.2-py2.py3-none-any.whl (347 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.8903720Z Downloading uvloop-0.22.1-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (3.8 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.9093810Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 3.8/3.8 MB 210.8 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.9171878Z Downloading watchfiles-1.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (456 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.9284101Z Downloading websockets-15.0.1-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (182 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.9384727Z Downloading mako-1.3.10-py3-none-any.whl (78 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.9483129Z Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (22 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:44.9579179Z Downloading nvidia_nccl_cu12-2.28.7-py3-none-manylinux_2_18_x86_64.whl (296.8 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:46.4928268Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 296.8/296.8 MB 182.0 MB/s  0:00:01
+Backend tests	UNKNOWN STEP	2025-11-12T01:01:47.0344161Z Installing collected packages: pytz, websockets, uvloop, urllib3, tzdata, typing-extensions, threadpoolctl, sniffio, six, redis, pyyaml, python-dotenv, psycopg2-binary, nvidia-nccl-cu12, numpy, MarkupSafe, joblib, idna, httptools, h11, greenlet, click, charset_normalizer, certifi, cachetools, asyncpg, annotated-types, annotated-doc, uvicorn, typing-inspection, sqlalchemy, scipy, requests, python-dateutil, pydantic-core, Mako, httpcore, anyio, xgboost, watchfiles, starlette, scikit-learn, pydantic, pandas, httpx, alembic, nba_api, fastapi
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.1625592Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.1654623Z Successfully installed Mako-1.3.10 MarkupSafe-3.0.3 alembic-1.17.1 annotated-doc-0.0.4 annotated-types-0.7.0 anyio-4.11.0 asyncpg-0.30.0 cachetools-6.2.1 certifi-2025.10.5 charset_normalizer-3.4.4 click-8.3.0 fastapi-0.121.1 greenlet-3.2.4 h11-0.16.0 httpcore-1.0.9 httptools-0.7.1 httpx-0.28.1 idna-3.11 joblib-1.5.2 nba_api-1.11.1 numpy-2.3.4 nvidia-nccl-cu12-2.28.7 pandas-2.3.3 psycopg2-binary-2.9.11 pydantic-2.12.4 pydantic-core-2.41.5 python-dateutil-2.9.0.post0 python-dotenv-1.2.1 pytz-2025.2 pyyaml-6.0.3 redis-7.0.1 requests-2.32.5 scikit-learn-1.7.2 scipy-1.16.3 six-1.17.0 sniffio-1.3.1 sqlalchemy-2.0.44 starlette-0.49.3 threadpoolctl-3.6.0 typing-extensions-4.15.0 typing-inspection-0.4.2 tzdata-2025.2 urllib3-2.5.0 uvicorn-0.38.0 uvloop-0.22.1 watchfiles-1.1.1 websockets-15.0.1 xgboost-3.1.1
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6899373Z ##[group]Run python -m alembic -c backend/alembic.ini upgrade head
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6899849Z [36;1mpython -m alembic -c backend/alembic.ini upgrade head[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6935094Z shell: /usr/bin/bash -e {0}
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6935528Z env:
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6935792Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6936217Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6936609Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6936945Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6937286Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6937626Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6937968Z   DATABASE_URL: sqlite+aiosqlite:///./dev_ci.db
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:05.6938238Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1350267Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1351508Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1354640Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(nba_player_id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1355949Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(nba_player_id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1357024Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(name, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1358088Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(name, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1360451Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(team, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1361506Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(team, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1362515Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(position, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1363559Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(position, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1364621Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(created_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1365978Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) _configure_property(created_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1367460Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) Identified primary key columns: OrderedSet([Column('id', Integer(), table=<players>, primary_key=True, nullable=False)])
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1374774Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) Identified primary key columns: OrderedSet([Column('id', Integer(), table=<players>, primary_key=True, nullable=False)])
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1375988Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) constructed
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1376497Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Player|players) constructed
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1389951Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(player, _RelationshipDeclared)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1391729Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(player, _RelationshipDeclared)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1393050Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1394231Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1395643Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(player_id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1397216Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(player_id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1398534Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(source, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1399719Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(source, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1400933Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(stat, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1402131Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(stat, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1403308Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(line, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1404457Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(line, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1405955Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(projection_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1407259Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(projection_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1408516Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(raw, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1409649Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(raw, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1410816Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(created_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1412072Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) _configure_property(created_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1413774Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) Identified primary key columns: OrderedSet([Column('id', Integer(), table=<projections>, primary_key=True, nullable=False)])
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1416141Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) Identified primary key columns: OrderedSet([Column('id', Integer(), table=<projections>, primary_key=True, nullable=False)])
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1417709Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) constructed
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1418696Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (Projection|projections) constructed
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1420468Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1421727Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(id, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1423001Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(name, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1424289Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(name, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1425732Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(version, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1427285Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(version, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1428576Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(path, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1429755Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(path, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1431010Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(notes, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1432468Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(notes, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1433780Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(created_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1435048Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) _configure_property(created_at, Column)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1437016Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) Identified primary key columns: OrderedSet([Column('id', Integer(), table=<model_metadata>, primary_key=True, nullable=False)])
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1439233Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) Identified primary key columns: OrderedSet([Column('id', Integer(), table=<model_metadata>, primary_key=True, nullable=False)])
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1440744Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) constructed
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1441760Z 2025-11-12 01:02:06 INFO  [sqlalchemy.orm.mapper.Mapper] (ModelMetadata|model_metadata) constructed
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1732078Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1732941Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1733816Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1734674Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1735675Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] BEGIN (implicit)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1736318Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] BEGIN (implicit)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1737094Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA main.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1738000Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA main.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1738854Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1739525Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1740312Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA temp.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1741215Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA temp.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1742028Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1742686Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1743505Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA main.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1744444Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA main.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1745465Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1746120Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1746844Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA temp.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1747707Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] PRAGMA temp.table_info("alembic_version")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1748453Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1749425Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [raw sql] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1750065Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1750574Z CREATE TABLE alembic_version (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1750982Z 	version_num VARCHAR(32) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1751515Z 	CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1752027Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1752188Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1752196Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1752409Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1752872Z CREATE TABLE alembic_version (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1753107Z 	version_num VARCHAR(32) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1753583Z 	CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1753994Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1754129Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1754135Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1754396Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00009s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1754815Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00009s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1795441Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Running upgrade  -> 0001_initial, initial migration
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1796483Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Running upgrade  -> 0001_initial, initial migration
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1803471Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1803985Z CREATE TABLE players (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1804370Z 	id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1804633Z 	nba_player_id INTEGER, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1804892Z 	name VARCHAR(255) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1805394Z 	team VARCHAR(64), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1805677Z 	position VARCHAR(32), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1806020Z 	created_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1806281Z 	PRIMARY KEY (id)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1806502Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1806604Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1806609Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1806825Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1807217Z CREATE TABLE players (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1807558Z 	id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1807923Z 	nba_player_id INTEGER, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1808273Z 	name VARCHAR(255) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1808527Z 	team VARCHAR(64), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1808746Z 	position VARCHAR(32), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1808985Z 	created_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1809214Z 	PRIMARY KEY (id)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1809420Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1809518Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1809522Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1809784Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00009s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1810287Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00009s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1828756Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1829246Z CREATE TABLE projections (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1829598Z 	id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1829939Z 	player_id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1830295Z 	source VARCHAR(128), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1830633Z 	stat VARCHAR(64) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1830976Z 	line FLOAT NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1831452Z 	projection_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1831831Z 	raw TEXT, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1832106Z 	created_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1832420Z 	PRIMARY KEY (id), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1832780Z 	FOREIGN KEY(player_id) REFERENCES players (id)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1833241Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1833390Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1833396Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1833537Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1833841Z CREATE TABLE projections (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1834071Z 	id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1834273Z 	player_id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1834501Z 	source VARCHAR(128), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1834698Z 	stat VARCHAR(64) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1834914Z 	line FLOAT NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1835112Z 	projection_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1835568Z 	raw TEXT, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1835753Z 	created_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1836185Z 	PRIMARY KEY (id), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1836414Z 	FOREIGN KEY(player_id) REFERENCES players (id)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1836687Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1836775Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1836779Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1836952Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00009s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1837360Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00009s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1852229Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1853018Z CREATE TABLE model_metadata (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1853429Z 	id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1853809Z 	name VARCHAR(128) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1854195Z 	version VARCHAR(64), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1854707Z 	path VARCHAR(512), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1854924Z 	notes TEXT, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1855118Z 	created_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1855605Z 	PRIMARY KEY (id)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1855863Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1855954Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1855958Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1856100Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1856404Z CREATE TABLE model_metadata (
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1856638Z 	id INTEGER NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1856837Z 	name VARCHAR(128) NOT NULL, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1857052Z 	version VARCHAR(64), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1857240Z 	path VARCHAR(512), 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1857427Z 	notes TEXT, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1857602Z 	created_at DATETIME, 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1857793Z 	PRIMARY KEY (id)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1857962Z )
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1858053Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1858058Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1858222Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00008s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1858622Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [no key 0.00008s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1875605Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] INSERT INTO alembic_version (version_num) VALUES ('0001_initial') RETURNING version_num
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1877124Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] INSERT INTO alembic_version (version_num) VALUES ('0001_initial') RETURNING version_num
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1878215Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [generated in 0.00011s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1878995Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] [generated in 0.00011s] ()
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1879526Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] COMMIT
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1879852Z 2025-11-12 01:02:06 INFO  [sqlalchemy.engine.Engine] COMMIT
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2557475Z ##[group]Run pip install pytest
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2557803Z [36;1mpip install pytest[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2558029Z [36;1mpytest -q[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2590924Z shell: /usr/bin/bash -e {0}
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2591150Z env:
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2591393Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2591786Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2592176Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2592529Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2592875Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2593215Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2593516Z   PYTHONPATH: .
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2593743Z   DATABASE_URL: sqlite+aiosqlite:///./dev_ci.db
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.2593993Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.2163319Z Collecting pytest
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.2864589Z   Downloading pytest-9.0.0-py3-none-any.whl.metadata (7.6 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.3756189Z Collecting iniconfig>=1.0.1 (from pytest)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.3832992Z   Downloading iniconfig-2.3.0-py3-none-any.whl.metadata (2.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4066196Z Collecting packaging>=22 (from pytest)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4142111Z   Downloading packaging-25.0-py3-none-any.whl.metadata (3.3 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4333135Z Collecting pluggy<2,>=1.5 (from pytest)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4425551Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4710589Z Collecting pygments>=2.7.2 (from pytest)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4800743Z   Downloading pygments-2.19.2-py3-none-any.whl.metadata (2.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.4927786Z Downloading pytest-9.0.0-py3-none-any.whl (373 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.5352992Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.5459141Z Downloading iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.5552892Z Downloading packaging-25.0-py3-none-any.whl (66 kB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.5677556Z Downloading pygments-2.19.2-py3-none-any.whl (1.2 MB)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.6315697Z    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 20.5 MB/s  0:00:00
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:07.7228035Z Installing collected packages: pygments, pluggy, packaging, iniconfig, pytest
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:08.6135427Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:08.6162222Z Successfully installed iniconfig-2.3.0 packaging-25.0 pluggy-1.6.0 pygments-2.19.2 pytest-9.0.0
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3110833Z ........                                                                 [100%]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3111478Z =============================== warnings summary ===============================
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3112432Z backend/tests/test_feature_engineering_unit.py::test_engineer_features_basic
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3113401Z backend/tests/test_ml_prediction_service_unit.py::test_ml_prediction_with_persisted_model
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3114380Z tests/test_feature_engineering.py::test_engineer_features_minimal
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3115516Z tests/test_ml_prediction_service.py::test_ml_prediction_fallback
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3117521Z   /home/runner/work/StatMusePicksv2/StatMusePicksv2/backend/services/feature_engineering.py:152: FutureWarning: Downcasting object dtype arrays on .fillna, .ffill, .bfill is deprecated and will change in a future version. Call result.infer_objects(copy=False) instead. To opt-in to the future behavior, set `pd.set_option('future.no_silent_downcasting', True)`
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3119092Z     return df.fillna(0)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3119253Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3119564Z backend/tests/test_ml_prediction_service_unit.py::test_ml_prediction_with_persisted_model
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3120701Z   /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/sklearn/utils/validation.py:2742: UserWarning: X has feature names, but RandomForestRegressor was fitted without feature names
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3121645Z     warnings.warn(
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3121782Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3122325Z tests/test_integration.py::test_migrations_train_and_endpoints
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3122984Z   /home/runner/work/StatMusePicksv2/StatMusePicksv2/backend/fastapi_nba.py:56: DeprecationWarning: 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3123636Z           on_event is deprecated, use lifespan event handlers instead.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3123995Z   
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3124202Z           Read more about it in the
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3124661Z           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3125115Z           
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3125525Z     @app.on_event("startup")
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3125703Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3125894Z tests/test_integration.py::test_migrations_train_and_endpoints
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3126558Z   /opt/hostedtoolcache/Python/3.11.14/x64/lib/python3.11/site-packages/fastapi/applications.py:4575: DeprecationWarning: 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3127129Z           on_event is deprecated, use lifespan event handlers instead.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3127415Z   
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3127582Z           Read more about it in the
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3127953Z           [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3128318Z           
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3128505Z     return self.router.on_event(event_type)
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3128680Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3128868Z -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.3129570Z 8 passed, 7 warnings in 5.85s
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6091021Z ##[group]Run actions/setup-node@v4
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6091458Z with:
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6091637Z   node-version: 18
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6091823Z   always-auth: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6092018Z   check-latest: false
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6092327Z   token: ***
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6092496Z env:
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6092730Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6093128Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6093512Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6093855Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6094198Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6094543Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.6094827Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:15.8081601Z Attempting to download 18...
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:16.1248932Z Acquiring 18.20.8 - x64 from https://github.com/actions/node-versions/releases/download/18.20.8-14110393767/node-18.20.8-linux-x64.tar.gz
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:16.4913267Z Extracting ...
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:16.5019152Z [command]/usr/bin/tar xz --strip 1 --warning=no-unknown-keyword --overwrite -C /home/runner/work/_temp/011ea6a7-7537-4864-baba-71e2241fcc0d -f /home/runner/work/_temp/0163edcf-ab91-42cf-918e-901beab77a93
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:17.4266670Z Adding to the cache ...
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.0455871Z ##[group]Environment details
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3633992Z node: v18.20.8
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3634340Z npm: 10.8.2
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3634539Z yarn: 1.22.22
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3635026Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3793015Z ##[group]Run cd /home/runner/work/StatMusePicksv2/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3793489Z [36;1mcd /home/runner/work/StatMusePicksv2/StatMusePicksv2[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3793800Z [36;1mnpm ci[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3826922Z shell: /usr/bin/bash -e {0}
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3827149Z env:
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3827398Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3827830Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3828225Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3828573Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3828914Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3829263Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.3829547Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9728416Z npm warn EBADENGINE Unsupported engine {
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9729090Z npm warn EBADENGINE   package: 'marked@17.0.0',
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9729594Z npm warn EBADENGINE   required: { node: '>= 20' },
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9730149Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9730570Z npm warn EBADENGINE }
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9738252Z npm warn EBADENGINE Unsupported engine {
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9738720Z npm warn EBADENGINE   package: 'vite@7.2.2',
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9739154Z npm warn EBADENGINE   required: { node: '^20.19.0 || >=22.12.0' },
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9739636Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9739980Z npm warn EBADENGINE }
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9743395Z npm warn EBADENGINE Unsupported engine {
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9743987Z npm warn EBADENGINE   package: 'vitest@4.0.8',
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9744751Z npm warn EBADENGINE   required: { node: '^20.0.0 || ^22.0.0 || >=24.0.0' },
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9745806Z npm warn EBADENGINE   current: { node: 'v18.20.8', npm: '10.8.2' }
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:19.9746410Z npm warn EBADENGINE }
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9623058Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9623836Z added 517 packages, and audited 519 packages in 14s
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9630739Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9631110Z 144 packages are looking for funding
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9631578Z   run `npm fund` for details
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9639606Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9639813Z found 0 vulnerabilities
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9930137Z ##[group]Run npm run typecheck
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9930426Z [36;1mnpm run typecheck[0m
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9963427Z shell: /usr/bin/bash -e {0}
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9963651Z env:
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9963898Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9964309Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib/pkgconfig
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9964699Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9965045Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9965487Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.14/x64
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9965843Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.14/x64/lib
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:32.9966129Z ##[endgroup]
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1239868Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1240713Z > vite-react-typescript-starter@0.0.0 typecheck
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1241474Z > tsc --noEmit -p tsconfig.app.json
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1241803Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0442664Z ##[error]src/components/AnalysisSection.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0450847Z ##[error]src/components/AnalysisSection.tsx(237,44): error TS6133: 'it' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0452614Z ##[error]src/components/AnalysisSection.tsx(256,29): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0454244Z ##[error]src/components/AnalysisSection.tsx(257,26): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0456261Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(23,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0458616Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(76,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0461115Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(77,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0462848Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(95,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0464306Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(103,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0466000Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(106,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0467557Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(28,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0469792Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(93,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0472148Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0473793Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(112,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0475109Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(119,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0476740Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(123,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0478053Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(127,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0816358Z ##[error]Process completed with exit code 2.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0890519Z Post job cleanup.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1830973Z [command]/usr/bin/git version
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1867901Z git version 2.51.2
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1918725Z Temporarily overriding HOME='/home/runner/work/_temp/73ed7bfa-b476-4a9d-b408-583c4ec06acc' before making global git config changes
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1920230Z Adding repository directory to the temporary git global config as a safe directory
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1924885Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/StatMusePicksv2/StatMusePicksv2
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1958832Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1991446Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.2221284Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.2241986Z http.https://github.com/.extraheader
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.2255119Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.2287054Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.2634238Z Cleaning up orphan processes

@@ -67,4 +67,8 @@ export interface Settings {
   // Allowed absolute difference between model confidence and heuristic score
   // before considering them in strong disagreement (0-100 scale).
   modelHeuristicDelta?: number;
+  // Calibrated v2 confidence threshold (0-100). Used by AnalysisSection to
+  // compare deterministic v2 scores with the LLM output. Optional and
+  // backwards-compatible.
+  v2ConfidenceThreshold?: number;
 }

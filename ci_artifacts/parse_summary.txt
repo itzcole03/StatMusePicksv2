@@ -1,0 +1,150 @@
+
+=== Run dir: ci_artifacts\run_19282939420 ===
+Alembic log (extracted): ci_artifacts\run_19282939420\runlog.txt
+  migrations run lines: 6
+    - backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.8393228Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+    - backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.8394092Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+    - backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.8395002Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+    - backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.8395960Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+    - backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.8456400Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Running upgrade  -> 0001_initial, initial migration
+    - backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.8457571Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Running upgrade  -> 0001_initial, initial migration
+  ERRORS (3):
+---
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.9601791Z   DATABASE_URL: sqlite:///./dev_ci.db
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:14.9602032Z ##[endgroup]
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1622858Z Traceback (most recent call last):
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1634109Z   File "/home/runner/work/StatMusePicksv2/StatMusePicksv2/backend/scripts/train_and_persist_real_model.py", line 7, in <module>
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1635224Z     from backend.services.model_registry import ModelRegistry
+---
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1634109Z   File "/home/runner/work/StatMusePicksv2/StatMusePicksv2/backend/scripts/train_and_persist_real_model.py", line 7, in <module>
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1635224Z     from backend.services.model_registry import ModelRegistry
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1635782Z ModuleNotFoundError: No module named 'backend'
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.3114054Z ##[error]Process completed with exit code 1.
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.3223094Z Post job cleanup.
+---
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1635224Z     from backend.services.model_registry import ModelRegistry
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.1635782Z ModuleNotFoundError: No module named 'backend'
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.3114054Z ##[error]Process completed with exit code 1.
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.3223094Z Post job cleanup.
+backend-tests	UNKNOWN STEP	2025-11-12T01:02:17.4165171Z [command]/usr/bin/git version
+  Skipped/Notice lines (2), sample: ['backend-tests\tUNKNOWN STEP\t2025-11-12T01:02:14.8395002Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.', 'backend-tests\tUNKNOWN STEP\t2025-11-12T01:02:14.8395960Z 2025-11-12 01:02:14 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.']
+
+=== Run dir: ci_artifacts\run_19282939424 ===
+Alembic log (extracted): ci_artifacts\run_19282939424\runlog.txt
+  migrations run lines: 6
+    - Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1732078Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+    - Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1732941Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Context impl SQLiteImpl.
+    - Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1733816Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+    - Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1734674Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.
+    - Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1795441Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Running upgrade  -> 0001_initial, initial migration
+    - Backend tests	UNKNOWN STEP	2025-11-12T01:02:06.1796483Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Running upgrade  -> 0001_initial, initial migration
+  ERRORS (18):
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1241474Z > tsc --noEmit -p tsconfig.app.json
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1241803Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0442664Z ##[error]src/components/AnalysisSection.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0450847Z ##[error]src/components/AnalysisSection.tsx(237,44): error TS6133: 'it' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0452614Z ##[error]src/components/AnalysisSection.tsx(256,29): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:33.1241803Z 
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0442664Z ##[error]src/components/AnalysisSection.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0450847Z ##[error]src/components/AnalysisSection.tsx(237,44): error TS6133: 'it' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0452614Z ##[error]src/components/AnalysisSection.tsx(256,29): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0454244Z ##[error]src/components/AnalysisSection.tsx(257,26): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0442664Z ##[error]src/components/AnalysisSection.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0450847Z ##[error]src/components/AnalysisSection.tsx(237,44): error TS6133: 'it' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0452614Z ##[error]src/components/AnalysisSection.tsx(256,29): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0454244Z ##[error]src/components/AnalysisSection.tsx(257,26): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0456261Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(23,14): error TS6133: 'prompt' is declared but its value is never read.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0450847Z ##[error]src/components/AnalysisSection.tsx(237,44): error TS6133: 'it' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0452614Z ##[error]src/components/AnalysisSection.tsx(256,29): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0454244Z ##[error]src/components/AnalysisSection.tsx(257,26): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0456261Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(23,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0458616Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(76,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0452614Z ##[error]src/components/AnalysisSection.tsx(256,29): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0454244Z ##[error]src/components/AnalysisSection.tsx(257,26): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0456261Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(23,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0458616Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(76,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0461115Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(77,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0454244Z ##[error]src/components/AnalysisSection.tsx(257,26): error TS2339: Property 'v2ConfidenceThreshold' does not exist on type 'Settings'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0456261Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(23,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0458616Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(76,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0461115Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(77,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0462848Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(95,9): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0456261Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(23,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0458616Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(76,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0461115Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(77,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0462848Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(95,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0464306Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(103,5): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0458616Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(76,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0461115Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(77,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0462848Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(95,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0464306Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(103,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0466000Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(106,5): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0461115Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(77,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0462848Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(95,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0464306Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(103,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0466000Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(106,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0467557Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(28,14): error TS6133: 'prompt' is declared but its value is never read.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0462848Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(95,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0464306Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(103,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0466000Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(106,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0467557Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(28,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0469792Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(93,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0464306Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(103,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0466000Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(106,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0467557Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(28,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0469792Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(93,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0472148Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0466000Z ##[error]src/components/__tests__/AnalysisSection.disagreement.e2e.test.tsx(106,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0467557Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(28,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0469792Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(93,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0472148Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0473793Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(112,9): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0467557Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(28,14): error TS6133: 'prompt' is declared but its value is never read.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0469792Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(93,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0472148Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0473793Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(112,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0475109Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(119,5): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0469792Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(93,1): error TS2582: Cannot find name 'describe'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0472148Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0473793Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(112,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0475109Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(119,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0476740Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(123,5): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0472148Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(94,3): error TS2582: Cannot find name 'it'. Do you need to install type definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0473793Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(112,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0475109Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(119,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0476740Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(123,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0478053Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(127,5): error TS2304: Cannot find name 'expect'.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0473793Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(112,9): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0475109Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(119,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0476740Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(123,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0478053Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(127,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0816358Z ##[error]Process completed with exit code 2.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0475109Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(119,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0476740Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(123,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0478053Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(127,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0816358Z ##[error]Process completed with exit code 2.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0890519Z Post job cleanup.
+---
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0476740Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(123,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0478053Z ##[error]src/components/__tests__/AnalysisSection.e2e.test.tsx(127,5): error TS2304: Cannot find name 'expect'.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0816358Z ##[error]Process completed with exit code 2.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.0890519Z Post job cleanup.
+Backend tests	UNKNOWN STEP	2025-11-12T01:02:36.1830973Z [command]/usr/bin/git version
+  Skipped/Notice lines (2), sample: ['Backend tests\tUNKNOWN STEP\t2025-11-12T01:02:06.1733816Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.', 'Backend tests\tUNKNOWN STEP\t2025-11-12T01:02:06.1734674Z 2025-11-12 01:02:06 INFO  [alembic.runtime.migration] Will assume non-transactional DDL.']

@@ -19,6 +19,16 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
+    ,
+    "types": ["vite/client", "vitest/globals"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": [
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/*.e2e.test.tsx",
+    "src/**/*.e2e.test.ts",
+    "src/**/__tests__/**",
+    "node_modules"
+  ]
 }

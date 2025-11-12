@@ -12,6 +12,9 @@ import time
 
 from backend.services import nba_stats_client
 from backend.services.cache import redis_get_json, redis_set_json, get_redis
+import logging
+
+logger = logging.getLogger(__name__)
 
 try:
     # import the app defined in fastapi_nba.py
@@ -31,7 +34,7 @@ if not any(getattr(r, "path", None) == "/health" for r in app.routes):
 @app.get("/debug/status")
 async def _debug_status():
     """Return simple DB and Redis connectivity checks for local dev."""
-    # DB status (quick heuristic)
+    # DB status (quick heuristic with optional async connectivity test)
     try:
         from backend import db as backend_db
         db_url = getattr(backend_db, 'DATABASE_URL', None)
@@ -39,16 +42,29 @@ async def _debug_status():
         db_url = os.environ.get('DATABASE_URL') or 'sqlite+aiosqlite:///./dev.db'
 
     db_ok = False
+    db_error = None
     try:
         if db_url and db_url.startswith('sqlite'):
             # check for local file existence
             db_path = pathlib.Path('./dev.db')
             db_ok = db_path.exists()
         else:
-            # assume non-sqlite DB is configured if URL present
-            db_ok = bool(db_url)
-    except Exception:
+            # try an async DB connection if backend.db available
+            try:
+                from backend import db as backend_db
+                backend_db._ensure_engine_and_session()
+                if getattr(backend_db, 'engine', None) is not None:
+                    async with backend_db.engine.connect() as conn:
+                        await conn.run_sync(lambda sync_conn: None)
+                    db_ok = True
+                else:
+                    db_ok = bool(db_url)
+            except Exception as e:
+                db_ok = False
+                db_error = str(e)
+    except Exception as e:
         db_ok = False
+        db_error = str(e)
 
     # Redis status
     redis_url = os.environ.get('REDIS_URL')
@@ -65,7 +81,7 @@ async def _debug_status():
             redis_error = str(e)
 
     return {
-        'db': {'url': db_url, 'ok': db_ok},
+        'db': {'url': db_url, 'ok': db_ok, 'error': db_error},
         'redis': {'installed': redis_installed, 'env': redis_url, 'can_connect': redis_can_connect, 'error': redis_error}
     }
 
@@ -135,9 +151,47 @@ async def player_context(player_name: Optional[str] = None, limit: int = 8):
     return out
 
 
+@app.get("/api/db_health")
+async def db_health():
+    """Check DB connectivity and basic query health."""
+    try:
+        from backend import db as backend_db
+
+        backend_db._ensure_engine_and_session()
+        if getattr(backend_db, 'engine', None) is None:
+            return {"ok": False, "db": {"ok": False, "error": "no engine"}}
+
+        # run a lightweight sync no-op to validate connection
+        async with backend_db.engine.connect() as conn:
+            await conn.run_sync(lambda sync_conn: None)
+
+        return {"ok": True, "db": {"ok": True}}
+    except Exception as e:
+        logger.exception("DB health check failed")
+        return {"ok": False, "db": {"ok": False, "error": str(e)}}
+
+
 @app.on_event("startup")
 async def _startup():
-    # placeholder for startup tasks (DB connections, caches)
+    # Initialize DB engine/session factory so the app is ready to use DB.
+    try:
+        from backend import db as backend_db
+
+        # ensure engine and sessionmaker are created
+        backend_db._ensure_engine_and_session()
+
+        # quick connectivity check for non-sqlite DBs
+        try:
+            if getattr(backend_db, 'engine', None) is not None:
+                async with backend_db.engine.connect() as conn:
+                    # no-op sync call to validate connection
+                    await conn.run_sync(lambda sync_conn: None)
+        except Exception as e:
+            logger.warning("DB engine created but connectivity test failed: %s", e)
+
+    except Exception as e:
+        logger.debug("No backend.db available on startup: %s", e)
+
     return None
 
 

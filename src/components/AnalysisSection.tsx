@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { marked } from "marked";
 import { ParsedProjection, Settings } from "../types";
 import {
@@ -234,7 +234,7 @@ export default function AnalysisSection({
         // the external `v2Predictions` state to avoid stale reads and satisfy
         // hook dependency checks.
         if (typeof preds !== "undefined" && Array.isArray(preds)) {
-          const v2Items = score.items.map((it: any, idx: number) => {
+          const v2Items = score.items.map((_it: any, idx: number) => {
             const v2 = preds[idx];
             const modelRec = parsed[idx]?.recommendation || null;
             const v2Rec = v2?.recommendation || null;
