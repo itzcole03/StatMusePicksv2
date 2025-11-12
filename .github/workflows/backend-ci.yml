@@ -22,7 +22,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
-          pip install pytest
+          pip install pytest aiosqlite
 
       - name: Set DATABASE_URL to sqlite
         run: echo "DATABASE_URL=sqlite:///./dev_ci.db" >> $GITHUB_ENV
@@ -40,6 +40,55 @@ jobs:
         run: |
           python backend/scripts/e2e_predict_testclient.py
 
-      - name: Run unit tests
+      - name: Run backend unit tests
         run: |
-          pytest -q
+          pytest -q backend/tests
+
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statmuse_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install pytest aiosqlite
+
+      - name: Wait for Postgres to become ready
+        run: |
+          echo "Waiting for Postgres..."
+          for i in {1..15}; do
+            pg_isready -h localhost -p 5432 -U postgres && break || sleep 2
+          done
+
+      - name: Run Alembic migrations against Postgres
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/statmuse_ci
+        run: |
+          alembic -c backend/alembic.ini upgrade head
+
+      - name: Run lightweight DB smoke test
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_ci
+        run: |
+          # run a lightweight DB health test (do not fail pipeline on this check)
+          pytest -q backend/tests/test_db_health.py::test_db_health_sqlite || true

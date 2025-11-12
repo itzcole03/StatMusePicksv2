@@ -43,6 +43,28 @@ Notes:
 - The backend includes startup model preloading and a global error handler to avoid process exits on unexpected exceptions.
 - If you have Redis running and configured, the backend will use it for caching (player context + predict TTLs).
 
+Redis (optional)
+
+- The repo includes a `redis` service in `docker-compose.dev.yml` which exposes Redis on `6379`.
+- Start only Redis locally with Docker Compose (from repo root):
+
+```powershell
+# Start the redis service in the dev compose file
+docker compose -f docker-compose.dev.yml up -d redis
+```
+
+- Set `REDIS_URL` for the backend (PowerShell example):
+
+```powershell
+# Connect to local redis instance (DB 0)
+$env:REDIS_URL = 'redis://localhost:6379/0'
+# Then start the backend (example)
+& .\.venv\Scripts\Activate.ps1
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+When `REDIS_URL` is set, the backend cache helpers will connect to Redis; otherwise an in-memory fallback is used for local dev and tests.
+
 Start frontend (development)
 
 The repo contains helper scripts to start the frontend detached on Windows. For an interactive foreground start:

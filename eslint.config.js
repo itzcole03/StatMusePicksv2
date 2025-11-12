@@ -11,7 +11,17 @@ import tsParser from "@typescript-eslint/parser";
 export default [
   js.configs.recommended,
   {
-    ignores: ["dist", ".venv", "backend/.venv"],
+    ignores: [
+      "node_modules",
+      "dist",
+      ".venv",
+      "backend/.venv",
+      "logs",
+      "**/*.min.js",
+      "coverage",
+      "*.lock",
+      "package-lock.json",
+    ],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,

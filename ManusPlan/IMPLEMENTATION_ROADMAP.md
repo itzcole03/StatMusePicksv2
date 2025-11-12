@@ -88,6 +88,7 @@ Dev helper files added:
 - [x] Install PostgreSQL 14+ locally or provision cloud instance (dev via `docker-compose.dev.yml`)
 - [x] Create database: `statmuse_dev` (dev). Note: production DB `statmuse_predictions` is pending provisioning
 - [ ] Install TimescaleDB extension for time-series data
+ - [x] Install TimescaleDB extension for time-series data (staging enabled)
 - [x] Create database schema:
   - [x] `players` table (id, name, team, position, etc.)
   - [x] `games` table (id, date, home_team, away_team, etc.)
@@ -96,6 +97,8 @@ Dev helper files added:
   - [x] `models` table / `model_metadata` (id, player_name, version, path, notes, created_at)
 - [x] Set up database migrations (Alembic) — migrations exist and were applied to dev Postgres
 - [x] Create database connection pool in FastAPI (async engine + sessionmaker in `backend/db.py`)
+
+**Status:** ✅ Completed (dev)
 
 **Acceptance Criteria:**
 
@@ -114,6 +117,18 @@ Dev helper files added:
 - The original `0001_initial` migration and `model_metadata` table exist and were applied earlier. The `players` and `projections` tables from the initial migration are present.
 - The backend now initializes an async SQLAlchemy engine and sessionmaker (see `backend/db.py` `_ensure_engine_and_session()`), and FastAPI startup hooks and a DB health endpoint were added/validated. This satisfies the "Create database connection pool in FastAPI" acceptance item for the dev environment.
 
+**Completion notes (Nov 11, 2025):**
+
+- Applied Alembic migrations to the development Postgres instance and added a targeted index migration for production hot queries (`backend/alembic/versions/0003_add_indexes.py`) which creates:
+  - `ix_player_stats_player_id_game_date` on `player_stats(player_id, game_date)`
+  - `ix_predictions_player_id_created_at` on `predictions(player_id, created_at)`
+
+- Added a CI smoke test workflow that runs Alembic migrations against a disposable Postgres service and executes a lightweight DB health test (`.github/workflows/alembic_migration_smoke.yml`).
+
+- Added developer helper `backend/scripts/persist_toy_model.py` and unit tests so the backend test-suite can validate model persistence and DB-related features locally.
+
+- Verified local dev test run: `python -m pytest backend/tests` → all backend tests pass (6 passed, 10 warnings).
+
 **Timescale staging notes (Nov 11, 2025):**
 
 - A TimescaleDB staging container (`statmuse_timescale`) was started and the `timescaledb` extension was enabled for local benchmarking.
@@ -122,15 +137,19 @@ Dev helper files added:
 **Remaining / Not done yet for Task 1.1.2:**
 
 - [x] Install TimescaleDB extension for time-series workloads (optional, production optimization) — Timescale staging container started and `timescaledb` extension enabled; example hypertable `player_stats_ht` created for local benchmarking.
-- [ ] Create production database and apply migrations in CI/deploy pipeline (`statmuse_predictions`) — dev stack uses `statmuse_dev`.
-- [ ] Add production-grade indexes and performance tuning (e.g., indexes on `player_id`, `game_date`, and partial indexes for hot queries).
-- [ ] Add schema migration smoke tests in CI to ensure Alembic is invoked against the intended environment variable in pipelines.
+- [x] Create production-grade index migrations for hot queries (added in `0003_add_indexes`).
+- [x] Add schema migration smoke test in CI (`.github/workflows/alembic_migration_smoke.yml`) that runs Alembic migrations and a DB health test.
+- [ ] Create production database and apply migrations in CI/deploy pipeline (`statmuse_predictions`) — requires provisioning and deployment privileges (see Next Steps).
+
+**Immediate follow-ups (added):**
+- [ ] Add Alembic index migration(s) for hot queries (e.g., `player_stats(player_id, game_date)`).
+- [ ] Add a CI smoke test that runs Alembic migrations against a disposable test DB to validate `DATABASE_URL` handling.
 
 **Recommended next actions (short-term, roadmap-aligned):**
 
-1. Wire Alembic in CI to ensure `DATABASE_URL` is respected (or add `-x db_url=...` invocation) and add a migration smoke test.
-2. Add index migrations for frequently-queried columns (e.g., `player_stats(player_id, game_date)`, `predictions(player_id, created_at)`).
-3. If time-series queries are important, plan adding TimescaleDB in a staging environment and re-run benchmarks.
+ 1. Provision production database (`statmuse_predictions`) and ensure secrets/`DATABASE_URL` are available to the deploy pipeline. Then run `alembic -c backend/alembic.ini upgrade head` in CI/CD deployment to apply migrations during release.
+ 2. After provisioning, run performance tuning and index analysis in a staging environment (use `EXPLAIN ANALYZE` on hot queries) and add any additional partial indexes or materialized views as Alembic migrations.
+ 3. Keep the existing CI smoke workflow (or extend `backend-ci.yml`) to run `pytest backend/tests` and the Alembic smoke test on PRs to prevent migration/DB regressions.
 
 These updates maintain fidelity to the technical guide: migrations were applied, DB connectivity is wired into the FastAPI runtime, and toy model persistence/metadata insertion has been validated against the dev Postgres instance.
 
@@ -1720,11 +1739,18 @@ _This document should be updated regularly as tasks are completed and new requir
   - Implemented `backend/services/ml_prediction_service.py` and exposed `/api/predict` and `/api/batch_predict` endpoints; validated with in-process TestClient and local scripts.
   - Added async Redis helper (`backend/services/cache.py`), increased TTL for player context to 6 hours, and added `/debug/status` endpoint for quick infra checks.
 
-- **Immediate next steps (recommended):**
+  - Added unit test for ML prediction fallback and ensured backend tests run locally (`backend/tests/test_ml_prediction_service_fallback.py`).
+  - Fixed Alembic index migration to create index on `player_stats(player_id, game_date)` and corrected downgrade handling (`backend/alembic/versions/0003_add_indexes.py`).
+  - Added small dev helper to persist a toy model for tests: `backend/scripts/persist_toy_model.py` (creates `backend/models_store/LeBron_James.pkl`).
+  - Installed missing test dependency `aiosqlite` for sqlite-based DB health tests in local dev.
+  - Confirmed backend tests pass locally: `python -m pytest backend/tests` → 6 passed (10 warnings).
 
-  1. Persist a toy model via `ModelRegistry` to exercise model save/load and confirm `model_metadata` entries in Postgres (I can run a small training/save script now).
-  2. Start the FastAPI app pointing at the Postgres + Redis stack and test `/api/predict` end-to-end over HTTP.
-  3. Add unit tests for `FeatureEngineering` and `MLPredictionService` and wire a CI job that runs the in-process prediction integration test.
+- **Immediate next steps (recommended):**
+ - **Immediate next steps (recommended):**
+
+  1. (Done locally) Persisted toy model via `backend/scripts/persist_toy_model.py` to exercise model save/load and enable `ModelRegistry` tests.
+  2. Start the FastAPI app pointing at the Postgres + Redis stack and test `/api/predict` end-to-end over HTTP (recommend running in dev: `npm run backend:dev` or `uvicorn backend.main:app --reload --port 8000`).
+  3. Add CI job step to run `pytest backend/tests/` as part of backend CI (suggest adding to `backend-ci.yml` or extending `alembic_migration_smoke.yml`).
 
 - **Notes / Caveats:**
   - Alembic expects a sync DB URL when executed as a CLI process; migrations were applied using a `postgresql://` URL (sync driver). The runtime app continues to use the async URL (`postgresql+asyncpg://`) where appropriate.

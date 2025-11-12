@@ -1,60 +1,66 @@
 ## Purpose
 
-Short, focused instructions so an AI coding agent becomes productive immediately in this repository.
-
-Keep these notes concise — reference exact files, conventions, and commands the agent should use.
+Brief, high-value guidance so an AI coding agent becomes productive immediately in this repository.
+Focus on exact files, commands, and patterns unique to this project — not generic advice.
 
 ## Big picture (what this app is and why it’s structured this way)
-- Frontend: Vite + React + TypeScript single-page app in `src/` (Tailwind for styling).
-- Data ingest: Very large PrizePicks JSONs are parsed in a Worker (`src/workers/parser.worker.ts`) and persisted in IndexedDB to avoid blocking the main thread.
-- Persistence/query layer: `src/services/indexedDBService.ts` is the ground-truth for projections, players, and cached NBA contexts. Always call `initDB()` before DB operations in tests or dev harnesses.
-- External numeric context: `src/services/nbaService.ts` fetches/caches NBA numeric context and uses the local backend proxy when available. Contexts are persisted via `saveNbaContexts()` and attached to projection objects as `nbaContext`.
-- AI layers: `src/services/aiService.ts` (LLM prompt/streaming helpers) + `src/services/aiService.v2.ts` (statistical model & deterministic checks). The UI compares LLM output and v2 to decide whether to null/flag recommendations.
-- Backend (dev-only): `backend/fastapi_nba.py` wraps `nba_api` for reliable player context during local development.
+## Big picture (what to know quickly)
+- Frontend: Vite + React + TypeScript in `src/`. UI is virtualized (`react-window`) and styled with Tailwind.
+- Data ingest: Large PrizePicks JSONs are parsed inside `src/workers/parser.worker.ts` and written in chunks to IndexedDB.
+- Persistence: `src/services/indexedDBService.ts` is the ground truth. Call `initDB()` before DB operations in tests/dev.
+- External numeric context: `src/services/nbaService.ts` builds and caches contexts; use `buildExternalContextForProjections()` + `saveNbaContexts()` to persist.
+- AI layers: `src/services/aiService.ts` (LLM prompts/streaming) and `src/services/aiService.v2.ts` (statistical checks). `AnalysisSection.tsx` compares outputs and applies deterministic safety rules.
+- Backend (dev-only): `backend/fastapi_nba.py` wraps `nba_api` for local numeric context during dev.
 
 ## Key files to inspect first
-- `src/workers/parser.worker.ts` — chunking + main-thread protocol (must remain in worker).
-- `src/services/indexedDBService.ts` — `saveBatch`, `getPlayersWithCounts`, `getPlayerMappings`, `saveNbaContexts`, migrations (initDB/upgrade).
-- `src/services/nbaService.ts` — TTL, cache policy, and backend proxy usage (use `buildExternalContextForProjections()` when pre-warming).
-- `src/services/aiService.ts` & `src/services/aiService.v2.ts` — prompt construction, streaming parser, calibrated confidences and v2 heuristics.
-- `src/components/AnalysisSection.tsx` — where LLM + v2 outputs are validated, compared and flagged.
-- `src/components/ProjectionsTable.tsx` — react-window virtualization pattern (note `outerElementType` forwardRef requirement).
+- `src/workers/parser.worker.ts` — parser, chunking, and main-thread message protocol. Keep heavy parsing in the worker.
+- `src/services/indexedDBService.ts` — DB init, migrations, `saveBatch`, `rebuildPlayersIndex()`, `getPlayersWithCounts()`.
+- `src/services/nbaService.ts` — TTL/cache strategy, backend proxy usage, `buildExternalContextForProjections()`.
+- `src/services/aiService.ts` & `src/services/aiService.v2.ts` — LLM prompt builders, streaming parser, and deterministic heuristics.
+- `src/components/AnalysisSection.tsx` — where LLM + v2 are compared and items can be flagged/nullified.
+- `src/components/ProjectionsTable.tsx` — virtualized list pattern; `outerElementType` must be a `forwardRef` wrapper.
 
 ## Project-specific conventions & patterns
-- Worker import for Vite: `new Worker(new URL('../workers/parser.worker.ts', import.meta.url), { type: 'module' })` (do not inline-large JSON parsing on the main thread).
-- IndexedDB stores include `players` and `player_map` to support fast autocomplete — avoid synchronous full-table scans.
-- External numeric context is saved on projection objects as `nbaContext` and must include `fetchedAt`; when no recent games exist the backend sets `noGamesThisSeason` explicitly.
-- UI components react to DB changes via `window.dispatchEvent(new CustomEvent('db-updated',{detail}))` — use this to signal other UI parts after persistence changes.
-- Deterministic safety: `aiService.v2` outputs calibrated confidence values; `AnalysisSection` uses these to null/flag LLM recommendations when disagreements exceed thresholds.
+- Worker import (Vite): `new Worker(new URL('../workers/parser.worker.ts', import.meta.url), { type: 'module' })` — do not parse large JSON on main thread.
+- IndexedDB stores: `players`, `player_map`, `projections`. Use `saveBatch(items)` and `rebuildPlayersIndex()`; avoid full-table synchronous scans.
+- Numeric context: attach as `nbaContext` with `fetchedAt`. When no recent games exist backend sets `noGamesThisSeason`.
+- Broadcast DB changes: emit `window.dispatchEvent(new CustomEvent('db-updated',{detail}))` after persistence updates so UI can refresh.
+- Deterministic safety: `aiService.v2` provides calibrated confidences; `AnalysisSection` applies thresholds to null/flag LLM outputs.
 
-## Developer workflows & commands
-- Start frontend dev server: `npm run dev` (Vite). If port blocked, try: `npm run dev -- --port 5173`.
-- Start backend dev proxy: `npm run backend:dev` (uvicorn on port 3002). Frontend `nbaService` expects this proxy in dev.
-- Run unit tests: `npx vitest --run` or `npm test` (uses `vitest.setup.ts` and `jsdom`).
-- Typecheck / typed lint scope: A repo-scoped typed lint config `tsconfig.eslint.json` is used to limit heavy type-checking to `src/`. Run ESLint typed check/fix for source with:
-
+## Common developer workflows & commands
+- Start frontend: `npm run dev` (Vite). If port conflicts, use `npm run dev -- --port 5173`.
+- Start backend proxy (dev): `npm run backend:dev` (uvicorn on `3002`) — frontend `nbaService` expects this in dev.
+- Run tests: `npx vitest --run` or `npm test` (uses `vitest.setup.ts`, `jsdom`).
+- Typecheck: `npm run typecheck`.
+- ESLint quick fix for src: 
 ```pwsh
 npx eslint "src/**/*.{ts,tsx}" --ext .ts,.tsx --fix
 ```
 
 ## Testing & gotchas
-- Vitest runs in `jsdom`; guard browser-only APIs in tests (e.g., check for `scrollIntoView`).
-- When changing DB schema or stores bump `DB_VERSION` in `src/services/indexedDBService.ts` or clear IndexedDB in the browser — migrations are handled inside `initDB()`.
+- Vitest runs in `jsdom`. Guard browser-only APIs (e.g., `scrollIntoView`) and mock IndexedDB when needed.
+- Always call `initDB()` before DB ops in tests or dev harnesses. For schema changes bump `DB_VERSION` in `src/services/indexedDBService.ts` and add migrations in `initDB()`.
+- Worker tests: avoid importing worker code directly in the main thread; test worker protocols by mocking `postMessage`/`onmessage` patterns.
 
-## Integration points & external dependencies
-- Local LLMs / endpoints: `src/services/aiService.ts` reads `settings.llmEndpoint` and `llmModel` — detection helpers live in `SettingsModal` and scripts under `scripts/`.
-- NBA context backend: `backend/fastapi_nba.py` (dev-only) or optional `nba-proxy/app.py` — use these for authoritative numeric context.
-- IndexedDB is the persistent store for normal runs — the frontend expects `players`, `player_map`, and `projections` stores.
+## Integration points & external deps
+- Local LLM endpoints: `src/services/aiService.ts` reads `settings.llmEndpoint` & `llmModel`. Dev scripts in `scripts/` help build prompts and probe endpoints.
+- NBA numeric context backend: `backend/fastapi_nba.py` (dev-only) or `nba-proxy/app.py` for alternative proxying.
+- CI & migrations: Alembic migrations live in `backend/alembic/versions/`. Migrations must be dialect-aware; some CI jobs run SQLite, others Postgres/Timescale.
+- Timescale rollout helpers and benchmarks: `backend/scripts/run_timescale_benchmark.py` and `backend/TIMESCALE_ROLLOUT.md` (if present) — review before applying hypertable migrations.
 
 ## Small examples & snippets
 - Debounced player search: `getPlayersWithCounts(league || undefined, stat || undefined, query || undefined)` in `src/components/Filters.tsx`.
 - Pre-warm contexts before analysis: `const contexts = await buildExternalContextForProjections(items, settings); await saveNbaContexts(contexts);` (see `src/App.tsx`).
 
-## When editing / making fixes
-- Prefer root-cause fixes and avoid sweeping changes that alter runtime semantics (e.g., auto-fixing React hook deps requires human review).
-- Keep worker parsing logic intact; if you change import flows preserve the chunk/save pattern (use `saveBatch` progressively).
+## When editing / making fixes (repo-specific)
+- Keep heavy parsing in `src/workers/parser.worker.ts`. Preserve chunking and `saveBatch()` semantics to avoid UI freezes.
+- When touching `indexedDBService.ts`:
+	- Call `initDB()` in tests/dev harnesses.
+	- Bump `DB_VERSION` for schema changes and add upgrade logic.
+- Alembic migrations (backend): edit files in `backend/alembic/versions/`. Use dialect guards for Postgres-only/Timescale SQL and avoid running Timescale-specific SQL on SQLite CI jobs.
+- CI: upload Alembic logs and JUnit XML (`logs/alembic.log`, `reports/junit.xml`) — agents should parse these to diagnose migration/test failures.
 
-If you'd like, I can trim this to a role-specific variant (UI-only, data-ingest-only, or backend-only). Feedback? Point out any missing files or behaviors to include and I'll update.
+If you want a role-focused variant (UI-only / ingest-only / backend-only), tell me which and I'll produce a trimmed variant.
 ## Purpose
 
 Short, focused instructions so an AI coding agent becomes productive immediately in this repository.
