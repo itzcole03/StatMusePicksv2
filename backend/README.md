@@ -47,6 +47,85 @@ Notes
 - To enable Redis caching set `REDIS_URL` environment variable before starting the server.
 - This backend is intended for local/dev use only; secure and harden before exposing publicly.
 
+Ingestion validation & alerting
+--------------------------------
+
+- `run_daily_sync()` performs a best-effort fetch -> persist raw -> normalize -> validate -> ingest flow for game data. It writes raw fetches to the directory configured by `INGEST_AUDIT_DIR` (defaults to `./backend/ingest_audit`).
+- Validation: the pipeline runs `validate_batch()` which checks for required fields (e.g. `game_date`, `home_team`, `away_team`), basic type checks, and numeric outliers. The result is returned as part of the `run_daily_sync()` summary under the `validation` key and includes `missing`, `type_errors`, and `outliers` lists.
+- Filtering policy: records missing critical fields are filtered out of ingestion by default. The `run_daily_sync()` return value contains `filtered_out_count` so automated tooling can detect dropped rows.
+- Alerting: if validation finds missing or type errors the service will attempt a best-effort POST of a small JSON summary to the webhook URL configured in the `INGEST_ALERT_WEBHOOK` environment variable. If no webhook is configured the message is logged as a warning.
+
+Example (env vars):
+
+```powershell
+# Audit directory for raw fetches
+$env:INGEST_AUDIT_DIR = "C:\path\to\audit_dir"
+
+# Optional: webhook that will receive validation summaries (POST JSON)
+$env:INGEST_ALERT_WEBHOOK = "https://hooks.example.com/ingest-alerts"
+```
+
+Webhook secrets & verification
+------------------------------
+
+The ingestion pipeline can POST small JSON validation summaries to a webhook when issues are found. These environment variables control the alerting behavior and verification:
+
+- `INGEST_ALERT_WEBHOOK`: (optional) URL to POST validation summaries to. If unset, validation findings are logged but not sent.
+- `INGEST_ALERT_SECRET`: (optional) an opaque secret string sent in the `X-Ingest-Secret` header for simple authentication (e.g., webhook expects a header match).
+- `INGEST_ALERT_HMAC_SECRET`: (optional) when set, the backend computes an HMAC-SHA256 over the request body and sends `X-Ingest-Signature: sha256=<hex>` so receivers can verify payload integrity and authenticity. Example receiver pseudocode:
+
+```python
+import hmac, hashlib
+def verify(body_bytes, header_sig, secret):
+    expected = hmac.new(secret.encode('utf-8'), body_bytes, hashlib.sha256).hexdigest()
+    return header_sig == f"sha256={expected}"
+```
+
+- `INGEST_ALERT_RETRIES`: (optional) number of retry attempts for transient failures; default `3`.
+- `INGEST_ALERT_BACKOFF`: (optional) base backoff factor in seconds for retries; default `0.5`. Exponential backoff is applied.
+
+Recommendations:
+
+- Store `INGEST_ALERT_HMAC_SECRET` and `INGEST_ALERT_SECRET` in your platform's secret store (e.g., GitHub Actions Secrets, Azure Key Vault, AWS Secrets Manager) and inject at runtime; do not commit them to source control.
+- Verify the HMAC signature on the receiver side before acting on alerts; use constant-time compare functions to avoid timing attacks.
+- If you need advanced retry policies or non-blocking background alerting, consider forwarding alerts to a dedicated queuing service (SQS, Pub/Sub) and processing asynchronously.
+
+Async usage
+-----------
+
+If your application is already running inside an `asyncio` event loop (for example, a FastAPI background task
+or another async worker), prefer the async entrypoint `run_daily_sync_async()` so you can `await` the work
+without blocking the loop. Example:
+
+```python
+import asyncio
+from datetime import date
+from backend.services import data_ingestion_service as dis
+
+async def do_ingest():
+    result = await dis.run_daily_sync_async(when=date.today())
+    print(result)
+
+# schedule/run inside existing loop
+asyncio.create_task(do_ingest())
+```
+
+If you call from synchronous code, continue to use `run_daily_sync()` which will call the async variant via
+`asyncio.run()` under the hood.
+
+
+Example `run_daily_sync()` summary (returned from the function):
+
+```json
+{
+    "audit_path": ".../games_raw_2025-11-12.json",
+    "player_rows": 10,
+    "team_rows": 30,
+    "validation": { "missing": [], "type_errors": [], "outliers": [] },
+    "filtered_out_count": 0
+}
+```
+
 # Backend (FastAPI) - NBA data example
 
 This folder contains an example FastAPI app that demonstrates how to use the
@@ -143,4 +222,29 @@ Notes:
 - Ensure the directory is writable by all worker processes.
 - In CI or systemd setups, set `PROMETHEUS_MULTIPROC_DIR` in the unit/service environment and
     ensure the directory is cleaned between runs (it accumulates temporary metric files).
+
+## Scheduling & CI smoke tests
+
+- Use the provided `systemd` unit and timer templates in `scripts/systemd/` to schedule the daily ingestion job. A secure environment file template is available at `scripts/systemd/env.example` and an idempotent installer script `scripts/systemd/install_env.sh` prepares `/etc/statmuse/env` with `0600` permissions.
+
+- We also include an example GitHub Actions workflow `.github/workflows/ingest-smoke.yml` that demonstrates how to inject the `INGEST_ALERT_HMAC_SECRET` repository secret and run the CLI against a local webhook receiver started inside the job for smoke-testing. To use it in your repository:
+
+    1. Add `INGEST_ALERT_HMAC_SECRET` to the repository Secrets in GitHub (Settings → Secrets).
+    2. Trigger the workflow manually from the Actions tab or push to `main`/`master`.
+
+- Local installer example (run on the target host as root):
+
+```bash
+# generate a secure HMAC secret
+HMAC_SECRET=$(openssl rand -hex 32)
+
+# run installer as root to create /etc/statmuse/env (idempotent)
+sudo ./scripts/systemd/install_env.sh --repo-root /srv/statmusepicks --hmac "$HMAC_SECRET" --service-user statmuse
+```
+
+Notes:
+
+- Keep `/etc/statmuse/env` owned by `root:root` and set to `0600`.
+- For production use, prefer a secrets manager (Vault, AWS Secrets Manager) and adapt the installer to fetch secrets at deploy time.
+- The GitHub Actions workflow is a smoke test pattern: it starts a local HTTP receiver to verify webhook posts and demonstrates secrets injection; tune or disable network-dependent steps in CI if your runner blocks outbound requests.
 

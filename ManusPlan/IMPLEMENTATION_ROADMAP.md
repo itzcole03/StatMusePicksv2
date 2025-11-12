@@ -225,29 +225,59 @@ These updates maintain fidelity to the technical guide: migrations were applied,
 
 ### Task 1.2.3: Build Data Ingestion Pipeline
 
-- [ ] Create `backend/services/data_ingestion_service.py`
-- [ ] Implement daily data sync:
-  - [ ] Fetch yesterday's game results
-  - [ ] Update player stats in database
-  - [ ] Update team stats
-  - [ ] Store raw data for auditing
-- [ ] Add data validation:
-  - [ ] Check for missing values
-  - [ ] Detect outliers (e.g., stat > 3 std deviations)
-  - [ ] Validate data types
-- [ ] Create scheduled job (cron or Celery):
-  - [ ] Run daily at 6 AM EST (after games finish)
-- [ ] Add logging and error notifications
+- [x] Create `backend/services/data_ingestion_service.py`
+- [x] Implement daily data sync:
+  - [x] Fetch yesterday's game results
+  - [x] Update player stats in database
+  - [x] Update team stats
+  - [x] Store raw data for auditing
+- [x] Add data validation (initial + extended):
+  - [x] Check for missing values
+  - [x] Detect outliers (e.g., stat > 3 std deviations)
+  - [x] Validate data types and ranges
+ - [x] Create scheduled job (cron or Celery):
+  - [x] Run daily at 6 AM EST (after games finish) — CLI + shell runner and systemd templates added
+ - [~] Add logging and error notifications (in-progress)
 
 **Acceptance Criteria:**
 
-- ✅ Pipeline runs without manual intervention
-- ✅ Data validation catches errors
-- ✅ Failed jobs send alerts
+- ✅ Pipeline runs without manual intervention (scaffold and local runner implemented)
+- ✅ Data validation: missing-values, type checks and outlier detection implemented and covered by unit tests
+- ⚠️ Alerting: best-effort webhook posting implemented; integration with real webhook/SLACK/Sentry pending
 
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Status:** 🟡 In Progress  
+**Assigned To:** Backend Team  
+**Completion Date:** in progress
+
+**Update Log (recent work):**
+
+- Implemented `backend/services/data_ingestion_service.py` with:
+  - `normalize_raw_game()` (canonical field mapping, date parsing, score normalization, team-name normalization)
+  - `save_raw_games()` for raw-audit persistence
+  - `update_player_stats()` and `update_team_stats()` that persist `Player`, `Game`, `PlayerStat` and compute/upsert `TeamStat` aggregates
+- Added `backend/models/team_stat.py` and Alembic migration `backend/alembic/versions/0007_add_team_stats.py`.
+- Added file-based team mapping `backend/data/team_abbrevs.json` and wired loader into normalization.
+- Implemented validation helpers and tests: `detect_missing_values`, `validate_record_types`, `detect_outliers`, `validate_batch` and unit tests under `backend/tests`.
+- Wired validation into `run_daily_sync()` so records missing critical fields are filtered and a validation summary is returned. Validation findings are sent as a best-effort POST to `INGEST_ALERT_WEBHOOK` (or logged when unset).
+- Added `scripts/run_daily_sync_example.ps1` — PowerShell runner for manual/testing runs and scheduling.
+
+**Next steps:**
+
+- Verify scheduled runner in target environment (create systemd service/timer or Task Scheduler entry). Use `scripts/run_daily_sync_example.ps1` (Windows) or `scripts/run_daily_sync.sh` (Linux) to schedule the job.
+- Harden alerting (add secret header, retries, and test webhook integration) and add an integration test that simulates a webhook. (HMAC + retries already implemented; consider rotating secrets and storing in GitHub Actions/Secrets.)
+ - Add monitoring (Grafana/Prometheus) for job success/failure metrics and wire alerts to Slack/Sentry.
+
+Recent tooling added:
+
+- Added `scripts/run_daily_sync_example.ps1` — a small PowerShell example that activates the virtualenv, sets `INGEST_AUDIT_DIR`, optionally configures `INGEST_ALERT_WEBHOOK`, runs `run_daily_sync()` and prints the result. Use this script as a manual runner or as the command executed by a scheduled task.
+
+Scheduling guidance (example):
+
+- On Windows: add a Task Scheduler job that runs PowerShell and calls `scripts\run_daily_sync_example.ps1` daily at 06:00.
+- On Linux: a cron entry that activates your venv and calls a similarly-constructed shell script that runs:
+  - `python -c "from backend.services.data_ingestion_service import run_daily_sync; print(run_daily_sync())"`
+
+
 
 ---
 
