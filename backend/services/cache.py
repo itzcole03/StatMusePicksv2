@@ -96,6 +96,31 @@ async def redis_delete(key: str) -> bool:
         return False
 
 
+async def redis_delete_prefix(prefix: str) -> int:
+    """Delete keys that start with `prefix`. Returns number of keys deleted.
+
+    Uses `SCAN` on real Redis for safety; falls back to scanning the in-memory store.
+    """
+    client = get_redis()
+    deleted = 0
+    if client is None:
+        async with _fallback_lock:
+            keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
+            for k in keys:
+                del _fallback_store[k]
+                deleted += 1
+        return deleted
+
+    try:
+        # Use scan_iter to avoid blocking Redis on large keyspaces
+        async for k in client.scan_iter(match=prefix + "*"):
+            await client.delete(k)
+            deleted += 1
+        return deleted
+    except Exception:
+        return deleted
+
+
 async def close_redis() -> None:
     """Close the async redis client if initialized."""
     global _redis_client
