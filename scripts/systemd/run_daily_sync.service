@@ -1,0 +1,38 @@
+[Unit]
+Description=StatMusePicksV2 - Daily Data Ingestion Sync
+After=network.target
+
+[Service]
+Type=simple
+# Read environment variables (REPO_ROOT, INGEST_ALERT_WEBHOOK, INGEST_ALERT_HMAC_SECRET, etc.)
+# Create an EnvironmentFile like `/etc/statmuse/env` with secure permissions (0600) and owner set to the service user.
+EnvironmentFile=-/etc/statmuse/env
+User=your_user
+Group=your_group
+# Use WorkingDirectory from the env file; fallback to /srv/statmusepicks if not set
+WorkingDirectory=%t
+ExecStart=/bin/bash -lc 'cd "${REPO_ROOT:-/srv/statmusepicks}" && ./scripts/run_daily_sync.sh'
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+[Unit]
+Description=Run StatMusePicksv2 daily ingestion
+After=network.target
+
+[Service]
+Type=oneshot
+# Replace %REPO_ROOT% with the absolute path to the repository root on the host
+WorkingDirectory=%REPO_ROOT%
+Environment=INGEST_AUDIT_DIR=%REPO_ROOT%/backend/ingest_audit
+# ExecStart uses the repo virtualenv python; adjust path if different
+ExecStart=%REPO_ROOT%/.venv/bin/python -c "from datetime import date; from backend.services import data_ingestion_service as dis; print(dis.run_daily_sync(when=date.today()))"
+# Run as the user owning the repo (optional)
+User=%YOUR_USER%
+Group=%YOUR_GROUP%
+
+[Install]
+WantedBy=multi-user.target

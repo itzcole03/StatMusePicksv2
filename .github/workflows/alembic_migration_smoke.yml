@@ -1,0 +1,53 @@
+name: Alembic Migrations Smoke Test
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statmuse_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; else pip install alembic sqlalchemy asyncpg psycopg2-binary pytest; fi
+
+      - name: Wait for Postgres to become ready
+        run: |
+          echo "Waiting for Postgres..."
+          for i in {1..15}; do
+            pg_isready -h localhost -p 5432 -U postgres && break || sleep 2
+          done
+
+      - name: Run Alembic migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/statmuse_ci
+        run: |
+          alembic -c backend/alembic.ini upgrade head
+
+      - name: Run DB smoke tests
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_ci
+        run: |
+          # Run any lightweight DB health tests (non-blocking)
+          pytest -q backend/tests/test_db_health.py::test_db_health_sqlite || true

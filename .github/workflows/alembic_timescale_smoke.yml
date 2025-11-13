@@ -1,0 +1,183 @@
+name: Alembic Timescale Smoke
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  timescale-migrations:
+    name: Alembic + Timescale smoke
+    runs-on: ubuntu-latest
+    services:
+      timescaledb:
+        image: timescale/timescaledb:latest-pg15
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: statmuse_timescale
+        options: >-
+          --health-cmd pg_isready -U postgres
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/statmuse_timescale
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Set PYTHONPATH for backend imports
+        run: |
+          echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+
+      - name: Wait for TimescaleDB
+        run: |
+          echo "Waiting for TimescaleDB to be ready..."
+          for i in {1..60}; do
+            pg_isready -h localhost -p 5432 -U postgres && break || sleep 1
+          done
+
+      - name: Ensure Timescale extension
+        run: |
+          PSQL="postgresql://postgres:postgres@localhost:5432/statmuse_timescale"
+          until psql "$PSQL" -c '\l' >/dev/null 2>&1; do sleep 1; done
+          psql "$PSQL" -c "CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;"
+
+      - name: Apply Alembic migrations
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          mkdir -p logs
+          # Capture alembic output to a log file for debugging
+          alembic -c backend/alembic.ini upgrade head 2>&1 | tee logs/alembic.log
+
+      - name: Run smoke tests
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          mkdir -p reports
+          # Produce JUnit XML for CI artifacts
+          python -m pytest backend/tests/test_predict_integration.py::test_api_predict_with_persisted_model backend/tests/test_db_health.py::test_db_health_sqlite -q --junitxml=reports/junit.xml
+
+      - name: Upload CI artifacts (alembic logs + pytest reports)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alembic-timescale-artifacts
+          path: |
+            logs/**
+            reports/**
+
+  postgres-migrations:
+    name: Alembic + Postgres smoke
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5433:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: statmuse_postgres
+        options: >-
+          --health-cmd pg_isready -U postgres
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5433/statmuse_postgres
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Set PYTHONPATH for backend imports
+        run: |
+          echo "PYTHONPATH=${{ github.workspace }}" >> $GITHUB_ENV
+
+      - name: Wait for Postgres
+        run: |
+          echo "Waiting for Postgres to be ready..."
+          for i in {1..60}; do
+            pg_isready -h localhost -p 5433 -U postgres && break || sleep 1
+          done
+
+      - name: Apply Alembic migrations (Postgres only)
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          mkdir -p logs
+          # Capture alembic output to a log file for debugging
+          alembic -c backend/alembic.ini upgrade head 2>&1 | tee logs/alembic.log
+
+      - name: Run smoke tests (Postgres)
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+        run: |
+          mkdir -p reports
+          python -m pytest backend/tests/test_predict_integration.py::test_api_predict_with_persisted_model backend/tests/test_db_health.py::test_db_health_sqlite -q --junitxml=reports/junit.xml
+
+      - name: Upload CI artifacts (Postgres)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alembic-postgres-artifacts
+          path: |
+            logs/**
+            reports/**
+
+    frontend-typecheck:
+      name: Frontend Typecheck
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Set up Node
+          uses: actions/setup-node@v3
+          with:
+            node-version: '20'
+
+        - name: Install Node dependencies
+          run: |
+            npm ci
+
+        - name: Run TypeScript typecheck
+          run: |
+            npm run typecheck

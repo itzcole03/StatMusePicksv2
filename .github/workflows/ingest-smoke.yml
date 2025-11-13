@@ -1,0 +1,65 @@
+name: Ingest smoke test
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main, master ]
+
+jobs:
+  ingest-smoke:
+    runs-on: ubuntu-latest
+    name: Ingest CLI smoke + webhook receiver
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install backend deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Start local webhook receiver
+        id: start-webhook
+        run: |
+          # Start a tiny HTTP server that records POST bodies to /tmp/webhook_body.txt
+          python - <<'PY' &
+import sys
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+class H(BaseHTTPRequestHandler):
+    def do_POST(self):
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length) if length else b''
+        with open('/tmp/webhook_body.txt', 'ab') as f:
+            f.write(body + b"\n---\n")
+        self.send_response(200)
+        self.end_headers()
+
+HTTPServer(('127.0.0.1', 8001), H).serve_forever()
+PY
+          sleep 1
+
+      - name: Run ingest CLI smoke test (dry-run)
+        env:
+          # Inject secrets from repository secrets (set these in your repo settings)
+          INGEST_ALERT_HMAC_SECRET: ${{ secrets.INGEST_ALERT_HMAC_SECRET }}
+          INGEST_ALERT_WEBHOOK: http://127.0.0.1:8001/webhook
+          REPO_ROOT: ${{ github.workspace }}
+        run: |
+          # Run the CLI in dry-run mode - it will perform normalization/validation
+          # without writing audit files, DB rows, or sending alerts to external
+          # services. This keeps the CI run deterministic and network-safe.
+          python -m backend.cli.run_daily_sync --when 1970-01-01 --dry-run
+
+      - name: Show webhook content (if any)
+        run: |
+          if [[ -f /tmp/webhook_body.txt ]]; then
+            echo "--- webhook POSTS ---"
+            sed -n '1,200p' /tmp/webhook_body.txt || true
+          else
+            echo "No webhook posts received."
+          fi

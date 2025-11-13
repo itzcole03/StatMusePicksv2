@@ -49,7 +49,7 @@ export interface ParsedProjection {
 }
 
 export interface Settings {
-  aiProvider: 'local';
+  aiProvider: "local";
   llmEndpoint: string;
   llmModel: string;
   // Optional human-friendly name for a chosen local model directory
@@ -61,4 +61,14 @@ export interface Settings {
   nbaApiKey?: string;
   // If true, analysis will require external numeric context for all selected projections and fail otherwise
   requireExternalData?: boolean;
+  // Percentage threshold (0-100). If model vs heuristic agreement is below this,
+  // the projection will be flagged for review and recommendation nullified.
+  reviewThreshold?: number;
+  // Allowed absolute difference between model confidence and heuristic score
+  // before considering them in strong disagreement (0-100 scale).
+  modelHeuristicDelta?: number;
+  // Calibrated v2 confidence threshold (0-100). Used by AnalysisSection to
+  // compare deterministic v2 scores with the LLM output. Optional and
+  // backwards-compatible.
+  v2ConfidenceThreshold?: number;
 }

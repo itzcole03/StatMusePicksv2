@@ -1,0 +1,21 @@
+[Unit]
+Description=Timer to run StatMusePicksV2 daily ingestion at 06:00
+
+[Timer]
+# Run daily at 06:00 (systemd OnCalendar format)
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+Unit=run_daily_sync.service
+
+[Install]
+WantedBy=timers.target
+[Unit]
+Description=Timer to run StatMusePicksv2 daily ingestion
+
+[Timer]
+# Run daily at 06:00 local time. Adjust OnCalendar as needed.
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

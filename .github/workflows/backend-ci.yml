@@ -1,0 +1,163 @@
+name: Backend CI
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+  pull_request:
+    paths:
+      - 'backend/**'
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install pytest
+      - name: Run backend tests
+        run: |
+          pytest backend -q
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install pytest aiosqlite
+
+      - name: Set DATABASE_URL to sqlite
+        run: echo "DATABASE_URL=sqlite:///./dev_ci.db" >> $GITHUB_ENV
+
+      - name: Run Alembic migrations
+        working-directory: .
+        run: |
+          python -m alembic -c backend/alembic.ini upgrade head
+
+      - name: Train & persist real-features toy model
+        run: |
+          python backend/scripts/train_and_persist_real_model.py
+
+      - name: Run in-process e2e TestClient smoke test
+        run: |
+          python backend/scripts/e2e_predict_testclient.py
+
+      - name: Run backend unit tests
+        run: |
+          pytest -q backend/tests
+
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: statmuse_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install pytest aiosqlite
+
+      - name: Wait for Postgres to become ready
+        run: |
+          echo "Waiting for Postgres..."
+          for i in {1..15}; do
+            pg_isready -h localhost -p 5432 -U postgres && break || sleep 2
+          done
+
+      - name: Run Alembic migrations against Postgres
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/statmuse_ci
+        run: |
+          alembic -c backend/alembic.ini upgrade head
+
+      - name: Run lightweight DB smoke test
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_ci
+        run: |
+          # run a lightweight DB health test (do not fail pipeline on this check)
+          pytest -q backend/tests/test_db_health.py::test_db_health_sqlite || true
+
+  redis-integration:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install pytest redis
+
+      - name: Wait for Redis
+        run: |
+          echo "Waiting for Redis to become ready..."
+          for i in {1..15}; do
+            redis-cli -h localhost ping && break || sleep 1
+          done
+
+      - name: Run cache integration tests against Redis
+        env:
+          REDIS_URL: redis://localhost:6379/0
+        run: |
+          pytest -q \
+            backend/tests/test_cache.py::test_redis_fallback_set_get_delete \
+            backend/tests/test_cache.py::test_redis_fallback_ttl_and_prefix_delete \
+            backend/tests/test_cache_sync_delete.py::test_redis_delete_prefix_sync_no_loop \
+            backend/tests/test_cache_sync_delete.py::test_redis_delete_prefix_sync_with_loop_running

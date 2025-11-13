@@ -1,0 +1,10 @@
+Starting poll_and_download for itzcole03/StatMusePicksv2 / alembic_timescale_smoke.yml
+Listing recent runs for workflow alembic_timescale_smoke.yml (primary attempt using --workflow)...
+Primary workflow-filtered listing failed (will fallback to repo-wide listing):
+[31;1mHTTP 404: workflow alembic_timescale_smoke.yml not found on the default branch (https://api.github.com/repos/itzcole03/StatMusePicksv2/actions/workflows/alembic_timescale_smoke.yml)[0m
+Listing recent runs across repo and filtering by workflowName...
+Fail: C:\Users\bcmad\Downloads\StatMusePicksv2\scripts\poll_and_download.ps1:27:51
+Line |
+  27 |  . nt -eq 0) { Fail "No runs found matching workflow name '$Workflow' in .
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | No runs found matching workflow name 'alembic_timescale_smoke.yml' in recent runs

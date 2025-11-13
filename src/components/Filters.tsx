@@ -1,78 +1,117 @@
-import { useEffect, useState, useRef } from 'react';
-import { getDistinctValues, getDistinctStatsByLeague, getDistinctLeaguesByStat, getPlayersWithCounts, getPlayerMappings } from '../services/indexedDBService';
+import { useEffect, useState, useRef } from "react";
+import {
+  getDistinctValues,
+  getDistinctStatsByLeague,
+  getDistinctLeaguesByStat,
+  getPlayersWithCounts,
+  getPlayerMappings,
+} from "../services/indexedDBService";
 
 interface FiltersProps {
   filters: { league: string; stat: string; search: string };
-  onFilterChange: (filters: { league: string; stat: string; search: string }) => void;
+  onFilterChange: (_filters: { league: string; stat: string; search: string }) => void;
+  // Note: parameter name prefixed with underscore if unused
   onAnalyze: () => void;
   onSearch: () => void;
 }
 
-export default function Filters({ filters, onFilterChange, onAnalyze, onSearch }: FiltersProps) {
+export default function Filters({ filters: _filters, onFilterChange, onAnalyze, onSearch }: FiltersProps) {
+  // map incoming prop to local name used throughout the component
+  const filters = _filters;
   const [leagues, setLeagues] = useState<string[]>([]);
   const [stats, setStats] = useState<string[]>([]);
   const [players, setPlayers] = useState<{ name: string; count: number }[]>([]);
-  const [playerQuery, setPlayerQuery] = useState<string>(filters.search || '');
+
+  const [playerQuery, setPlayerQuery] = useState<string>(filters.search || "");
   const [isOpen, setIsOpen] = useState(false);
   const [highlighted, setHighlighted] = useState<number>(-1);
+
   const [loading, setLoading] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [leaguesLoading, setLeaguesLoading] = useState(false);
-  const [playersLoading, setPlayersLoading] = useState(false);
+  // (filters already mapped above)
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
   const debounceRef = useRef<number | null>(null);
   const statsTimer = useRef<number | null>(null);
   const leaguesTimer = useRef<number | null>(null);
-  const statsAnimateTimer = useRef<number | null>(null);
-  const leaguesAnimateTimer = useRef<number | null>(null);
-  const playersAnimateTimer = useRef<number | null>(null);
-  const [statsAnimating, setStatsAnimating] = useState(false);
-  const [leaguesAnimating, setLeaguesAnimating] = useState(false);
-  const [playersAnimating, setPlayersAnimating] = useState(false);
 
+  // initial load
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const l = await getDistinctValues('league');
-      const s = await getDistinctStatsByLeague();
-      const p = await getPlayersWithCounts();
+      const [l, s] = await Promise.all([
+        getDistinctValues("league"),
+        getDistinctStatsByLeague(),
+      ]);
       if (!mounted) return;
       setLeagues(l);
       setStats(s);
-      setPlayers(p);
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  // When a player is selected (filters.search), auto-adjust league and available stats.
+  // query players (debounced)
+  useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current as any);
+    setLoading(true);
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        const res = await getPlayersWithCounts(filters.league || undefined, filters.stat || undefined, playerQuery || undefined);
+        setPlayers(res || []);
+        setHighlighted(-1);
+      } finally {
+        setLoading(false);
+      }
+    }, 200) as unknown as number;
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current as any);
+    };
+  }, [playerQuery, filters.league, filters.stat]);
+
+  // when a player is selected via filters.search (external), pre-filter leagues/stats
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!filters.search) return;
-      setPlayersLoading(true);
+      // keep the local input in sync with external filter.search
+      setPlayerQuery(filters.search || "");
+
+      // if search was cleared, restore full league/stat lists (respect current league filter)
+      if (!filters.search) {
+        try {
+          const [allLeagues, statsForLeague] = await Promise.all([
+            getDistinctValues("league"),
+            getDistinctStatsByLeague(filters.league || undefined),
+          ]);
+          if (!mounted) return;
+          setLeagues(allLeagues);
+          setStats(statsForLeague);
+        } catch {
+          // ignore
+        }
+        return;
+      }
+
+      // players loading state intentionally omitted to reduce noise
       try {
         const maps = await getPlayerMappings(filters.search);
         if (!mounted) return;
-        const uniqueLeagues = Array.from(new Set(maps.map(m => m.league).filter(Boolean)));
-        const uniqueStats = Array.from(new Set(maps.map(m => m.stat).filter(Boolean)));
-
-        // Update leagues list to only those relevant if we found any; otherwise restore full list
+        const uniqueLeagues = Array.from(new Set(maps.map((m) => m.league).filter(Boolean)));
+        const uniqueStats = Array.from(new Set(maps.map((m) => m.stat).filter(Boolean)));
         if (uniqueLeagues.length > 0) {
           setLeagues(uniqueLeagues);
-          // Auto-set league when it's unambiguous
           if (uniqueLeagues.length === 1 && filters.league !== uniqueLeagues[0]) {
             onFilterChange({ ...filters, league: uniqueLeagues[0] });
           }
         } else {
-          const allLeagues = await getDistinctValues('league');
+          const allLeagues = await getDistinctValues("league");
           if (!mounted) return;
           setLeagues(allLeagues);
         }
-
-        // Update stat options to only those correlated with the selected player
         if (uniqueStats.length > 0) {
           setStats(uniqueStats);
           if (filters.stat && uniqueStats.indexOf(filters.stat) === -1) {
-            onFilterChange({ ...filters, stat: '' });
+            onFilterChange({ ...filters, stat: "" });
           }
         } else {
           const s = await getDistinctStatsByLeague(filters.league || undefined);
@@ -80,45 +119,18 @@ export default function Filters({ filters, onFilterChange, onAnalyze, onSearch }
           setStats(s);
         }
       } finally {
-        if (mounted) setPlayersLoading(false);
+        // no-op
       }
     })();
-    return () => { mounted = false; };
-  }, [filters.search]);
+    return () => {
+      mounted = false;
+    };
+  }, [filters, filters.search, filters.league, filters.stat, onFilterChange]);
 
-  // If all filters are cleared, restore the full lists for leagues, stats, and players.
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (filters.search || filters.league || filters.stat) return;
-      setLeaguesLoading(true);
-      setStatsLoading(true);
-      setPlayersLoading(true);
-      try {
-        const [allLeagues, allStats, allPlayers] = await Promise.all([
-          getDistinctValues('league'),
-          getDistinctStatsByLeague(),
-          getPlayersWithCounts()
-        ]);
-        if (!mounted) return;
-        setLeagues(allLeagues);
-        setStats(allStats);
-        setPlayers(allPlayers);
-      } finally {
-        if (mounted) {
-          setLeaguesLoading(false);
-          setStatsLoading(false);
-          setPlayersLoading(false);
-        }
-      }
-    })();
-    return () => { mounted = false; };
-  }, [filters.search, filters.league, filters.stat]);
-
-  // When league is changed, update available stats filtered by that league (debounced)
+  // when league changes, update stats (debounced)
   useEffect(() => {
     if (statsTimer.current) window.clearTimeout(statsTimer.current as any);
-    setStatsLoading(true);
+    // stats loading state omitted to reduce noise
     statsTimer.current = window.setTimeout(() => {
       let mounted = true;
       (async () => {
@@ -126,30 +138,23 @@ export default function Filters({ filters, onFilterChange, onAnalyze, onSearch }
           const s = await getDistinctStatsByLeague(filters.league || undefined);
           if (!mounted) return;
           setStats(s);
-          // animate a short fade when stats change
-          setStatsAnimating(true);
-          if (statsAnimateTimer.current) window.clearTimeout(statsAnimateTimer.current as any);
-          statsAnimateTimer.current = window.setTimeout(() => setStatsAnimating(false), 220) as unknown as number;
-          // keep current stat if still valid, otherwise clear it
-          if (filters.stat && s.indexOf(filters.stat) === -1) {
-            onFilterChange({ ...filters, stat: '' });
-          }
         } finally {
-          if (mounted) setStatsLoading(false);
+          // no-op
         }
       })();
-      return () => { mounted = false; };
+      return () => {
+        mounted = false;
+      };
     }, 120) as unknown as number;
     return () => {
       if (statsTimer.current) window.clearTimeout(statsTimer.current as any);
-      setStatsLoading(false);
     };
   }, [filters.league]);
 
-  // When stat is changed, update available leagues filtered by that stat (debounced)
+  // when stat changes, update leagues (debounced)
   useEffect(() => {
     if (leaguesTimer.current) window.clearTimeout(leaguesTimer.current as any);
-    setLeaguesLoading(true);
+    // leagues loading state omitted to reduce noise
     leaguesTimer.current = window.setTimeout(() => {
       let mounted = true;
       (async () => {
@@ -157,242 +162,164 @@ export default function Filters({ filters, onFilterChange, onAnalyze, onSearch }
           const l = await getDistinctLeaguesByStat(filters.stat || undefined);
           if (!mounted) return;
           setLeagues(l);
-          // animate a short fade when leagues change
-          setLeaguesAnimating(true);
-          if (leaguesAnimateTimer.current) window.clearTimeout(leaguesAnimateTimer.current as any);
-          leaguesAnimateTimer.current = window.setTimeout(() => setLeaguesAnimating(false), 220) as unknown as number;
-          if (filters.league && l.indexOf(filters.league) === -1) {
-            onFilterChange({ ...filters, league: '' });
-          }
         } finally {
-          if (mounted) setLeaguesLoading(false);
+          // no-op
         }
       })();
-      return () => { mounted = false; };
+      return () => {
+        mounted = false;
+      };
     }, 120) as unknown as number;
     return () => {
       if (leaguesTimer.current) window.clearTimeout(leaguesTimer.current as any);
-      setLeaguesLoading(false);
     };
   }, [filters.stat]);
 
+  // close dropdown when clicking outside
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      setPlayersLoading(true);
-      try {
-        const p = await getPlayersWithCounts(filters.league || undefined, filters.stat || undefined);
-        if (!mounted) return;
-        setPlayers(p);
-        // animate players list change
-        setPlayersAnimating(true);
-        if (playersAnimateTimer.current) window.clearTimeout(playersAnimateTimer.current as any);
-        playersAnimateTimer.current = window.setTimeout(() => setPlayersAnimating(false), 220) as unknown as number;
-        // If current selected player is no longer present, clear selection
-        if (filters.search && p.findIndex(x => x.name === filters.search) === -1) {
-          onFilterChange({ ...filters, search: '' });
-          setPlayerQuery('');
-        }
-      } finally {
-        if (mounted) setPlayersLoading(false);
+    function onDocClick(e: MouseEvent | TouchEvent) {
+      const el = containerRef.current;
+      if (!el) return;
+      const target = e.target as Node | null;
+      if (target && !el.contains(target)) {
+        setIsOpen(false);
       }
-    })();
-    return () => { mounted = false; };
-  }, [filters.league, filters.stat]);
-
-  function doQuery(q: string) {
-    setLoading(true);
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(async () => {
-      const res = await getPlayersWithCounts(filters.league || undefined, filters.stat || undefined, q);
-      setPlayers(res);
-      setLoading(false);
-      setIsOpen(true);
-      debounceRef.current = null;
-    }, 250) as unknown as number;
-  }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("touchstart", onDocClick);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("touchstart", onDocClick);
+    };
+  }, []);
 
   function clearAll() {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    setPlayerQuery('');
+    setPlayerQuery("");
+    onFilterChange({ league: "", stat: "", search: "" });
     setIsOpen(false);
     setHighlighted(-1);
-    onFilterChange({ league: '', stat: '', search: '' });
+  }
+
+  function choosePlayer(name: string) {
+    onFilterChange({ ...filters, search: name });
+    setPlayerQuery(name);
+    setIsOpen(false);
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-6 shadow-sm">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
         <div>
-          <label className="block text-sm font-medium mb-2">League</label>
-          <div className={`relative transition-opacity duration-200 ${leaguesLoading ? 'opacity-60' : leaguesAnimating ? 'opacity-90' : 'opacity-100'}`}>
-            <select
-              value={filters.league}
-              onChange={(e) => onFilterChange({ ...filters, league: e.target.value })}
-              className="w-full px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
-            >
-              <option value="">All Leagues</option>
-              {leagues.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-            {leaguesLoading && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-              </div>
-            )}
-          </div>
+          <select
+            value={filters.league}
+            onChange={(e) => onFilterChange({ ...filters, league: e.target.value })}
+            className="w-full h-11 px-4 border dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 appearance-none"
+          >
+            <option value="">All Leagues</option>
+            {leagues.map((l) => (
+              <option key={l} value={l}>
+                {l}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2">Stat Type</label>
-          <div className={`relative transition-opacity duration-200 ${statsLoading ? 'opacity-60' : statsAnimating ? 'opacity-90' : 'opacity-100'}`}>
-            <select
-              value={filters.stat}
-              onChange={(e) => onFilterChange({ ...filters, stat: e.target.value })}
-              className="w-full px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
-            >
-              <option value="">All Stats</option>
-              {stats.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            {statsLoading && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-              </div>
-            )}
-          </div>
+          <select
+            value={filters.stat}
+            onChange={(e) => onFilterChange({ ...filters, stat: e.target.value })}
+            className="w-full h-11 px-4 border dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 appearance-none"
+          >
+            <option value="">All Stats</option>
+            {stats.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Search Player</label>
-          <div className="flex flex-col gap-2">
-            <div className="relative">
+        <div className="col-span-1 md:col-span-2">
+          <div className="relative" ref={containerRef}>
+            <div className="flex gap-3 items-center">
               <input
-                type="text"
                 value={playerQuery}
-                onChange={(e) => { setPlayerQuery(e.target.value); doQuery(e.target.value); onFilterChange({ ...filters, search: e.target.value }); }}
+                onChange={(e) => setPlayerQuery(e.target.value)}
+                onClick={() => setIsOpen(true)}
                 onKeyDown={(e) => {
-                  const filtered = players.filter(p => p.name.toLowerCase().includes((playerQuery || '').toLowerCase()));
-                  if (e.key === 'ArrowDown') { e.preventDefault(); setHighlighted(h => Math.min(h + 1, filtered.length - 1)); }
-                  if (e.key === 'ArrowUp') { e.preventDefault(); setHighlighted(h => Math.max(h - 1, 0)); }
-                  if (e.key === 'Enter') {
-                    (async () => {
-                      if (highlighted >= 0) {
-                        const sel = filtered[highlighted];
-                        if (sel) {
-                          setPlayerQuery(sel.name);
-                          try {
-                            const maps = await getPlayerMappings(sel.name);
-                            const uniqueLeagues = Array.from(new Set(maps.map(m => m.league).filter(Boolean)));
-                            const uniqueStats = Array.from(new Set(maps.map(m => m.stat).filter(Boolean)));
-                            const next = { ...filters, search: sel.name };
-                            if (uniqueLeagues.length === 1) next.league = uniqueLeagues[0];
-                            if (uniqueStats.length === 1) next.stat = uniqueStats[0];
-                            onFilterChange(next);
-                          } catch (err) {
-                            onFilterChange({ ...filters, search: sel.name });
-                          }
-                        }
-                      } else {
-                        onSearch();
-                      }
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setHighlighted((h) => Math.min(h + 1, Math.max(0, players.length - 1)));
+                    setIsOpen(true);
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setHighlighted((h) => Math.max(h - 1, 0));
+                  } else if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (highlighted >= 0 && highlighted < players.length) {
+                      choosePlayer(players[highlighted].name);
+                    } else {
+                      onSearch();
                       setIsOpen(false);
-                    })();
+                    }
+                  } else if (e.key === "Escape") {
+                    setIsOpen(false);
                   }
                 }}
-                placeholder="Type to filter players"
-                className="w-64 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
+                placeholder="Search players"
+                className="w-full h-11 px-4 border dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 placeholder-gray-400"
               />
 
-              {loading && (
-                <div className="absolute right-3 top-1/2 -mt-2">
-                  <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                </div>
-              )}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    onSearch();
+                    setIsOpen(false);
+                  }}
+                  className="h-11 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm"
+                >
+                  Search
+                </button>
+                <button
+                  onClick={() => {
+                    onAnalyze();
+                    setIsOpen(false);
+                  }}
+                  className="h-11 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm"
+                >
+                  Analyze
+                </button>
+                <button onClick={clearAll} className="h-11 px-4 bg-transparent border border-gray-700 dark:border-gray-500 text-gray-200 hover:bg-gray-700/30 rounded-lg text-sm">
+                  Clear
+                </button>
+              </div>
+            </div>
 
-              {isOpen && (
-                <ul className="absolute z-50 mt-2 max-h-56 w-full overflow-auto rounded-lg shadow-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                  {players.filter(p => p.name.toLowerCase().includes((playerQuery || '').toLowerCase())).slice(0,50).map((p, idx) => (
+            {isOpen && (
+              <ul className="absolute z-50 mt-2 max-h-56 w-full overflow-auto rounded-lg shadow-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+                {players
+                  .filter((p) => p.name.toLowerCase().includes((playerQuery || "").toLowerCase()))
+                  .slice(0, 100)
+                  .map((p, idx) => (
                     <li
                       key={p.name}
-                      onMouseDown={async (e) => {
+                      onMouseDown={(e) => {
                         e.preventDefault();
-                        setPlayerQuery(p.name);
-                        try {
-                          const maps = await getPlayerMappings(p.name);
-                          const uniqueLeagues = Array.from(new Set(maps.map(m => m.league).filter(Boolean)));
-                          const uniqueStats = Array.from(new Set(maps.map(m => m.stat).filter(Boolean)));
-                          const next = { ...filters, search: p.name };
-                          if (uniqueLeagues.length === 1) next.league = uniqueLeagues[0];
-                          if (uniqueStats.length === 1) next.stat = uniqueStats[0];
-                          onFilterChange(next);
-                        } catch (err) {
-                          onFilterChange({ ...filters, search: p.name });
-                        }
-                        setIsOpen(false);
+                        choosePlayer(p.name);
                       }}
                       onMouseEnter={() => setHighlighted(idx)}
-                      className={`px-3 py-2 cursor-pointer ${highlighted === idx ? 'bg-gray-100 dark:bg-gray-600' : 'hover:bg-gray-50 dark:hover:bg-gray-600'}`}
+                      className={`px-3 py-2 cursor-pointer flex justify-between items-center ${highlighted === idx ? "bg-gray-100 dark:bg-gray-600" : "hover:bg-gray-50 dark:hover:bg-gray-600"}`}
                     >
                       <span className="font-medium">{p.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">({p.count || 0})</span>
+                      <span className="text-sm text-gray-500 ml-2">{p.count ?? 0}</span>
                     </li>
                   ))}
-                </ul>
-              )}
-            </div>
-
-            <div className={`relative transition-opacity duration-200 ${playersLoading ? 'opacity-60' : playersAnimating ? 'opacity-90' : 'opacity-100'}`}>
-              <select
-                value={filters.search}
-                onChange={async (e) => {
-                  const val = e.target.value;
-                  setPlayerQuery(val);
-                  if (val) {
-                    try {
-                      const maps = await getPlayerMappings(val);
-                      const uniqueLeagues = Array.from(new Set(maps.map(m => m.league).filter(Boolean)));
-                      const uniqueStats = Array.from(new Set(maps.map(m => m.stat).filter(Boolean)));
-                      const next = { ...filters, search: val };
-                      if (uniqueLeagues.length === 1) next.league = uniqueLeagues[0];
-                      if (uniqueStats.length === 1) next.stat = uniqueStats[0];
-                      onFilterChange(next);
-                    } catch (err) {
-                      onFilterChange({ ...filters, search: val });
-                    }
-                  } else {
-                    onFilterChange({ ...filters, search: '' });
-                  }
-                  setIsOpen(false);
-                }}
-                className="h-10 w-64 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
-              >
-                <option value="">All Players</option>
-                {players.map(p => <option key={p.name} value={p.name}>{p.name} ({p.count || 0})</option>)}
-              </select>
-              {playersLoading && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <svg className="animate-spin h-4 w-4 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path></svg>
-                </div>
-              )}
-            </div>
+                {players.length === 0 && !loading && (
+                  <li className="px-3 py-2 text-sm text-gray-500">No players</li>
+                )}
+              </ul>
+            )}
           </div>
-        </div>
-
-        <div className="flex items-end">
-          <div className="flex w-full gap-3">
-            <button onClick={onSearch} className="flex-1 px-6 py-2 bg-[#22c55e] hover:bg-[#16a34a] text-white font-medium rounded-lg">Show Results</button>
-            <button onClick={onAnalyze} className="flex-1 px-6 py-2 bg-[#5D5CDE] hover:bg-[#4a49c9] text-white font-medium rounded-lg">Analyze Selected</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Clear button sits between stacked controls and actions */}
-      <div className="mt-3 flex">
-        <div className="flex-1" />
-        <div>
-          <button onClick={clearAll} className="h-10 px-4 py-2 border border-gray-300 rounded-lg bg-white dark:bg-gray-700">Clear</button>
         </div>
       </div>
     </div>
