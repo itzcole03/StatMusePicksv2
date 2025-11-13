@@ -121,6 +121,45 @@ curl.exe -X POST "http://localhost:8000/api/predict" -H "Content-Type: applicati
 
 There is a small helper script used during checks: `scripts/check_predict.py` which POSTs a valid payload to `/api/predict` using the Python standard library.
 
+API Examples
+
+GET player context (cached) — PowerShell:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/player_context?player_name=LeBron%20James&limit=5" -Method GET | ConvertTo-Json -Depth 5
+```
+
+GET player context (curl + jq):
+
+```bash
+curl -s "http://localhost:8000/api/player_context?player_name=LeBron%20James&limit=5" | jq .
+```
+
+Notes:
+
+- `/api/player_context` will attempt to return a cached response from Redis using the key `player_context:{player_name}:{limit}`. Cached responses include `cached: true` and a `fetchedAt` timestamp.
+- The response includes `recentGames`, `seasonAvg`, and enhanced fields when available: `rollingAverages`, `contextualFactors`, and `opponentInfo`.
+
+Batch fetch example (POST):
+
+PowerShell:
+
+```powershell
+$body = @(
+	@{ player_name = 'LeBron James'; limit = 3 },
+	@{ player_name = 'Stephen Curry'; limit = 3 }
+ ) | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8000/api/batch_player_context" -Method Post -Body $body -ContentType 'application/json' | ConvertTo-Json -Depth 5
+```
+
+curl example:
+
+```bash
+echo '[{"player_name":"LeBron James","limit":3},{"player_name":"Stephen Curry","limit":3}]' > /tmp/batch.json
+curl -s -X POST "http://localhost:8000/api/batch_player_context" -H "Content-Type: application/json" -d @/tmp/batch.json | jq .
+```
+
 Run tests
 
 ```powershell
@@ -162,5 +201,19 @@ Model artifacts & changelog
 		```
 
 	- Publish models as GitHub Release assets or store them in an external artifact storage (S3, GCS) and provide a download script that places files into `backend/models_store/` during CI or local setup.
+
+Mocking / Live NBA integration
+--------------------------------
+
+- Production runtime is live-only: the backend no longer fabricates `recentGames` or other NBA data.
+- The previous behavior that injected deterministic mock data via `ENABLE_DEV_MOCKS` has been removed from production code.
+- Tests and developer tooling that need deterministic behavior must explicitly stub or monkeypatch `backend.services.nba_stats_client`, or use the `--mock` flags available on some helper scripts (these flags are explicit dev-time conveniences and do not alter production behavior).
+- Gated live-network tests can be run from CI using the manual workflow: `.github/workflows/live-nba-integration.yml` (use the "Run workflow" button and ensure any required API credentials are available in the runner environment).
+
+Guidance:
+
+- For deterministic unit/integration tests: monkeypatch `nba_stats_client` in your test (see `backend/tests/*` for examples).
+- For quick developer smoke runs you can pass `--mock` to scripts that support it (e.g., `scripts/generate_sample_prompt.*`). These flags are for local/dev use only.
+- Do NOT rely on `ENABLE_DEV_MOCKS` as a runtime toggle in production; CI or production environments should never enable mock fallbacks.
 
 - **Changelog:** See `CHANGELOG.md` in the repo root for recent notable changes and short release notes.

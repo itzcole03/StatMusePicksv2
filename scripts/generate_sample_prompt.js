@@ -62,8 +62,18 @@ function main() {
   const file = path.join(__dirname, "sample_projections.json");
   const data = JSON.parse(fs.readFileSync(file, "utf8"));
   const base = buildBasePrompt(data);
-  const contexts = mockedContextsFor(data);
-  const full = buildPromptWithContexts(base, data, contexts);
+  // Only include mocked external contexts when explicitly requested via
+  // the `--mock` flag. Environment toggles for runtime mocking are removed
+  // from production; prefer explicit flags in dev tooling and explicit
+  // test monkeypatching for deterministic tests.
+  const useMocks = process.argv.includes('--mock');
+  let full;
+  if (useMocks) {
+    const contexts = mockedContextsFor(data);
+    full = buildPromptWithContexts(base, data, contexts);
+  } else {
+    full = base + "\n---\nExternal data: (real NBA contexts would be fetched at runtime)\n";
+  }
   console.log(full);
 }
 
