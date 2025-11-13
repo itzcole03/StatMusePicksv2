@@ -495,6 +495,18 @@ class BatchPlayerRequest(BaseModel):
         }
 
 
+# Provide Pydantic v2 compatible JSON schema extras when available.
+try:
+    # pydantic v2
+    from pydantic import ConfigDict
+
+    BatchPlayerRequest.model_config = ConfigDict(json_schema_extra={
+        "example": {"player": "LeBron James", "stat": "points", "limit": 8}
+    })
+except Exception:
+    pass
+
+
 @app.post('/api/player_context', response_model=PlayerSummary)
 def api_player_context(req: PlayerContextRequest):
     """POST wrapper for client usage. Accepts JSON body and returns the same
@@ -609,6 +621,22 @@ class PredictionRequest(BaseModel):
                 "opponent_data": {}
             }
         }
+
+
+try:
+    from pydantic import ConfigDict
+
+    PredictionRequest.model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "player": "LeBron James",
+            "stat": "points",
+            "line": 25.5,
+            "player_data": {},
+            "opponent_data": {}
+        }
+    })
+except Exception:
+    pass
 
 
 class PredictionResponse(BaseModel):
