@@ -77,6 +77,7 @@ export interface NBAPlayerContext {
   fetchedAt?: string | null;
   recentSource?: string | null;
   seasonSource?: string | null;
+<<<<<<< HEAD
   // Multi-season aggregated contexts (training-scoped responses)
   seasonsConsidered?: string[] | null;
   seasonStatsMulti?: Record<string, Record<string, number>> | null;
@@ -84,6 +85,12 @@ export interface NBAPlayerContext {
   teamId?: number | null;
   teamStatsMulti?: Record<string, Record<string, number>> | null;
   teamAdvancedMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+=======
+  // Rolling averages keyed by window (e.g. sma_5, ema_10)
+  rollingAverages?: Record<string, number | null> | null;
+  // Opponent-specific info and matchup summaries
+  opponentInfo?: Record<string, any> | null;
+>>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
 }
 
 // Module-level normalizer so both single and batch fetchers can reuse the logic.
@@ -94,6 +101,12 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
         date: g.date || g.gameDate || null,
         statValue: g.statValue != null ? Number(g.statValue) : null,
       }))
+    : null;
+  // rollingAverages may be returned as object of numeric strings
+  const rollingAverages = json.rollingAverages && typeof json.rollingAverages === 'object'
+    ? Object.fromEntries(
+        Object.entries(json.rollingAverages).map(([k, v]) => [k, v != null ? Number(v) : null])
+      )
     : null;
   const seasonAvg = json.seasonAvg != null ? Number(json.seasonAvg) : null;
   const recent = typeof json.recent === 'string' ? json.recent : null;
@@ -108,6 +121,7 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
         pace: json.opponent.pace != null ? Number(json.opponent.pace) : null,
       }
     : null;
+  const opponentInfo = json.opponentInfo && typeof json.opponentInfo === 'object' ? json.opponentInfo : null;
   const contextualFactors = json.contextualFactors
     ? {
         daysRest: json.contextualFactors.daysRest != null ? Number(json.contextualFactors.daysRest) : null,
@@ -144,6 +158,7 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
     contextualFactors,
     recentSource,
     seasonSource,
+<<<<<<< HEAD
     // include optional multi-season training fields when present
     seasonsConsidered,
     seasonStatsMulti,
@@ -151,6 +166,10 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
     teamId,
     teamStatsMulti,
     teamAdvancedMulti,
+=======
+    rollingAverages,
+    opponentInfo,
+>>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
   } as NBAPlayerContext;
 }
 
@@ -175,14 +194,13 @@ export async function fetchPlayerContextFromNBA(
       ? settings.nbaEndpoint
       : defaultEndpoint;
 
-  // Try a list of candidate paths derived from the provided endpoint to be resilient across backends
+  // Prefer the canonical new backend paths first
   const candidates = [
-    base,
+    base + "/api/player_context",
     base + "/player_summary",
     base + "/api/player_summary",
     base + "/player/context",
-    base + "/api/player_context",
-    base + "/api/batch_player_context",
+    base,
   ];
 
   const headersBase: Record<string, string> = { Accept: "application/json" };

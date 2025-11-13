@@ -425,6 +425,19 @@ export default function AnalysisSection({
                               </div>
                             )}
 
+                            {ctx.rollingAverages && Object.keys(ctx.rollingAverages).length > 0 && (
+                              <div className="text-xs mt-1">
+                                <strong>Rolling averages:</strong>
+                                <div className="mt-1 flex flex-wrap gap-2">
+                                  {Object.entries(ctx.rollingAverages).map(([k, v]: any) => (
+                                    <div key={k} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+                                      {k}: {v != null ? Number(v).toFixed(2) : "null"}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
                             {ctx.noGamesThisSeason && (
                               <div className="mt-2 text-xs text-yellow-700 dark:text-yellow-300">
                                 <strong>Note:</strong>{" "}

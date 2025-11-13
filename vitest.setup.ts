@@ -9,3 +9,12 @@ try {
 } catch (e) {
 	// Ignore if the package isn't installed in the current environment.
 }
+
+// Register centralized test mocks so component tests don't need to import mocks manually.
+try {
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	require('./src/tests/testUtils/mockServices');
+} catch (e) {
+	// If the helper isn't present, tests will still work because some tests
+	// import mocks directly; swallow the error to avoid failing setup.
+}

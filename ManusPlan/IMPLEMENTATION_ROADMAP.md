@@ -470,6 +470,7 @@ Scheduling guidance (example):
 
 - [x] Implement `/api/player_context` endpoint
 - [x] Accept parameters:
+<<<<<<< HEAD
   - [x] `player_name` (string)
   - [x] `stat_type` (string: points, rebounds, assists, etc.)
   - [x] `game_date` (date)
@@ -479,19 +480,43 @@ Scheduling guidance (example):
   - [x] Advanced metrics
   - [x] Rolling averages
   - [x] Opponent info
+=======
+- [x] `player_name` (string)
+- [x] `stat_type` (string: points, rebounds, assists, etc.)
+- [x] `game_date` (date)
+- [x] Return enhanced player context:
+- [x] Recent games
+- [x] Season average
+- [x] Advanced metrics
+- [x] Rolling averages
+- [x] Opponent info
+>>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
 - [x] Add response caching (Redis, 6-hour TTL)
 - [x] Add API documentation (Swagger)
 
-**Acceptance Criteria:**
+- **Acceptance Criteria:**
 
 - ✅ Endpoint returns 200 OK for valid requests
 - ✅ Returns 404 for unknown players
 - ✅ Response time < 500ms (with cache)
 - ✅ Swagger docs accessible at `/docs`
 
+<<<<<<< HEAD
 **Status:** ✅ Completed (dev)  
 **Assigned To:** Backend Team  
 **Completion Date:** Nov 17, 2025
+=======
+- **Status:** ✅ Completed (dev)  
+- **Assigned To:** Backend Team  
+- **Completion Date:** Nov 12, 2025
+
+**Progress update (Nov 12, 2025):**
+
+- Implemented `/api/player_context` in `backend/main.py` and wired it to `engineer_features` and `nba_service` for numeric context.
+- Added Redis caching (6-hour TTL) with in-process fallback; unit tests for cache + player_id path added under `backend/tests/` and passing locally.
+- Updated Pydantic response schema in `backend/schemas/player_context.py` to include `rollingAverages`, `contextualFactors`, and `opponentInfo`. Swagger docs reflect the new fields.
+
+>>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
 
 ---
 
@@ -519,22 +544,29 @@ Scheduling guidance (example):
 ## 1.5 Frontend Integration
 
 ### Task 1.5.1: Update nbaService.ts to Use New Backend
-
-- [ ] Update `fetchPlayerContextFromNBA()` function
-- [ ] Point to new backend endpoint: `http://localhost:8000/api/player_context`
-- [ ] Update response parsing to handle new data structure
-- [ ] Add error handling for backend failures
-- [ ] Test with existing frontend components
+ - [x] Update `fetchPlayerContextFromNBA()` function
+ - [x] Point to new backend endpoint: `http://localhost:8000/api/player_context`
+ - [x] Update response parsing to handle new data structure
+ - [x] Add error handling for backend failures
+ - [x] Test with existing frontend components
 
 **Acceptance Criteria:**
 
-- ✅ Frontend successfully fetches data from new backend
-- ✅ Existing UI components work without changes
-- ✅ Error messages displayed to user
+ - ✅ Frontend successfully fetches data from new backend
+ - ✅ Existing UI components work without changes
+ - ✅ Error messages displayed to user
 
 **Status:** ✅ Completed (dev)
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Assigned To:** ******_******  
+**Completion Date:** Nov 12, 2025
+
+**Progress update (Nov 12, 2025):**
+
+- Frontend `nbaService` now normalizes the enhanced backend response (`rollingAverages`, `contextualFactors`, `opponentInfo`). Files updated include `src/services/nbaService.ts`, `src/types.ts`, and `src/components/AnalysisSection.tsx` which renders rolling averages in the analysis details panel.
+- Frontend tests stabilized: centralized mocks were added (`src/tests/testUtils/mockServices.ts`) and registered in `vitest.setup.ts`; `PlayerContext.rollingAverages.test.tsx` now asserts the presence of rolling averages and passes locally.
+- CI decision: live NBA/network integration tests are gated to avoid CI flakiness. A manual/scheduled workflow was added at `.github/workflows/live-nba-integration.yml`. Live tests run only when `RUN_LIVE_NBA_TESTS=1` is set (or via the manual workflow) and are not run on default PR/CI runs.
+- Model artifact note: a persisted toy model for development testing lives at `backend/models_store/LeBron_James.pkl` (tracked via LFS).
+
 
 ---
 

@@ -95,3 +95,27 @@ export type BatchPlayerResult = {
   player: string;
   error: string;
 } | any;
+
+// Enhanced frontend types for backend player context
+export interface RollingAverages {
+  [key: string]: number | null; // e.g. 'sma_5': 12.3, 'ema_10': 11.2
+}
+
+export interface OpponentInfo {
+  name?: string | null;
+  defensiveRating?: number | null;
+  pace?: number | null;
+  [key: string]: any;
+}
+
+export interface EnhancedPlayerContext {
+  player: string;
+  stat: string;
+  recentGames?: Array<{ date?: string | null; statValue?: number | null }> | null;
+  seasonAvg?: number | null;
+  noGamesThisSeason?: boolean;
+  fetchedAt?: string | null;
+  rollingAverages?: RollingAverages | null;
+  opponentInfo?: OpponentInfo | null;
+  contextualFactors?: { daysRest?: number | null; isBackToBack?: boolean | null } | null;
+}
