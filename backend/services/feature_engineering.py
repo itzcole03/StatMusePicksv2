@@ -266,6 +266,12 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         features["opp_def_rating"] = None
         features["opp_pace"] = None
 
+    # Opponent-adjusted features: average vs stronger/weaker defenses and
+    # historical matchup stats. This uses per-game metadata in `recentGames`
+    # when available (`opponentDefRating`, `opponentTeamId`, `opponentAbbrev`).
+    adv = _calculate_opponent_adjusted(recent, opponent_data)
+    features.update(adv)
+
     df = pd.DataFrame([features])
     # Fill missing values and ensure correct dtypes; call infer_objects to avoid
     # future downcasting behavior changes in pandas.
@@ -278,6 +284,88 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         pass
 
     return df
+
+
+def _calculate_opponent_adjusted(recent_games: List[Dict], opponent_data: Optional[Dict]) -> Dict:
+    """Compute opponent-adjusted features from recent games and current opponent.
+
+    Returns keys:
+      - games_vs_current_opponent: int
+      - avg_vs_current_opponent: float or None
+      - avg_vs_stronger_def: float or None  (avg vs opponents with def rating <= current opponent)
+      - avg_vs_similar_def: float or None   (avg vs opponents with def rating within +/-2 pts)
+      - last_game_vs_current_opponent_date: str or None
+      - last_game_vs_current_opponent_stat: float or None
+
+    This function tolerates missing per-game opponentDefRating and team identifiers.
+    """
+    out = {
+        "games_vs_current_opponent": 0,
+        "avg_vs_current_opponent": None,
+        "avg_vs_stronger_def": None,
+        "avg_vs_similar_def": None,
+        "last_game_vs_current_opponent_date": None,
+        "last_game_vs_current_opponent_stat": None,
+    }
+
+    if not recent_games:
+        return out
+
+    # Gather opponent def ratings from recent games when available
+    opp_ratings = [g.get("opponentDefRating") for g in recent_games if g.get("opponentDefRating") is not None]
+    opp_ratings = [float(x) for x in opp_ratings]
+
+    # Current opponent defensive rating (if provided)
+    current_opp_def = None
+    current_team_id = None
+    if opponent_data:
+        current_opp_def = opponent_data.get("defensiveRating")
+        current_team_id = opponent_data.get("teamId") or opponent_data.get("team") or opponent_data.get("abbrev")
+
+    # Stats for various buckets
+    vals_vs_current = []
+    vals_vs_stronger = []
+    vals_vs_similar = []
+
+    for g in recent_games:
+        stat = g.get("statValue")
+        if stat is None:
+            continue
+        # match by team id or abbrev if available
+        opp_id = g.get("opponentTeamId") or g.get("opponent") or g.get("opponentAbbrev")
+        opp_def = g.get("opponentDefRating")
+
+        # games vs current opponent
+        if current_team_id is not None and opp_id is not None and str(opp_id) == str(current_team_id):
+            vals_vs_current.append(float(stat))
+            # record last game info (first occurrence is most recent because recent_games are ordered newest-first)
+            if out["last_game_vs_current_opponent_date"] is None:
+                out["last_game_vs_current_opponent_date"] = g.get("date")
+                out["last_game_vs_current_opponent_stat"] = float(stat)
+
+        # stronger = opponent defensive rating numerically <= current opponent def (lower defensive rating => stronger defense)
+        if current_opp_def is not None and opp_def is not None:
+            try:
+                opp_def_f = float(opp_def)
+                if opp_def_f <= float(current_opp_def):
+                    vals_vs_stronger.append(float(stat))
+                # similar within +/- 2 rating points
+                if abs(opp_def_f - float(current_opp_def)) <= 2.0:
+                    vals_vs_similar.append(float(stat))
+            except Exception:
+                pass
+
+    if vals_vs_current:
+        out["games_vs_current_opponent"] = len(vals_vs_current)
+        out["avg_vs_current_opponent"] = float(np.mean(vals_vs_current))
+
+    if vals_vs_stronger:
+        out["avg_vs_stronger_def"] = float(np.mean(vals_vs_stronger))
+
+    if vals_vs_similar:
+        out["avg_vs_similar_def"] = float(np.mean(vals_vs_similar))
+
+    return out
 
 
 # Compatibility wrapper expected by training scripts
