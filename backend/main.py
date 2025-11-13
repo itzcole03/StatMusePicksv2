@@ -16,6 +16,7 @@ import time
 from backend.services import nba_stats_client
 from backend.services.cache import redis_get_json, redis_set_json, get_redis
 from backend.services.cache import get_cache_metrics
+from backend.services import feature_engineering
 try:
     # Prefer using our metrics helper which supports multiprocess mode.
     from backend.services.metrics import generate_latest, CONTENT_TYPE_LATEST
@@ -168,6 +169,10 @@ async def player_context(player_name: Optional[str] = None, limit: int = 8):
         "player_id": pid,
         "recentGames": recent,
         "seasonAvg": season_avg,
+        # will populate enhanced context below
+        "rollingAverages": None,
+        "contextualFactors": {},
+        "opponentInfo": None,
         "fetchedAt": int(time.time()),
         "cached": False,
     }
@@ -176,6 +181,32 @@ async def player_context(player_name: Optional[str] = None, limit: int = 8):
     try:
         await redis_set_json(key, out, ex=60 * 60 * 6)
     except Exception:
+        pass
+
+    # Build enhanced numeric context using local feature engineering helpers
+    try:
+        player_data = {"seasonAvg": season_avg, "recentGames": recent, "contextualFactors": {}}
+        # opponent info: try to extract from most recent game if available
+        opponent_info = None
+        if recent and isinstance(recent, list) and len(recent) > 0:
+            g0 = recent[0]
+            opponent_info = {
+                "teamId": g0.get("opponentTeamId") or g0.get("opponent") or g0.get("opponentAbbrev"),
+                "defensiveRating": g0.get("opponentDefRating") or g0.get("opponentDef") or None,
+                "pace": g0.get("opponentPace") or None,
+            }
+        out["opponentInfo"] = opponent_info
+
+        df = feature_engineering.engineer_features(player_data, opponent_info)
+        if df is not None and not df.empty:
+            # extract rolling averages and opponent-adjusted fields
+            row = df.iloc[0].to_dict()
+            rolling_keys = [k for k in row.keys() if k.startswith("last_") or "exponential" in k or k.startswith("wma_") or k in ("slope_10", "momentum_vs_5_avg")]
+            rolling = {k: row.get(k) for k in rolling_keys}
+            out["rollingAverages"] = rolling
+            out["contextualFactors"] = {"is_home": int(row.get("is_home", 0)), "days_rest": int(row.get("days_rest", 0)), "is_back_to_back": int(row.get("is_back_to_back", 0))}
+    except Exception:
+        # non-fatal: return best-effort context
         pass
 
     return out

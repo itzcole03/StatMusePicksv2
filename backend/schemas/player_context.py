@@ -21,6 +21,9 @@ class PlayerContextResponse(BaseModel):
     player_id: Optional[int]
     recentGames: List[dict] = Field(default_factory=list)
     seasonAvg: Optional[float]
+    rollingAverages: Optional[dict] = None
+    contextualFactors: Optional[dict] = None
+    opponentInfo: Optional[dict] = None
     fetchedAt: int
     cached: bool = False
 
