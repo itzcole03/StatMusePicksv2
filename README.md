@@ -121,6 +121,45 @@ curl.exe -X POST "http://localhost:8000/api/predict" -H "Content-Type: applicati
 
 There is a small helper script used during checks: `scripts/check_predict.py` which POSTs a valid payload to `/api/predict` using the Python standard library.
 
+API Examples
+
+GET player context (cached) — PowerShell:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/player_context?player_name=LeBron%20James&limit=5" -Method GET | ConvertTo-Json -Depth 5
+```
+
+GET player context (curl + jq):
+
+```bash
+curl -s "http://localhost:8000/api/player_context?player_name=LeBron%20James&limit=5" | jq .
+```
+
+Notes:
+
+- `/api/player_context` will attempt to return a cached response from Redis using the key `player_context:{player_name}:{limit}`. Cached responses include `cached: true` and a `fetchedAt` timestamp.
+- The response includes `recentGames`, `seasonAvg`, and enhanced fields when available: `rollingAverages`, `contextualFactors`, and `opponentInfo`.
+
+Batch fetch example (POST):
+
+PowerShell:
+
+```powershell
+$body = @(
+	@{ player_name = 'LeBron James'; limit = 3 },
+	@{ player_name = 'Stephen Curry'; limit = 3 }
+ ) | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8000/api/batch_player_context" -Method Post -Body $body -ContentType 'application/json' | ConvertTo-Json -Depth 5
+```
+
+curl example:
+
+```bash
+echo '[{"player_name":"LeBron James","limit":3},{"player_name":"Stephen Curry","limit":3}]' > /tmp/batch.json
+curl -s -X POST "http://localhost:8000/api/batch_player_context" -H "Content-Type: application/json" -d @/tmp/batch.json | jq .
+```
+
 Run tests
 
 ```powershell

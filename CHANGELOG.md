@@ -24,3 +24,9 @@ Unreleased
 Notes:
 
 - Model artifacts (pickles) can be large and should be managed with Git LFS or as release artifacts; see README for guidance.
+
+2025-11-12 — feat: Add `/api/player_context` endpoint
+
+- Implemented `/api/player_context` in the backend. The endpoint returns recent games, a derived `seasonAvg`, and enhanced numeric context when available (`rollingAverages`, `contextualFactors`, `opponentInfo`).
+- Endpoint uses Redis caching (key: `player_context:{player_name}:{limit}`) when configured.
+- Added unit tests for the endpoint and feature extraction helpers.
