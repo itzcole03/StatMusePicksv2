@@ -9,6 +9,7 @@ import logging
 from datetime import date
 
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
 from backend.services import data_ingestion_service as dis
 
@@ -44,20 +45,22 @@ async def _periodic_ingest(interval_seconds: int = 24 * 60 * 60):
             continue
 
 
-@app.on_event("startup")
-async def _startup():
-    """Start the background periodic ingest task on startup."""
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Lifespan handler to start and stop the periodic ingest background task.
+
+    This replaces the deprecated `@app.on_event` usage and ensures the
+    periodic task is signalled to stop cleanly on shutdown.
+    """
     global _stop_event, _ingest_task
+    # startup
     _stop_event = asyncio.Event()
-    # Start task with a small initial delay to avoid race with other startup tasks
     _ingest_task = asyncio.create_task(_periodic_ingest())
     logger.info("Started periodic ingest task")
 
+    yield
 
-@app.on_event("shutdown")
-async def _shutdown():
-    """Signal the periodic task to stop and await its completion on shutdown."""
-    global _stop_event, _ingest_task
+    # shutdown
     if _stop_event is not None:
         _stop_event.set()
     if _ingest_task is not None:
@@ -65,6 +68,10 @@ async def _shutdown():
             await _ingest_task
         except Exception:
             logger.exception("Error while awaiting ingest task shutdown")
+
+
+# Attach lifespan to app
+app.router.lifespan_context = _lifespan
 
 
 if __name__ == "__main__":

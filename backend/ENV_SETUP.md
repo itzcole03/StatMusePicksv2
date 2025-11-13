@@ -88,7 +88,20 @@ python backend/scripts/persist_toy_model.py
 
 - If imports fail when running scripts, set `PYTHONPATH='.'` or run with `python -m backend.scripts.persist_toy_model` from the repo root.
 - If Alembic migrations seem to use SQLite even though `DATABASE_URL` is set, check for literal placeholders like `${DATABASE_URL}` in your shell/CI and verify `env.py` picks up `os.environ['DATABASE_URL']`.
-- If the FastAPI startup `@app.on_event('startup')` preloading behaves unexpectedly, consider running tests with `TestClient(app)` which triggers startup events in-process.
+- The codebase now prefers FastAPI lifespan handlers instead of the `@app.on_event` decorator. If you encounter legacy examples
+	that still use `@app.on_event`, they have been migrated in core files, and example implementations (e.g., `backend/examples/fastapi_background_ingest.py`) now use an `asynccontextmanager` lifespan handler.
+
+## Notes on deprecations & follow-up tasks
+
+- Pydantic migration: the backend includes a compatibility helper `model_to_dict()` in `backend/fastapi_nba.py` which will
+	call `.model_dump()` (Pydantic v2) when available or fall back to `.dict()` (Pydantic v1). This is an intermediate step
+	to avoid breaking changes while we migrate the codebase to v2 semantics.
+- Remaining warnings observed during local test runs include:
+	- Pydantic class-config deprecation (use `ConfigDict` in v2).
+	- scikit-learn InconsistentVersionWarning when unpickling test model artifacts produced with slightly different sklearn versions.
+	- SQLAlchemy UTC deprecation notices (prefer timezone-aware now).
+
+These are tracked as follow-up items in the roadmap and will be addressed in a subsequent cleanup pass (see `ManusPlan/IMPLEMENTATION_ROADMAP.md`).
 
 ## Best practices
 

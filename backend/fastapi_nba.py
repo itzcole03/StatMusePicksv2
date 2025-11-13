@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -7,6 +7,8 @@ import os
 import json
 import logging
 import re
+from typing import Dict
+from contextlib import asynccontextmanager
 
 # Caching
 from cachetools import TTLCache
@@ -37,27 +39,19 @@ except Exception:
         playergamelog = None
         playercareerstats = None
 
-app = FastAPI(title="NBA Data Backend (example)")
-
-# basic logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("fastapi_nba")
 
-# Allow requests from local frontend dev servers
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
+@asynccontextmanager
+async def _lifespan(app: FastAPI):
+    """Lifespan handler to replace deprecated startup/shutdown events.
 
-@app.on_event("startup")
-async def _startup_models():
-    """Load persisted models into the ML service registry at startup to
-    avoid lazy loads and improve readiness for external requests.
+    The startup phase preloads persisted models into the ML registry so the
+    service is ready to serve requests without lazy initialization. Shutdown
+    code may be added after the ``yield`` if cleanup is required.
     """
+    # Startup
     try:
         # Ensure registry exists and ml_service is initialized
         global registry, ml_service
@@ -101,6 +95,27 @@ async def _startup_models():
     except Exception:
         logger.exception('Error during startup model preload')
 
+    yield
+
+    # Shutdown (no-op placeholder)
+    try:
+        pass
+    except Exception:
+        logger.exception('Error during lifespan shutdown')
+
+
+# Create the FastAPI app with the lifespan handler and configure CORS
+app = FastAPI(title="NBA Data Backend (example)", lifespan=_lifespan)
+
+# Allow requests from local frontend dev servers
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 @app.exception_handler(Exception)
 async def _global_exception_handler(request, exc):
@@ -126,6 +141,7 @@ class PlayerSummary(BaseModel):
     seasonAvg: Optional[float]
     lastGameDate: Optional[str] = None
     lastSeason: Optional[str] = None
+    contextualFactors: Optional[dict] = None
     fetchedAt: str
 
 # in-memory TTL cache
@@ -138,6 +154,79 @@ STAT_MAP = {
     'stl': 'STL', 'steals': 'STL',
     'blk': 'BLK', 'blocks': 'BLK',
 }
+
+# Simple in-memory token-bucket rate limiter per client IP for batch endpoints.
+# Keyed by client host. This is a best-effort limiter intended for dev/low-traffic
+# use; in production prefer Redis-based or proxy-level rate limiting.
+_rate_buckets: Dict[str, Dict[str, float]] = {}
+RATE_LIMIT_RPM = int(os.environ.get('BATCH_MAX_RPM', '120'))  # requests per minute
+
+def _consume_tokens(key: str, amount: int) -> bool:
+    """Attempt to consume `amount` tokens for `key`. Returns True if allowed.
+
+    Prefer Redis-backed token bucket if `redis_client` is available. Otherwise
+    fall back to the in-process token bucket stored in `_rate_buckets`.
+    """
+    # If Redis is configured, use an atomic Lua script to manage the token bucket.
+    if redis_client is not None:
+        try:
+            # Lua script: refill tokens based on elapsed time, check and deduct.
+            # KEYS[1] -> bucket key
+            # ARGV[1] -> now (float seconds)
+            # ARGV[2] -> rate_limit_per_minute
+            # ARGV[3] -> amount to consume
+            lua = """
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local rate = tonumber(ARGV[2])
+local req = tonumber(ARGV[3])
+local data = redis.call('HMGET', key, 'tokens', 'last')
+local tokens = tonumber(data[1])
+local last = tonumber(data[2])
+if tokens == nil then
+  tokens = rate
+  last = now
+end
+local elapsed = now - last
+local refill = elapsed * (rate / 60.0)
+tokens = math.min(rate, tokens + refill)
+if tokens >= req then
+  tokens = tokens - req
+  redis.call('HMSET', key, 'tokens', tostring(tokens), 'last', tostring(now))
+  redis.call('EXPIRE', key, 120)
+  return 1
+else
+  redis.call('HMSET', key, 'tokens', tostring(tokens), 'last', tostring(now))
+  redis.call('EXPIRE', key, 120)
+  return 0
+end
+"""
+            now = time.time()
+            # Some Redis clients expect bytes/str; use eval
+            allowed = redis_client.eval(lua, 1, f"rate_bucket:{key}", now, RATE_LIMIT_RPM, amount)
+            return bool(int(allowed))
+        except Exception:
+            # If Redis fails, gracefully fall back to in-process limiter below
+            pass
+
+    # Fallback: in-process token bucket
+    now = time.time()
+    bucket = _rate_buckets.get(key)
+    if bucket is None:
+        bucket = {'tokens': float(RATE_LIMIT_RPM), 'last': now}
+        _rate_buckets[key] = bucket
+
+    elapsed = now - bucket['last']
+    # refill
+    refill = elapsed * (RATE_LIMIT_RPM / 60.0)
+    bucket['tokens'] = min(float(RATE_LIMIT_RPM), bucket['tokens'] + refill)
+    bucket['last'] = now
+
+    if bucket['tokens'] >= amount:
+        bucket['tokens'] -= amount
+        return True
+
+    return False
 
 
 def find_player_id_by_name(name: str):
@@ -184,6 +273,32 @@ def find_player_id_by_name(name: str):
             return p['id']
 
     return None
+
+
+def model_to_dict(model):
+    """Return a plain dict from a Pydantic model with v1/v2 compatibility.
+
+    Some deployments already use Pydantic v2's `model_dump()` while others
+    remain on v1 which exposes `dict()`. Use whichever is available to
+    preserve backwards compatibility and silence deprecation warnings.
+    """
+    if model is None:
+        return None
+    if hasattr(model, "model_dump"):
+        try:
+            return model.model_dump()
+        except Exception:
+            pass
+    if hasattr(model, "dict"):
+        try:
+            return model.dict()
+        except Exception:
+            pass
+    # Last resort: attempt to coerce to dict
+    try:
+        return dict(model)
+    except Exception:
+        return model
 
 
 def fetch_recent_games(player_id: int, limit: int = 8):
@@ -306,6 +421,47 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
         out['noGamesThisSeason'] = True
         out['note'] = 'No recent games available for this player this season.'
 
+    # Derive simple contextual factors used by feature engineering and frontend:
+    # - daysRest: integer days since the previous game (None if insufficient data)
+    # - isBackToBack: True if daysRest == 0
+    try:
+        days_rest = None
+        is_b2b = False
+        if len(recent_games) >= 2:
+            from datetime import datetime
+
+            # recent_games assumed ordered most-recent-first
+            d0 = recent_games[0].get('gameDate')
+            d1 = recent_games[1].get('gameDate')
+            if d0 and d1:
+                try:
+                    fmt = None
+                    # Accept common date formats (ISO-like or nba_api format)
+                    for f in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ"):
+                        try:
+                            dt0 = datetime.strptime(d0, f)
+                            dt1 = datetime.strptime(d1, f)
+                            fmt = f
+                            break
+                        except Exception:
+                            continue
+                    if fmt is None:
+                        # Fallback: try parsing only the date portion
+                        dt0 = datetime.fromisoformat(d0.split('T')[0])
+                        dt1 = datetime.fromisoformat(d1.split('T')[0])
+
+                    # days between games minus 1 equals days_rest
+                    delta_days = (dt0.date() - dt1.date()).days
+                    days_rest = max(0, delta_days - 1)
+                    is_b2b = (days_rest == 0)
+                except Exception:
+                    days_rest = None
+                    is_b2b = False
+
+        out['contextualFactors'] = {'daysRest': days_rest, 'isBackToBack': is_b2b}
+    except Exception:
+        out['contextualFactors'] = {'daysRest': None, 'isBackToBack': False}
+
     # Attach debug info when requested (non-breaking)
     if debug:
         out['debug'] = debug_info
@@ -328,6 +484,17 @@ class PlayerContextRequest(BaseModel):
     limit: Optional[int] = 8
 
 
+class BatchPlayerRequest(BaseModel):
+    player: str
+    stat: Optional[str] = 'points'
+    limit: Optional[int] = 8
+
+    class Config:
+        schema_extra = {
+            "example": {"player": "LeBron James", "stat": "points", "limit": 8}
+        }
+
+
 @app.post('/api/player_context', response_model=PlayerSummary)
 def api_player_context(req: PlayerContextRequest):
     """POST wrapper for client usage. Accepts JSON body and returns the same
@@ -336,22 +503,75 @@ def api_player_context(req: PlayerContextRequest):
     return player_summary(player=req.player, stat=req.stat or 'points', limit=req.limit or 8)
 
 
+MAX_BATCH_SIZE = int(os.environ.get('MAX_BATCH_SIZE', '50'))
+
+
 @app.post('/api/batch_player_context')
-def api_batch_player_context(requests: List[PlayerContextRequest]):
-    """Accepts a list of player context requests and returns an array of
-    player summaries. If an individual request fails (player not found), the
-    response will include an object with `error` for that entry to enable
-    partial results handling on the client."""
-    results = []
-    for r in requests:
+async def api_batch_player_context(
+    requests: List[BatchPlayerRequest] = Body(
+        ...,
+        examples={
+            "example": {
+                "summary": "Batch of players",
+                "value": [
+                    {"player": "LeBron James", "stat": "points", "limit": 8},
+                    {"player": "Stephen Curry", "stat": "points", "limit": 8},
+                ],
+            }
+        },
+    ),
+    max_concurrency: int = Query(6, description="Max concurrent requests"),
+    request_obj: Request = None,
+):
+    """Accepts a list of player context requests (either `player` or
+    `player_name` keys) and returns an array of player summaries. Runs
+    requests concurrently up to `max_concurrency`. If an individual request
+    fails (player not found), the response will include an object with
+    `error` for that entry to enable partial results handling on the client.
+    """
+    import asyncio
+
+    data = [model_to_dict(r) for r in requests]
+
+    if len(data) > MAX_BATCH_SIZE:
+        raise HTTPException(status_code=400, detail=f'max batch size exceeded (max {MAX_BATCH_SIZE})')
+
+    # Rate limit: count requests as number of player items. Use client IP when available.
+    client_host = None
+    try:
+        client_host = request_obj.client.host if request_obj and request_obj.client is not None else 'local'
+    except Exception:
+        client_host = 'local'
+
+    needed = max(1, len(data))
+    allowed = _consume_tokens(client_host, needed)
+    if not allowed:
+        # Ask client to retry later; include simple hint
+        raise HTTPException(status_code=429, detail=f'rate limit exceeded, try later')
+
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def _call_summary(item: dict):
+        player = item.get('player') or item.get('player_name')
+        stat = item.get('stat') or 'points'
+        limit = item.get('limit') or 8
+
+        if not player:
+            return {'player': player, 'error': 'player name required'}
+
         try:
-            res = player_summary(player=r.player, stat=r.stat or 'points', limit=r.limit or 8)
-            results.append(res)
+            async with semaphore:
+                # `player_summary` is synchronous; run in threadpool to avoid blocking
+                res = await asyncio.to_thread(player_summary, player, stat, limit)
+                return res
         except HTTPException as he:
-            results.append({'player': r.player, 'error': he.detail})
+            return {'player': player, 'error': he.detail}
         except Exception as e:
-            results.append({'player': r.player, 'error': str(e)})
-    return results
+            return {'player': player, 'error': str(e)}
+
+    tasks = [asyncio.create_task(_call_summary(item)) for item in data]
+    gathered = await asyncio.gather(*tasks)
+    return gathered
 
 
 # --- ML prediction endpoints (scaffold) ---------------------------------
@@ -379,9 +599,36 @@ class PredictionRequest(BaseModel):
     line: float
     player_data: Optional[dict] = None
     opponent_data: Optional[dict] = None
+    class Config:
+        schema_extra = {
+            "example": {
+                "player": "LeBron James",
+                "stat": "points",
+                "line": 25.5,
+                "player_data": {},
+                "opponent_data": {}
+            }
+        }
 
 
-@app.post('/api/predict')
+class PredictionResponse(BaseModel):
+    player: str
+    stat: str
+    line: float
+    predicted_value: Optional[float] = None
+    over_probability: Optional[float] = None
+    under_probability: Optional[float] = None
+    recommendation: Optional[str] = None
+    expected_value: Optional[float] = None
+    confidence: Optional[float] = None
+    error: Optional[str] = None
+
+
+class BatchPredictResponse(BaseModel):
+    predictions: List[PredictionResponse]
+
+
+@app.post('/api/predict', response_model=PredictionResponse, responses={503: {"description": "ML service unavailable"}})
 async def api_predict(req: PredictionRequest):
     if ml_service is None:
         raise HTTPException(status_code=503, detail='ML service unavailable')
@@ -416,13 +663,13 @@ async def api_predict(req: PredictionRequest):
     return result
 
 
-@app.post('/api/batch_predict')
+@app.post('/api/batch_predict', response_model=BatchPredictResponse, responses={503: {"description": "ML service unavailable"}})
 async def api_batch_predict(requests: List[PredictionRequest]):
-    results = []
+    results: List[PredictionResponse] = []
     for r in requests:
         try:
             if ml_service is None:
-                results.append({'player': r.player, 'error': 'ML service unavailable'})
+                results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='ML service unavailable'))
             else:
                 res = await ml_service.predict(
                     player_name=r.player,
@@ -431,10 +678,15 @@ async def api_batch_predict(requests: List[PredictionRequest]):
                     player_data=r.player_data or {},
                     opponent_data=r.opponent_data or {}
                 )
-                results.append(res)
+                # coerce into PredictionResponse when possible
+                if isinstance(res, dict):
+                    results.append(PredictionResponse(**res))
+                else:
+                    # unknown shape, wrap minimally
+                    results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result format'))
         except Exception as e:
-            results.append({'player': r.player, 'error': str(e)})
-    return {'predictions': results}
+            results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=str(e)))
+    return BatchPredictResponse(predictions=results)
 
 
 # Model management API

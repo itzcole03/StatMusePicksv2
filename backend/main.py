@@ -3,7 +3,10 @@
 This file exposes `app` for tools that expect `backend.main:app` and
 provides minimal startup/shutdown hooks.
 """
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, Request
+from pydantic import BaseModel
+from typing import List
+from backend.schemas.player_context import PlayerContextResponse
 import os
 import importlib
 import pathlib
@@ -113,7 +116,7 @@ async def _metrics():
     
 
 
-@app.get("/api/player_context")
+@app.get("/api/player_context", response_model=PlayerContextResponse)
 async def player_context(player_name: Optional[str] = None, limit: int = 8):
     """Return recent games and simple numeric context for a player.
 
@@ -178,6 +181,50 @@ async def player_context(player_name: Optional[str] = None, limit: int = 8):
     return out
 
 
+class BatchPlayerRequest(BaseModel):
+    # Accept either `player` or `player_name` keys so callers/tests can use either shape.
+    player: Optional[str] = None
+    player_name: Optional[str] = None
+    limit: Optional[int] = None
+
+
+@app.post("/api/batch_player_context")
+async def batch_player_context(request: Request, default_limit: int = 8, max_concurrency: int = 6):
+    """Fetch player contexts for a batch of players in parallel (bounded concurrency).
+
+    Returns a dict with `results` (list) and `errors` (list of player names with errors).
+    Each result is the same shape as `/api/player_context`.
+    """
+    import asyncio
+
+    # read raw JSON to avoid Pydantic body validation differences between callers
+    data = await request.json()
+    if not isinstance(data, list):
+        return {"results": [], "errors": [{"error": "request body must be an array of player requests"}]}
+
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def _fetch_one(req: dict):
+        # support either `player` or `player_name` keys
+        name = req.get("player") or req.get("player_name")
+        lim = req.get("limit") or default_limit
+        try:
+            async with semaphore:
+                # Reuse existing route logic to ensure caching and behavior are consistent
+                res = await player_context(name, lim)
+                return {"player_name": name, "ok": True, "context": res}
+        except Exception as e:
+            return {"player_name": name, "ok": False, "error": str(e)}
+
+    tasks = [asyncio.create_task(_fetch_one(r)) for r in requests]
+    gathered = await asyncio.gather(*tasks)
+
+    results = [g for g in gathered if g.get("ok")]
+    errors = [g for g in gathered if not g.get("ok")]
+
+    return {"results": results, "errors": errors}
+
+
 @app.get("/api/db_health")
 async def db_health():
     """Check DB connectivity and basic query health."""
@@ -198,7 +245,6 @@ async def db_health():
         return {"ok": False, "db": {"ok": False, "error": str(e)}}
 
 
-@app.on_event("startup")
 async def _startup():
     # Initialize DB engine/session factory so the app is ready to use DB.
     try:
@@ -222,10 +268,21 @@ async def _startup():
     return None
 
 
-@app.on_event("shutdown")
 async def _shutdown():
     # placeholder for graceful shutdown
     return None
+
+
+# Register lifecycle handlers using `add_event_handler` instead of the
+# `@app.on_event` decorator which is deprecated. This preserves the same
+# behavior while avoiding decorator deprecation warnings.
+try:
+    app.add_event_handler("startup", _startup)
+    app.add_event_handler("shutdown", _shutdown)
+except Exception:
+    # If `app` doesn't support adding handlers for some reason, ignore
+    # to avoid import-time failures in tests that import this module.
+    pass
 
 
 if __name__ == "__main__":

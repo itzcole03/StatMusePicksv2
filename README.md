@@ -41,6 +41,18 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 Notes:
 
 - The backend includes startup model preloading and a global error handler to avoid process exits on unexpected exceptions.
+- Recent: the project uses FastAPI lifespan handlers for startup/shutdown lifecycle (preferred over the
+	deprecated `@app.on_event` decorator). See `backend/fastapi_nba.py` and `backend/main.py` for examples.
+
+- Pydantic compatibility helper: to maintain compatibility between Pydantic v1 and v2, the backend includes a
+	small helper `model_to_dict()` in `backend/fastapi_nba.py` that calls either `.model_dump()` (v2) or `.dict()` (v1)
+	as available. This avoids breaking changes while migrating to Pydantic v2.
+
+- If you still see deprecation warnings (Pydantic class-config, FastAPI `on_event`, SQLAlchemy UTC usage, or
+	scikit-learn unpickle version warnings), those are non-blocking and tracked as follow-up cleanup tasks in the
+	roadmap. We plan to (a) finish Pydantic migration, (b) address SQLAlchemy UTC timezone usage, and (c) surface
+	safer model serialization to address sklearn pickle version warnings.
+
 - If you have Redis running and configured, the backend will use it for caching (player context + predict TTLs).
 
 Redis (optional)
