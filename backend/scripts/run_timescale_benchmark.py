@@ -13,7 +13,7 @@ Usage: python backend/scripts/run_timescale_benchmark.py --rows 100000
 import argparse
 import random
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import psycopg2
 from psycopg2.extras import execute_batch
@@ -92,7 +92,7 @@ def populate(conn, rows):
     total = rows
     players = 500  # number of unique players to simulate
     stat_types = ['points', 'rebounds', 'assists']
-    base_date = datetime.utcnow()
+    base_date = datetime.now(timezone.utc)
 
     insert_sql = "INSERT INTO {table} (player_id, game_id, stat_type, value, game_date) VALUES (%s,%s,%s,%s,%s)"
 
@@ -121,7 +121,7 @@ def run_queries(conn):
     cur = conn.cursor()
     # sample player and date range
     player_id = random.randint(1, 500)
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     thirty_days_ago = today - timedelta(days=30)
 
     queries = [

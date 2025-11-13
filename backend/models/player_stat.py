@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from backend.db import Base
@@ -12,7 +12,7 @@ class PlayerStat(Base):
     game_id = Column(Integer, ForeignKey("games.id"), nullable=False, index=True)
     stat_type = Column(String(64), nullable=False, index=True)
     value = Column(Float, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     player = relationship("Player", backref="stats")
     game = relationship("Game", backref="player_stats")

@@ -308,6 +308,18 @@ Scheduling guidance (example):
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
 
+**Progress update (Nov 12, 2025):**
+
+- [x] Created `backend/services/feature_engineering.py` and added unit tests under `backend/tests/test_feature_engineering.py`.
+- [x] Implemented `FeatureEngineering` compatibility wrapper and top-level `engineer_features` that returns a `pandas.DataFrame` ready for model input.
+- [x] Implemented basic features: recent performance (last 3/5/10), season average, home/away indicator, days-of-rest, rolling averages, EMA, and simple imputations. Unit tests validate recent stats and rolling calculations.
+ - [x] Back-to-back game indicator: implemented and exposed as `contextualFactors.daysRest` and `contextualFactors.isBackToBack` in the `player_context` API response. Frontend types and `nbaService` normalization updated to consume these fields.
+- [x] Feature extraction function present and covered by unit tests; additional coverage (10+ players) is recommended.
+
+**Status:** ✅ Completed (dev) — partial enhancement pending (back-to-back indicator)
+**Assigned To:** Backend Team
+**Completion Date:** Nov 12, 2025
+
 ---
 
 ### Task 1.3.2: Add Rolling Statistics
@@ -398,12 +410,12 @@ Scheduling guidance (example):
 
 ### Task 1.4.2: Create Batch Context Endpoint
 
-- [ ] Implement `/api/batch_player_context` endpoint
-- [ ] Accept list of player requests
-- [ ] Process in parallel (asyncio)
-- [ ] Return list of player contexts
-- [ ] Add rate limiting (max 50 players per request)
-- [ ] Optimize database queries (batch fetch)
+- [x] Implement `/api/batch_player_context` endpoint
+ - [x] Accept list of player requests
+ - [x] Process in parallel (asyncio)
+ - [x] Return list of player contexts
+ - [x] Add rate limiting (max 50 players per request)
+ - [x] Optimize database queries (batch fetch)
 
 **Acceptance Criteria:**
 
@@ -433,7 +445,7 @@ Scheduling guidance (example):
 - ✅ Existing UI components work without changes
 - ✅ Error messages displayed to user
 
-**Status:** 🔴 Not Started  
+**Status:** ✅ Completed (dev)
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
 
@@ -793,7 +805,7 @@ Scheduling guidance (example):
 - ✅ Response format correct
 - ✅ Caching works
 
-**Status:** 🔴 Not Started  
+**Status:** ✅ Completed (dev)  
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
 

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from backend.db import Base
@@ -12,9 +12,9 @@ class Projection(Base):
     source = Column(String(128), nullable=True)
     stat = Column(String(64), nullable=False, index=True)
     line = Column(Float, nullable=False)
-    projection_at = Column(DateTime, default=datetime.utcnow)
+    projection_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     raw = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     player = relationship("Player", backref="projections")
 

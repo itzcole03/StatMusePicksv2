@@ -1,26 +1,58 @@
 """Feature engineering helpers for the backend.
 
-This is a small scaffold implementing a few basic helpers mentioned in the
-roadmap: recent means, rolling averages, trend slope and simple imputations.
-Extend this file as the pipeline is built out.
+This module contains a small, well-tested set of helpers used by the
+prediction service and training code. Functions are intentionally small and
+pure to make unit-testing easy and to allow them to be used in DataFrame
+pipelines later.
+
+Key concepts provided here:
+- recent statistics (mean, median, std, trend slope)
+- rolling / windowed averages and a small EMA implementation
+- a thin wrapper that returns a flat feature dict suitable for model input
+- a DataFrame-oriented `engineer_features` used by training scripts
+
+Behavioral notes:
+- Functions expect lists of lightweight dict objects representing recent
+  games where the field `statValue` (or another `stat_field`) contains the
+  numeric stat. Missing or None values are ignored when computing means.
+- The module defines an explicit `is_back_to_back` indicator derived from
+  `contextualFactors.daysRest` (1 when daysRest == 0, else 0). This is
+  surfaced for both the dict-oriented and DataFrame-oriented wrappers.
 """
+
 from __future__ import annotations
 
 from typing import Dict, Any, List, Optional
 import numpy as np
 
 
-def recent_stats_from_games(recent_games: List[Dict[str, Any]], stat_field: str = 'statValue') -> Dict[str, Optional[float]]:
-    """Compute simple recent statistics from a list of game dicts.
+def recent_stats_from_games(
+    recent_games: List[Dict[str, Any]], stat_field: str = "statValue"
+) -> Dict[str, Optional[float]]:
+    """Compute simple recent statistics from a list of game records.
 
-    Each `game` is expected to include the numeric `stat_field` (or None).
-    Returns a dictionary with mean, median, std, sample_size and trend_slope.
+    Args:
+        recent_games: Sequence of game dicts. Each dict should provide the
+            numeric stat under `stat_field` (or None/missing).
+        stat_field: Key name to read the numeric stat from each game dict.
+
+    Returns:
+        A dictionary with keys: ``mean``, ``median``, ``std``, ``sample_size``
+        and ``trend_slope``. Numeric values are floats; when no samples
+        exist the mean/median/std/trend_slope values are ``None`` and
+        ``sample_size`` is 0.
+
+    Notes:
+        - ``trend_slope`` is computed with a simple 1-D linear fit (numpy
+          polyfit) over the observed samples in chronological order.
+        - This function intentionally avoids complex imputation so the
+          caller can decide how to fall back (e.g. to season averages).
     """
     values = [g.get(stat_field) for g in recent_games if g.get(stat_field) is not None]
     values = [float(v) for v in values]
     n = len(values)
     if n == 0:
-        return {'mean': None, 'median': None, 'std': None, 'sample_size': 0, 'trend_slope': None}
+        return {"mean": None, "median": None, "std": None, "sample_size": 0, "trend_slope": None}
 
     arr = np.array(values)
     mean = float(arr.mean())
@@ -34,24 +66,35 @@ def recent_stats_from_games(recent_games: List[Dict[str, Any]], stat_field: str 
         slope, _ = np.polyfit(x, arr, 1)
         trend_slope = float(slope)
 
-    return {'mean': mean, 'median': median, 'std': std, 'sample_size': n, 'trend_slope': trend_slope}
+    return {"mean": mean, "median": median, "std": std, "sample_size": n, "trend_slope": trend_slope}
 
 
-def rolling_averages(recent_games: List[Dict[str, Any]], stat_field: str = 'statValue') -> Dict[str, Optional[float]]:
+def rolling_averages(recent_games: List[Dict[str, Any]], stat_field: str = "statValue") -> Dict[str, Optional[float]]:
+    """Compute a few small rolling statistics from recent games.
+
+    The function returns a dict containing the last 3/5/10 averages and an
+    exponential moving average with alpha=0.3. Missing values are ignored.
+    """
     vals = [g.get(stat_field) for g in recent_games if g.get(stat_field) is not None]
     vals = [float(v) for v in vals]
+
     def avg(slice_vals):
         return float(np.mean(slice_vals)) if len(slice_vals) > 0 else None
 
     return {
-        'last3': avg(vals[:3]) if len(vals) >= 1 else None,
-        'last5': avg(vals[:5]) if len(vals) >= 1 else None,
-        'last10': avg(vals[:10]) if len(vals) >= 1 else None,
-        'ema_alpha_0_3': _ema(vals, 0.3) if len(vals) >= 1 else None
+        "last3": avg(vals[:3]) if len(vals) >= 1 else None,
+        "last5": avg(vals[:5]) if len(vals) >= 1 else None,
+        "last10": avg(vals[:10]) if len(vals) >= 1 else None,
+        "ema_alpha_0_3": _ema(vals, 0.3) if len(vals) >= 1 else None,
     }
 
 
 def _ema(values: List[float], alpha: float) -> Optional[float]:
+    """Compute a simple exponential moving average (EMA).
+
+    This is a tiny, dependency-free implementation used for quick
+    experimentation. It returns ``None`` for empty input.
+    """
     if not values:
         return None
     ema = values[0]
@@ -61,25 +104,35 @@ def _ema(values: List[float], alpha: float) -> Optional[float]:
 
 
 def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
-    """High-level feature engineering wrapper.
+    """High-level feature engineering wrapper returning a flat dict.
 
-    Input: a player context containing `recentGames` and `seasonAvg`.
-    Output: a flat feature dict ready for model input (scaffold).
+    Args:
+        player_context: A mapping representing a player's context. Expected
+            keys include ``recentGames`` (list of game dicts) and
+            optionally ``seasonAvg`` and ``contextualFactors``.
+
+    Returns:
+        A flat dictionary of features suitable for quick model inputs. The
+        returned dict uses simple imputation: missing numeric values are
+        set to ``0.0``. The explicit ``is_back_to_back`` key is provided
+        and derived from ``contextualFactors.daysRest`` (1 when daysRest == 0).
     """
-    recent = player_context.get('recentGames', []) or []
+    recent = player_context.get("recentGames", []) or []
     stats = recent_stats_from_games(recent)
     rolls = rolling_averages(recent)
 
     features = {
-        'recent_mean': stats['mean'] or player_context.get('seasonAvg'),
-        'recent_median': stats['median'],
-        'recent_std': stats['std'] or 0.0,
-        'sample_size': stats['sample_size'],
-        'trend_slope': stats['trend_slope'] or 0.0,
-        'last3_avg': rolls['last3'] or player_context.get('seasonAvg'),
-        'last5_avg': rolls['last5'] or player_context.get('seasonAvg'),
-        'last10_avg': rolls['last10'] or player_context.get('seasonAvg'),
-        'ema_0_3': rolls['ema_alpha_0_3'] or player_context.get('seasonAvg'),
+        "recent_mean": stats["mean"] or player_context.get("seasonAvg"),
+        "recent_median": stats["median"],
+        "recent_std": stats["std"] or 0.0,
+        "sample_size": stats["sample_size"],
+        "trend_slope": stats["trend_slope"] or 0.0,
+        "last3_avg": rolls["last3"] or player_context.get("seasonAvg"),
+        "last5_avg": rolls["last5"] or player_context.get("seasonAvg"),
+        "last10_avg": rolls["last10"] or player_context.get("seasonAvg"),
+        "ema_0_3": rolls["ema_alpha_0_3"] or player_context.get("seasonAvg"),
+        # back-to-back indicator: 1 when daysRest == 0, else 0 (derived from contextualFactors)
+        "is_back_to_back": 1 if (player_context.get("contextualFactors", {}).get("daysRest") == 0) else 0,
     }
 
     # Simple imputation for missing numeric values
@@ -138,6 +191,8 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         "season_avg": player_data.get("seasonAvg"),
         "is_home": 1 if player_data.get("contextualFactors", {}).get("homeAway") == "home" else 0,
         "days_rest": player_data.get("contextualFactors", {}).get("daysRest") or 0,
+        # explicit back-to-back indicator: 1 when days_rest == 0, else 0
+        "is_back_to_back": 1 if (player_data.get("contextualFactors", {}).get("daysRest") == 0) else 0,
     }
 
     vals = [g.get("statValue") for g in recent if g.get("statValue") is not None]

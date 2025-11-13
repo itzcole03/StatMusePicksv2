@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 from backend.db import Base
@@ -13,7 +13,7 @@ class Prediction(Base):
     predicted_value = Column(Float, nullable=False)
     actual_value = Column(Float, nullable=True)
     game_id = Column(Integer, ForeignKey("games.id"), nullable=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     player = relationship("Player", backref="predictions")
     game = relationship("Game", backref="predictions")
