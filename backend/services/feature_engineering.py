@@ -163,8 +163,9 @@ def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3
     values = [g.get("statValue") for g in recent_games if g.get("statValue") is not None]
     out = {}
     for w in windows:
-        if len(values) >= w and w > 0:
-            out[f"last_{w}_avg"] = float(np.mean(values[:w]))
+        if w > 0 and len(values) > 0:
+            slice_vals = values[:w] if len(values) >= w else values[: len(values)]
+            out[f"last_{w}_avg"] = float(np.mean(slice_vals))
         else:
             out[f"last_{w}_avg"] = None
 
@@ -177,6 +178,61 @@ def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3
         out["exponential_moving_avg"] = float(ema)
     else:
         out["exponential_moving_avg"] = None
+
+    # weighted moving average (more weight to recent games)
+    def weighted_moving_avg(vals: List[float], window: int) -> Optional[float]:
+        if not vals or window <= 0:
+            return None
+        window_len = min(window, len(vals))
+        slice_vals = vals[:window_len]
+        weights = np.arange(window_len, 0, -1)
+        wsum = float(np.dot(slice_vals, weights))
+        denom = float(weights.sum())
+        return float(wsum / denom) if denom != 0.0 else None
+
+    out["wma_3"] = weighted_moving_avg(values, 3)
+    out["wma_5"] = weighted_moving_avg(values, 5)
+
+    # rolling statistics: std, min, max, median over windows
+    for w in windows:
+        key_base = f"last_{w}"
+        if len(values) >= 1:
+            slice_vals = values[:w] if len(values) >= w else values[:len(values)]
+            arr = np.array(slice_vals, dtype=float)
+            out[f"{key_base}_std"] = float(arr.std(ddof=0)) if arr.size > 0 else None
+            out[f"{key_base}_min"] = float(arr.min()) if arr.size > 0 else None
+            out[f"{key_base}_max"] = float(arr.max()) if arr.size > 0 else None
+            out[f"{key_base}_median"] = float(np.median(arr)) if arr.size > 0 else None
+        else:
+            out[f"{key_base}_std"] = None
+            out[f"{key_base}_min"] = None
+            out[f"{key_base}_max"] = None
+            out[f"{key_base}_median"] = None
+
+    # trend slope (linear regression) over last 10 games (or available)
+    def linear_slope(vals: List[float], window: int = 10) -> Optional[float]:
+        if not vals:
+            return None
+        slice_vals = vals[:window]
+        if len(slice_vals) < 2:
+            return 0.0
+        x = np.arange(len(slice_vals))
+        y = np.array(slice_vals, dtype=float)
+        slope, _ = np.polyfit(x, y, 1)
+        return float(slope)
+
+    out["slope_10"] = linear_slope(values, 10)
+
+    # momentum: current (most recent) vs 5-game average
+    if values:
+        current = float(values[0])
+        if len(values) >= 5:
+            five_avg = float(np.mean(values[:5]))
+        else:
+            five_avg = float(np.mean(values))
+        out["momentum_vs_5_avg"] = float(current - five_avg)
+    else:
+        out["momentum_vs_5_avg"] = None
 
     return out
 
