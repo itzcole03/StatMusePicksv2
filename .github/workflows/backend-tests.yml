@@ -18,6 +18,24 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Guardrails: detect deprecated patterns
+        run: |
+          set -e
+          echo "Checking for deprecated patterns in backend/ (datetime.utcnow, class Config, .dict())"
+          patterns=("datetime.utcnow(" "class Config:" "\.dict\(")
+          found=0
+          for p in "${patterns[@]}"; do
+            if grep -R --line-number -n "$p" backend | grep -v "backend/.venv" | grep -q .; then
+              echo "Found forbidden pattern: $p"
+              grep -R --line-number -n "$p" backend | grep -v "backend/.venv" || true
+              found=1
+            fi
+          done
+          if [ "$found" -eq 1 ]; then
+            echo "Deprecated patterns found. Please fix before merging."
+            exit 1
+          fi
+
       - name: Cache pip
         uses: actions/cache@v4
         with:
