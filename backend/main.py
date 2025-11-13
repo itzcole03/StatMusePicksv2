@@ -118,13 +118,17 @@ async def _metrics():
 
 
 @app.get("/api/player_context", response_model=PlayerContextResponse)
-async def player_context(player_name: Optional[str] = None, limit: int = 8):
+async def player_context(player_name: Optional[str] = None, player: Optional[str] = None, limit: int = 8):
     """Return recent games and simple numeric context for a player.
 
     - Tries Redis cache first (key: `player_context:{player_name}:{limit}`).
     - Falls back to `nba_api` via `backend.services.nba_stats_client`.
     """
+    # Accept either `player_name` or `player` query param for compatibility
     if not player_name:
+        player_name = player
+    if not player_name:
+        # Return a proper 400-like shape to avoid response_model validation errors
         return {"error": "player_name is required"}
 
     key = f"player_context:{player_name}:{limit}"
@@ -163,6 +167,23 @@ async def player_context(player_name: Optional[str] = None, limit: int = 8):
             season_avg = sum(vals) / len(vals)
     except Exception:
         season_avg = None
+
+    # DEV helper: populate deterministic sample recent games when requested
+    try:
+        dev_mock = os.environ.get('DEV_MOCK_CONTEXT')
+        if dev_mock and (not recent or len(recent) == 0):
+            # lightweight sample recent games to enable frontend/dev smoke tests
+            recent = [
+                {"date": "2025-11-01", "statValue": 28, "opponentTeamId": "BOS", "opponentDefRating": 105.0, "opponentPace": 98.3},
+                {"date": "2025-10-29", "statValue": 24, "opponentTeamId": "NYK", "opponentDefRating": 110.0, "opponentPace": 100.1},
+                {"date": "2025-10-26", "statValue": 30, "opponentTeamId": "GSW", "opponentDefRating": 103.5, "opponentPace": 101.2},
+            ]
+            vals = [g.get('statValue') or g.get('PTS') or g.get('points') for g in recent]
+            vals = [v for v in vals if v is not None]
+            if vals:
+                season_avg = sum(vals) / len(vals)
+    except Exception:
+        pass
 
     out = {
         "player": player_name,
