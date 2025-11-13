@@ -144,6 +144,24 @@ class PlayerSummary(BaseModel):
     contextualFactors: Optional[dict] = None
     fetchedAt: str
 
+
+try:
+    from pydantic import ConfigDict
+except Exception:
+    ConfigDict = None
+
+if ConfigDict is not None:
+    PlayerSummary.model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "player": "LeBron James",
+            "stat": "points",
+            "league": "nba",
+            "recentGames": [],
+            "seasonAvg": 27.5,
+            "fetchedAt": "2025-01-01T00:00:00Z",
+        }
+    })
+
 # in-memory TTL cache
 cache = TTLCache(maxsize=1000, ttl=60 * 10)
 
@@ -495,6 +513,18 @@ class BatchPlayerRequest(BaseModel):
         }
 
 
+# Provide Pydantic v2 compatible JSON schema extras when available.
+try:
+    # pydantic v2
+    from pydantic import ConfigDict
+
+    BatchPlayerRequest.model_config = ConfigDict(json_schema_extra={
+        "example": {"player": "LeBron James", "stat": "points", "limit": 8}
+    })
+except Exception:
+    pass
+
+
 @app.post('/api/player_context', response_model=PlayerSummary)
 def api_player_context(req: PlayerContextRequest):
     """POST wrapper for client usage. Accepts JSON body and returns the same
@@ -611,6 +641,22 @@ class PredictionRequest(BaseModel):
         }
 
 
+try:
+    from pydantic import ConfigDict
+
+    PredictionRequest.model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "player": "LeBron James",
+            "stat": "points",
+            "line": 25.5,
+            "player_data": {},
+            "opponent_data": {}
+        }
+    })
+except Exception:
+    pass
+
+
 class PredictionResponse(BaseModel):
     player: str
     stat: str
@@ -622,6 +668,26 @@ class PredictionResponse(BaseModel):
     expected_value: Optional[float] = None
     confidence: Optional[float] = None
     error: Optional[str] = None
+
+
+try:
+    # Attach v2-compatible config if available, keep v1 behavior otherwise.
+    from pydantic import ConfigDict
+except Exception:
+    ConfigDict = None
+
+if ConfigDict is not None:
+    PredictionResponse.model_config = ConfigDict(json_schema_extra={
+        "example": {
+            "player": "LeBron James",
+            "stat": "points",
+            "line": 25.5,
+            "predicted_value": 26.2,
+            "over_probability": 0.56,
+            "recommendation": "over",
+            "confidence": 0.8,
+        }
+    })
 
 
 class BatchPredictResponse(BaseModel):

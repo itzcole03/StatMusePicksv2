@@ -65,54 +65,36 @@ class PlayerModelRegistry:
 class FeatureEngineering:
     @staticmethod
     def engineer_features(player_data: Dict, opponent_data: Dict) -> pd.DataFrame:
-        features = {}
-        recent_games = player_data.get('recentGames', []) if player_data else []
-        values = [g.get('statValue') for g in recent_games if g.get('statValue') is not None]
-        if values:
-            arr = np.array(values)
-            features['recent_mean'] = float(arr.mean())
-            features['recent_median'] = float(np.median(arr))
-            features['recent_std'] = float(arr.std())
-            features['last_3_avg'] = float(arr[:3].mean()) if len(arr) >= 3 else float(arr.mean())
-            features['last_5_avg'] = float(arr[:5].mean()) if len(arr) >= 5 else float(arr.mean())
-            # trend slope
-            if len(arr) >= 2:
-                x = np.arange(len(arr))
-                slope = np.polyfit(x, arr, 1)[0]
-                features['trend_slope'] = float(slope)
-            else:
-                features['trend_slope'] = 0.0
-        else:
-            features.update({
+        # Delegate to the centralized, tested feature engineering utilities so
+        # training and prediction pipelines share the exact same feature set
+        # (including the newly added rolling stats, WMA, slope and momentum).
+        try:
+            from .feature_engineering import engineer_features as shared_engineer
+        except Exception:
+            # Fallback: construct a minimal DataFrame to preserve behavior
+            features = {
                 'recent_mean': 0.0,
                 'recent_median': 0.0,
                 'recent_std': 0.0,
                 'last_3_avg': 0.0,
                 'last_5_avg': 0.0,
-                'trend_slope': 0.0,
-            })
+                'last_10_avg': 0.0,
+                'exponential_moving_avg': 0.0,
+                'wma_3': 0.0,
+                'wma_5': 0.0,
+                'slope_10': 0.0,
+                'momentum_vs_5_avg': 0.0,
+                'season_avg': float(player_data.get('seasonAvg') or 0.0),
+                'is_home': 1 if (player_data.get('contextualFactors', {}).get('homeAway') == 'home') else 0,
+                'days_rest': float(player_data.get('contextualFactors', {}).get('daysRest') or 0.0),
+                'is_back_to_back': 1 if player_data.get('contextualFactors', {}).get('daysRest') == 0 else 0,
+                'opp_def_rating': float(opponent_data.get('defensiveRating') or 0.0) if opponent_data else 0.0,
+                'opp_pace': float(opponent_data.get('pace') or 0.0) if opponent_data else 0.0,
+            }
+            df = pd.DataFrame([features])
+            return df.fillna(0)
 
-        # season avg
-        season_avg = player_data.get('seasonAvg') if player_data else None
-        features['season_avg'] = float(season_avg) if season_avg is not None else 0.0
-
-        # contextual features
-        ctx = player_data.get('contextualFactors', {}) if player_data else {}
-        features['is_home'] = 1 if ctx.get('homeAway') == 'home' else 0
-        features['days_rest'] = float(ctx.get('daysRest') or 0.0)
-        features['is_back_to_back'] = 1 if ctx.get('isBackToBack') else 0
-
-        # opponent features (best-effort)
-        if opponent_data:
-            features['opp_def_rating'] = float(opponent_data.get('defensiveRating') or 0.0)
-            features['opp_pace'] = float(opponent_data.get('pace') or 0.0)
-        else:
-            features['opp_def_rating'] = 0.0
-            features['opp_pace'] = 0.0
-
-        df = pd.DataFrame([features])
-        df = df.fillna(0)
-        return df
+        return shared_engineer(player_data or {}, opponent_data or {})
 
 
 class MLPredictionService:

@@ -145,3 +145,22 @@ If you'd like, I can:
 - Add these dev instructions to the main `README.md` instead of a separate `README.dev.md`.
 - Create a short PowerShell script `scripts/dev_setup.ps1` that runs the common activation + install steps.
 - Add an automated `make dev` or `npm` script to unify backend/frontend start steps.
+
+Model artifacts & changelog
+
+- **New features (Nov 12, 2025):** This project now computes additional rolling statistics used by the ML feature pipeline. The feature set includes moving averages (SMA), exponential moving averages (EMA), weighted moving averages (WMA) for common windows (3/5/10 where applicable), rolling standard deviation/min/max/median, a linear `slope_10` trend over the last 10 games, and a `momentum_vs_5_avg` comparison. These are implemented in `backend/services/feature_engineering.py` and are used by both training and serving to avoid feature drift.
+
+- **Toy model artifact:** A toy RandomForest model was trained during the current development work and persisted locally at `backend/models_store/LeBron_James.pkl`. Large model artifacts should not be committed directly to `git`. Use one of these options instead:
+	- Track large artifacts with Git LFS (recommended for small teams):
+
+		```pwsh
+		git lfs install
+		git lfs track "backend/models_store/*.pkl"
+		git add .gitattributes
+		git add backend/models_store/LeBron_James.pkl
+		git commit -m "chore(models): add LeBron_James.pkl via LFS"
+		```
+
+	- Publish models as GitHub Release assets or store them in an external artifact storage (S3, GCS) and provide a download script that places files into `backend/models_store/` during CI or local setup.
+
+- **Changelog:** See `CHANGELOG.md` in the repo root for recent notable changes and short release notes.

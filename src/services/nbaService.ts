@@ -79,6 +79,59 @@ export interface NBAPlayerContext {
   seasonSource?: string | null;
 }
 
+// Module-level normalizer so both single and batch fetchers can reuse the logic.
+function normalizeBackendResponse(json: any, playerName?: string, statType?: string): NBAPlayerContext | null {
+  if (!json) return null;
+  const recentGames = Array.isArray(json.recentGames)
+    ? json.recentGames.map((g: any) => ({
+        date: g.date || g.gameDate || null,
+        statValue: g.statValue != null ? Number(g.statValue) : null,
+      }))
+    : null;
+  const seasonAvg = json.seasonAvg != null ? Number(json.seasonAvg) : null;
+  const recent = typeof json.recent === 'string' ? json.recent : null;
+  const notes = json.notes || null;
+  const noGamesThisSeason = !!json.noGamesThisSeason;
+  const recentSource = json.recentSource || null;
+  const seasonSource = json.seasonSource || null;
+  const opponent = json.opponent
+    ? {
+        name: json.opponent.name || null,
+        defensiveRating: json.opponent.defensiveRating != null ? Number(json.opponent.defensiveRating) : null,
+        pace: json.opponent.pace != null ? Number(json.opponent.pace) : null,
+      }
+    : null;
+  const contextualFactors = json.contextualFactors
+    ? {
+        daysRest: json.contextualFactors.daysRest != null ? Number(json.contextualFactors.daysRest) : null,
+        isBackToBack: json.contextualFactors.isBackToBack != null ? Boolean(json.contextualFactors.isBackToBack) : null,
+      }
+    : null;
+  const projectedMinutes = json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
+
+  if ((!recentGames || recentGames.length === 0) && seasonAvg == null && !noGamesThisSeason) return null;
+
+  return {
+    player: playerName || (json.player as string) || null,
+    stat: statType || (json.stat as string) || null,
+    recent: recent,
+    recentGames,
+    season: json.season || null,
+    seasonAvg,
+    notes,
+    opponent,
+    projectedMinutes,
+    noGamesThisSeason,
+    note: json.note || null,
+    lastSeason: json.lastSeason || null,
+    lastGameDate: json.lastGameDate || null,
+    fetchedAt: new Date().toISOString(),
+    contextualFactors,
+    recentSource,
+    seasonSource,
+  } as NBAPlayerContext;
+}
+
 export async function fetchPlayerContextFromNBA(
   proj: ParsedProjection,
   settings: Settings,
@@ -114,61 +167,7 @@ export async function fetchPlayerContextFromNBA(
   if (settings?.nbaApiKey)
     headersBase["Authorization"] = `Bearer ${settings.nbaApiKey}`;
 
-  // Helper to validate and normalize backend response
-  const normalize = (json: any): NBAPlayerContext | null => {
-    if (!json) return null;
-    const recentGames = Array.isArray(json.recentGames)
-      ? json.recentGames.map((g: any) => ({
-          date: g.date || g.gameDate || null,
-          statValue: g.statValue != null ? Number(g.statValue) : null,
-        }))
-      : null;
-    const seasonAvg = json.seasonAvg != null ? Number(json.seasonAvg) : null;
-    const recent = typeof json.recent === "string" ? json.recent : null;
-    const notes = json.notes || null;
-    const noGamesThisSeason = !!json.noGamesThisSeason;
-    const recentSource = json.recentSource || null;
-    const seasonSource = json.seasonSource || null;
-    const opponent = json.opponent
-      ? {
-          name: json.opponent.name || null,
-          defensiveRating:
-            json.opponent.defensiveRating != null
-              ? Number(json.opponent.defensiveRating)
-              : null,
-          pace: json.opponent.pace != null ? Number(json.opponent.pace) : null,
-        }
-      : null;
-    const projectedMinutes =
-      json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
-
-    // Accept only if we have at least some numeric evidence or explicit noGamesThisSeason flag
-    if (
-      (!recentGames || recentGames.length === 0) &&
-      seasonAvg == null &&
-      !noGamesThisSeason
-    )
-      return null;
-
-    return {
-      player: proj.player,
-      stat: proj.stat,
-      recent: recent,
-      recentGames,
-      season: json.season || null,
-      seasonAvg,
-      notes,
-      opponent,
-      projectedMinutes,
-      noGamesThisSeason,
-      note: json.note || null,
-      lastSeason: json.lastSeason || null,
-      lastGameDate: json.lastGameDate || null,
-      fetchedAt: new Date().toISOString(),
-      recentSource,
-      seasonSource,
-    } as NBAPlayerContext;
-  };
+  // Helper uses module-level normalizer
 
   // Try each candidate with retries/backoff
   for (const candidate of candidates) {
@@ -191,7 +190,7 @@ export async function fetchPlayerContextFromNBA(
             continue;
           }
           const json = await resp.json();
-          const ctx = normalize(json);
+          const ctx = normalizeBackendResponse(json, proj.player, proj.stat);
           if (ctx) return ctx;
           // if normalization failed, stop trying this candidate and move to next
           break;
@@ -270,5 +269,47 @@ export async function buildExternalContextForProjections(
       }
     }
     return contexts;
+  }
+}
+
+// Batch fetch helper: POSTs a list of player requests to the backend batch endpoint.
+export async function fetchBatchPlayerContext(
+  requests: Array<{ player: string; stat?: string; limit?: number }>,
+  settings: Settings
+): Promise<Array<NBAPlayerContext | { player: string; error: string }>> {
+  const viteEnvEndpoint =
+    typeof import.meta !== "undefined" &&
+    import.meta.env &&
+    import.meta.env.VITE_NBA_ENDPOINT
+      ? String(import.meta.env.VITE_NBA_ENDPOINT)
+      : undefined;
+  const defaultEndpoint = viteEnvEndpoint || "http://localhost:8000";
+  const base =
+    settings?.nbaEndpoint && settings.nbaEndpoint.length > 0
+      ? settings.nbaEndpoint
+      : defaultEndpoint;
+
+  const url = base + "/api/batch_player_context";
+
+  try {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(requests.map((r) => ({ player: r.player, stat: r.stat || "points", limit: r.limit || 8 }))),
+    });
+    if (!resp.ok) return requests.map((r) => ({ player: r.player, error: `http ${resp.status}` }));
+    const json = await resp.json();
+    // Expecting an array with per-player summaries or error objects
+    if (!Array.isArray(json)) return requests.map((r) => ({ player: r.player, error: "unexpected response" }));
+    return json.map((item: any, i: number) => {
+      if (item && item.error) return { player: item.player || requests[i].player, error: String(item.error) };
+      // try to normalize shape into NBAPlayerContext using the original request's player/stat
+      const normalized = normalizeBackendResponse(item, requests[i].player, requests[i].stat || 'points');
+      return (
+        normalized || ({ player: requests[i].player, error: 'no context' } as any)
+      );
+    });
+  } catch (e) {
+    return requests.map((r) => ({ player: r.player, error: String(e) }));
   }
 }

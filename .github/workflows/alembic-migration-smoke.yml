@@ -48,5 +48,3 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_migrations
         run: |
           python backend/scripts/check_alembic_graph.py --database-url $DATABASE_URL
-
-*** End Patch

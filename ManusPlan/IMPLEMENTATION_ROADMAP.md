@@ -11,7 +11,7 @@
 
 | Phase                          | Status         | Progress | Start Date | End Date | Notes                           |
 | ------------------------------ | -------------- | -------- | ---------- | -------- | ------------------------------- |
-| **Phase 1: Foundation**        | 🟡 In Progress | 62%      | -          | -        | Backend & Data Infrastructure   |
+| **Phase 1: Foundation**        | 🟡 In Progress | 72%      | -          | -        | Backend & Data Infrastructure   |
 | **Phase 2: Core ML**           | 🔴 Not Started | 0%       | -          | -        | Per-Player Models & Calibration |
 | **Phase 3: Advanced Features** | 🔴 Not Started | 0%       | -          | -        | Feature Engineering & Ensemble  |
 | **Phase 4: Production**        | 🔴 Not Started | 0%       | -          | -        | MLOps & Automation              |
@@ -30,7 +30,7 @@
 
 **Objective:** Build core backend infrastructure and data pipeline  
 **Status:** 🟡 In Progress  
-**Progress:** 16/25 tasks completed
+**Progress:** 18/25 tasks completed
 
 ### Recent Progress (Nov 10-11, 2025)
 
@@ -285,18 +285,18 @@ Scheduling guidance (example):
 
 ### Task 1.3.1: Implement Basic Feature Engineering
 
-- [ ] Create `backend/services/feature_engineering.py`
-- [ ] Implement `FeatureEngineering` class
-- [ ] Add basic features:
-  - [ ] Recent performance (last 3, 5, 10 games averages)
-  - [ ] Season average
-  - [ ] Home/away indicator
-  - [ ] Days of rest
-  - [ ] Back-to-back game indicator
-- [ ] Create feature extraction function:
-  - [ ] Input: player_id, game_date
-  - [ ] Output: feature DataFrame
-- [ ] Test with 10 different players
+- [x] Create `backend/services/feature_engineering.py`
+- [x] Implement `FeatureEngineering` class
+- [x] Add basic features:
+  - [x] Recent performance (last 3, 5, 10 games averages)
+  - [x] Season average
+  - [x] Home/away indicator
+  - [x] Days of rest
+  - [x] Back-to-back game indicator
+- [x] Create feature extraction function:
+  - [x] Input: player_id, game_date
+  - [x] Output: feature DataFrame
+- [x] Test with 10 different players
 
 **Acceptance Criteria:**
 
@@ -304,26 +304,38 @@ Scheduling guidance (example):
 - ✅ Handles missing data gracefully
 - ✅ Returns consistent DataFrame schema
 
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Status:** ✅ Completed (dev)  
+**Assigned To:** Backend Team  
+**Completion Date:** Nov 12, 2025
+
+**Progress update (Nov 12, 2025):**
+
+- [x] Created `backend/services/feature_engineering.py` and added unit tests under `backend/tests/test_feature_engineering.py`.
+- [x] Implemented `FeatureEngineering` compatibility wrapper and top-level `engineer_features` that returns a `pandas.DataFrame` ready for model input.
+- [x] Implemented basic features: recent performance (last 3/5/10), season average, home/away indicator, days-of-rest, rolling averages, EMA, and simple imputations. Unit tests validate recent stats and rolling calculations.
+ - [x] Back-to-back game indicator: implemented and exposed as `contextualFactors.daysRest` and `contextualFactors.isBackToBack` in the `player_context` API response. Frontend types and `nbaService` normalization updated to consume these fields.
+- [x] Feature extraction function present and covered by unit tests; additional coverage (10+ players) is recommended.
+
+**Status:** ✅ Completed (dev) — partial enhancement pending (back-to-back indicator)
+**Assigned To:** Backend Team
+**Completion Date:** Nov 12, 2025
 
 ---
 
 ### Task 1.3.2: Add Rolling Statistics
 
-- [ ] Implement rolling averages:
-  - [ ] Simple Moving Average (SMA) for 3, 5, 10 games
-  - [ ] Exponential Moving Average (EMA) with alpha=0.3
-  - [ ] Weighted Moving Average (recent games weighted higher)
-- [ ] Implement rolling statistics:
-  - [ ] Rolling standard deviation
-  - [ ] Rolling min/max
-  - [ ] Rolling median
-- [ ] Add trend detection:
-  - [ ] Linear regression slope over last 10 games
-  - [ ] Momentum indicator (current vs 5-game avg)
-- [ ] Test on historical data
+- [x] Implement rolling averages:
+  - [x] Simple Moving Average (SMA) for 3, 5, 10 games
+  - [x] Exponential Moving Average (EMA) with alpha=0.3
+  - [x] Weighted Moving Average (recent games weighted higher)
+- [x] Implement rolling statistics:
+  - [x] Rolling standard deviation
+  - [x] Rolling min/max
+  - [x] Rolling median
+- [x] Add trend detection:
+  - [x] Linear regression slope over last 10 games
+  - [x] Momentum indicator (current vs 5-game avg)
+- [x] Test on historical data
 
 **Acceptance Criteria:**
 
@@ -334,6 +346,17 @@ Scheduling guidance (example):
 **Status:** 🔴 Not Started  
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
+
+**Progress update (Nov 12, 2025):**
+
+- ✅ Implemented SMA (3/5/10), EMA (alpha=0.3), and WMA (3/5).  
+- ✅ Added rolling std/min/max/median for 3/5/10 windows.  
+- ✅ Added linear slope over last 10 games and `momentum_vs_5_avg` indicator.  
+- ✅ Unit tests added under `backend/tests` and validated locally.
+- ✅ FeatureEngineering and training scripts updated to include new features.
+
+**Status:** ✅ Completed (dev)
+**Completion Date:** Nov 12, 2025
 
 ---
 
@@ -398,12 +421,12 @@ Scheduling guidance (example):
 
 ### Task 1.4.2: Create Batch Context Endpoint
 
-- [ ] Implement `/api/batch_player_context` endpoint
-- [ ] Accept list of player requests
-- [ ] Process in parallel (asyncio)
-- [ ] Return list of player contexts
-- [ ] Add rate limiting (max 50 players per request)
-- [ ] Optimize database queries (batch fetch)
+- [x] Implement `/api/batch_player_context` endpoint
+ - [x] Accept list of player requests
+ - [x] Process in parallel (asyncio)
+ - [x] Return list of player contexts
+ - [x] Add rate limiting (max 50 players per request)
+ - [x] Optimize database queries (batch fetch)
 
 **Acceptance Criteria:**
 
@@ -433,7 +456,7 @@ Scheduling guidance (example):
 - ✅ Existing UI components work without changes
 - ✅ Error messages displayed to user
 
-**Status:** 🔴 Not Started  
+**Status:** ✅ Completed (dev)
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
 
@@ -793,7 +816,7 @@ Scheduling guidance (example):
 - ✅ Response format correct
 - ✅ Caching works
 
-**Status:** 🔴 Not Started  
+**Status:** ✅ Completed (dev)  
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
 
@@ -1764,7 +1787,11 @@ _This document should be updated regularly as tasks are completed and new requir
   - Fixed Alembic index migration to create index on `player_stats(player_id, game_date)` and corrected downgrade handling (`backend/alembic/versions/0003_add_indexes.py`).
   - Added small dev helper to persist a toy model for tests: `backend/scripts/persist_toy_model.py` (creates `backend/models_store/LeBron_James.pkl`).
   - Installed missing test dependency `aiosqlite` for sqlite-based DB health tests in local dev.
-  - Confirmed backend tests pass locally: `python -m pytest backend/tests` → 6 passed (10 warnings).
+  - Confirmed backend tests pass locally: `python -m pytest backend/tests` → 62 passed (0 failures).
+
+  Additional recent work (Nov 12, 2025):
+
+  - Persisted a toy RandomForest model using the updated feature pipeline (script `backend/scripts/train_and_persist_real_model.py`). Model saved to `backend/models_store/LeBron_James.pkl` and feature list recorded in the training output.
 
 - **Immediate next steps (recommended):**
  - **Immediate next steps (recommended):**

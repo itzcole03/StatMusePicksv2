@@ -45,6 +45,11 @@ export interface ParsedProjection {
     noGamesThisSeason?: boolean;
     lastSeason?: string | null;
     lastGameDate?: string | null;
+    // Derived contextual factors from backend to help UI and feature engineering
+    contextualFactors?: {
+      daysRest?: number | null;
+      isBackToBack?: boolean | null;
+    } | null;
   } | null;
 }
 
@@ -72,3 +77,14 @@ export interface Settings {
   // backwards-compatible.
   v2ConfidenceThreshold?: number;
 }
+
+export interface BatchPlayerRequest {
+  player: string;
+  stat?: string;
+  limit?: number;
+}
+
+export type BatchPlayerResult = {
+  player: string;
+  error: string;
+} | any;

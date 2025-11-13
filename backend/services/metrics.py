@@ -36,4 +36,3 @@ def generate_latest():
 
     # Single-process default
     return _gen_default()
-*** End Patch
