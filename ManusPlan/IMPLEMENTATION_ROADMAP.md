@@ -362,19 +362,19 @@ Scheduling guidance (example):
 
 ### Task 1.3.3: Add Opponent-Adjusted Features
 
-- [ ] Implement opponent strength metrics:
-  - [ ] Opponent defensive rating
-  - [ ] Opponent pace of play
-  - [ ] Opponent rank (1-30)
-- [ ] Calculate opponent-adjusted stats:
-  - [ ] Player avg vs top-10 defenses
-  - [ ] Player avg vs bottom-10 defenses
-  - [ ] Player avg vs similar opponents
-- [ ] Add historical matchup data:
-  - [ ] Games vs current opponent
-  - [ ] Avg performance vs current opponent
-  - [ ] Last game vs current opponent
-- [ ] Test with rivalry matchups (LAL vs BOS, etc.)
+- [x] Implement opponent strength metrics:
+  - [x] Opponent defensive rating
+  - [x] Opponent pace of play
+  - [x] Opponent rank (1-30)
+- [x] Calculate opponent-adjusted stats:
+  - [x] Player avg vs top-10 defenses
+  - [x] Player avg vs bottom-10 defenses
+  - [x] Player avg vs similar opponents
+- [x] Add historical matchup data:
+  - [x] Games vs current opponent
+  - [x] Avg performance vs current opponent
+  - [x] Last game vs current opponent
+- [x] Test with rivalry matchups (LAL vs BOS, etc.)
 
 **Acceptance Criteria:**
 
@@ -382,9 +382,21 @@ Scheduling guidance (example):
 - ✅ Historical matchup data retrieved
 - ✅ Handles new matchups (no history)
 
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Status:** ✅ Completed (dev)  
+**Assigned To:** Backend Team
+**Completion Date:** Nov 12, 2025
+
+**Progress update (Nov 12, 2025):**
+
+- Implemented opponent-adjusted features in `backend/services/feature_engineering.py` and wired them into the main `engineer_features(...)` output. New outputs include:
+  - `games_vs_current_opponent`, `avg_vs_current_opponent`, `avg_vs_stronger_def`, `avg_vs_similar_def`, `last_game_vs_current_opponent_date`, `last_game_vs_current_opponent_stat`.
+- Added unit tests: `backend/tests/test_opponent_adjusted.py` and an end-to-end integration test `backend/tests/test_engineer_features_end_to_end.py` — both pass locally.
+- Features tolerate missing per-game opponent metadata; missing values are safely handled and downstream code performs zero-fill/imputation as needed.
+
+**Notes:**
+
+- Definition of "stronger defense" uses numeric defensive rating where a lower number indicates a stronger defense; if your data uses the opposite convention adjust the comparison logic accordingly.
+- To fully populate opponent-adjusted metrics in training/serving, ensure per-game records include `opponentDefRating` and `opponentTeamId` (or equivalent) during ingestion.
 
 ---
 
