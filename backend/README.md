@@ -207,6 +207,34 @@ Notes:
 - The migrations use `DATABASE_URL` env var; if unset the helper defaults to `sqlite:///./dev.db`.
 - The training script writes a small model to `backend/models_store/` for local dev; it is not production-grade.
 
+### Training dataset generation (CLI)
+
+The repository includes a lightweight dataset generator used to build per-player
+training datasets from historical `player_stats`. Use the CLI helper to
+generate parquet/csv datasets and metadata for downstream training.
+
+Quick example (PowerShell):
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+python -m backend.services.training_data_service --stat-types points --out-dir backend/data/training_datasets
+```
+
+Notes:
+- The CLI will prefer Parquet output when `pyarrow` or `fastparquet` is installed; otherwise it falls back to CSV.
+- Per-player time-based splitting and a conservative filter for players with insufficient games are applied in the pipeline. See `backend/services/training_data_service.py` for details.
+- The CLI writes a small JSON metadata file alongside each dataset containing `version_id`, `rows`, and `created_at`.
+
+Quick programmatic usage (from Python):
+
+```python
+from backend.services.training_data_service import generate_samples_from_game_history, time_based_split
+# supply a player's game list (newest-first) and get a DataFrame of samples
+df = generate_samples_from_game_history("LeBron James", games)
+train, val, test = time_based_split(df)
+```
+
+
 Quick verification script (starts backend and runs prompt builder):
 
 ```pwsh
