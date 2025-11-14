@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import text
 
 from backend import db
@@ -48,7 +48,7 @@ async def seed(num_players: int = 10, games_per_player: int = 60, stat_type: str
             inserted_players.append((pid, name))
 
         # Create a pool of games (shared across players) with descending dates
-        base_date = datetime.utcnow()
+        base_date = datetime.now(timezone.utc)
         game_ids = []
         total_games = games_per_player
         for gidx in range(total_games):

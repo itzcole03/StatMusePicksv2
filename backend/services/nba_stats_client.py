@@ -1,13 +1,10 @@
 """Synchronous NBA stats client helpers used by backend code.
 
-This module provides two helpers expected by `fastapi_nba.py` and other
-backend modules: `find_player_id_by_name(name)` and `fetch_recent_games(player_id, limit)`.
-
-Behavior:
-- Prefer Redis caching via `backend.services.cache.get_redis()` when available.
-- Fall back to an in-process TTL cache for local dev/tests.
-- Use `nba_api` when installed; otherwise functions return `None` or []
-  so callers can handle missing data gracefully.
+This module provides a compact, single-copy implementation of the
+helpers used by `backend.fastapi_nba` and other services. It prefers
+Redis for caching via `backend.services.cache.get_redis()` and falls
+back to an in-process TTL cache. `nba_api` is optional and guarded so
+the module works in environments without network access.
 """
 from __future__ import annotations
 
@@ -21,10 +18,11 @@ from typing import Optional, List, Dict
 from cachetools import TTLCache
 
 from backend.services.cache import get_redis
+from backend.services.nba_normalize import canonicalize_rows
 
 logger = logging.getLogger(__name__)
 
-# Try importing nba_api optional dependency
+# Optional nba_api imports
 try:
     from nba_api.stats.static import players
     from nba_api.stats.endpoints import playergamelog
@@ -37,10 +35,10 @@ except Exception:  # pragma: no cover - optional dep
     playercareerstats = None
 
 
-# In-process TTL cache as a fallback when Redis is unavailable
-_local_cache = TTLCache(maxsize=2000, ttl=60 * 10)
+# Local TTL cache used when Redis isn't configured
+_local_cache = TTLCache(maxsize=2_000, ttl=60 * 10)
 
-# Simple token-bucket style rate limiter shared across sync calls
+# Rate limiter (simple token bucket) for external calls
 MAX_REQUESTS_PER_MINUTE = int(os.environ.get("NBA_API_MAX_RPM", "20"))
 _tokens = float(MAX_REQUESTS_PER_MINUTE)
 _last_refill = time.time()
@@ -48,7 +46,6 @@ _rl_lock = threading.Lock()
 
 
 def _acquire_token(timeout: float = 5.0) -> bool:
-    """Attempt to acquire a token within `timeout` seconds."""
     deadline = time.time() + timeout
     while time.time() < deadline:
         with _rl_lock:
@@ -78,7 +75,7 @@ def _with_retries(fn, *args, retries: int = 3, backoff: float = 0.5, **kwargs):
         except Exception as e:
             last_exc = e
             time.sleep(backoff * (2 ** attempt))
-    # final attempt without waiting for token
+    # final attempt
     try:
         return fn(*args, **kwargs)
     except Exception:
@@ -92,17 +89,14 @@ def _redis_client():
 
 
 def find_player_id_by_name(name: str) -> Optional[int]:
-    """Resolve a player name to the NBA player id.
+    """Resolve a player full name to an NBA player id.
 
-    Tries Redis -> in-process TTLCache -> `nba_api` calls (with retries/rate-limit).
-    Returns `None` if not resolvable.
+    Returns None when resolution is not possible in the current environment.
     """
     if not name:
         return None
 
     cache_key = f"player_id:{name}"
-
-    # Redis cache
     try:
         rc = _redis_client()
         if rc:
@@ -116,9 +110,9 @@ def find_player_id_by_name(name: str) -> Optional[int]:
                     except Exception:
                         return None
     except Exception:
+        # Redis may not be available in test/dev environments
         pass
 
-    # in-memory cache
     if cache_key in _local_cache:
         return _local_cache[cache_key]
 
@@ -143,7 +137,12 @@ def find_player_id_by_name(name: str) -> Optional[int]:
     except Exception:
         logger.debug("player id lookup failed for %s", name, exc_info=True)
 
-    # fallback: scan all players for a best-effort match
+    # best-effort scan
+    try:
+        allp = players.get_players()
+    except Exception:
+        return None
+
     def normalize(n: str) -> str:
         import re
 
@@ -153,18 +152,12 @@ def find_player_id_by_name(name: str) -> Optional[int]:
         n = re.sub(r"\s+", " ", n).strip()
         return n
 
-    try:
-        allp = players.get_players()
-    except Exception:
-        return None
-
     target = normalize(name)
     for p in allp:
         if normalize(p.get("full_name", "")) == target:
             pid = p["id"]
             _local_cache[cache_key] = pid
             return pid
-
     for p in allp:
         if target in normalize(p.get("full_name", "")):
             pid = p["id"]
@@ -175,16 +168,14 @@ def find_player_id_by_name(name: str) -> Optional[int]:
 
 
 def fetch_recent_games(player_id: int, limit: int = 8) -> List[dict]:
-    """Fetch recent game logs for a player id. Returns list of raw game dicts.
+    """Return recent game logs for a player id (list of dicts).
 
-    Tries Redis -> in-process TTLCache -> `nba_api` PlayerGameLog.
-    Returns empty list when data isn't available.
+    If `nba_api` is unavailable the function returns an empty list.
     """
     if not player_id:
         return []
 
     cache_key = f"player_recent:{player_id}:{limit}"
-
     try:
         rc = _redis_client()
         if rc:
@@ -210,6 +201,8 @@ def fetch_recent_games(player_id: int, limit: int = 8) -> List[dict]:
             return df.head(lim).to_dict(orient="records")
 
         recent = _with_retries(_fetch, player_id, limit)
+        # Canonicalize and dedupe before caching/returning
+        recent = canonicalize_rows(recent or [])
         _local_cache[cache_key] = recent
         try:
             rc = _redis_client()
@@ -223,52 +216,80 @@ def fetch_recent_games(player_id: int, limit: int = 8) -> List[dict]:
         return []
 
 
-__all__ = ["find_player_id_by_name", "fetch_recent_games"]
-
-# Compatibility wrappers expected by callers (legacy names used in `backend.main`)
 def find_player_id(name: str) -> Optional[int]:
-    """Backward-compatible alias for `find_player_id_by_name`.
-
-    Some modules call `find_player_id`; provide an alias to avoid attribute
-    errors when callers expect the older name.
-    """
     return find_player_id_by_name(name)
 
 
 def fetch_recent_games_by_id(player_id: int, limit: int = 8) -> List[dict]:
-    """Alias for `fetch_recent_games` that matches the older API naming.
-
-    Returns an empty list when the underlying implementation cannot fetch data.
-    """
     return fetch_recent_games(player_id, limit=limit)
 
 
 def fetch_recent_games_by_name(name: str, limit: int = 8) -> List[dict]:
-    """Fetch recent games by player name by resolving the id then delegating.
-
-    This mirrors the behavior expected by `backend.main` and test code.
-    """
     pid = find_player_id_by_name(name)
     if pid:
         return fetch_recent_games_by_id(pid, limit=limit)
     return []
 
-__all__ = [
-    "find_player_id_by_name",
-    "find_player_id",
-    "fetch_recent_games",
-    "fetch_recent_games_by_id",
-    "fetch_recent_games_by_name",
-]
+
+def fetch_games_by_season(player_id: int, season: str) -> List[dict]:
+    if not player_id or not season:
+        return []
+
+    cache_key = f"player_games_season:{player_id}:{season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    if playergamelog is None:
+        return []
+
+    try:
+        def _fetch(pid, s):
+            gl = playergamelog.PlayerGameLog(player_id=pid, season=s)
+            df = gl.get_data_frames()[0]
+            return df.to_dict(orient="records")
+
+        rows = _with_retries(_fetch, player_id, season)
+        rows = canonicalize_rows(rows or [])
+        _local_cache[cache_key] = rows
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 6, json.dumps(rows))
+        except Exception:
+            pass
+        return rows
+    except Exception:
+        logger.debug("fetch_games_by_season failed for %s %s", player_id, season, exc_info=True)
+        return []
+
+
+def fetch_career_games_by_id(player_id: int, seasons_start: int = 2000, seasons_end: int = 2025) -> List[dict]:
+    if not player_id:
+        return []
+
+    aggregated: List[dict] = []
+    for season in range(seasons_end, seasons_start - 1, -1):
+        season_str = f"{season-1}-{str(season)[-2:]}" if season >= 2001 else f"{season}-{str(season+1)[-2:]}"
+        rows = fetch_games_by_season(player_id, season_str)
+        for r in rows or []:
+            aggregated.append(r)
+    # canonicalize_rows will dedupe by game_id/player_id when possible
+    return canonicalize_rows(aggregated)
 
 
 def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
-    """Return basic season averages for a player (PTS/AST/REB) for a given season id.
-
-    Tries Redis -> local cache -> `playercareerstats` endpoint. Returns an
-    empty dict when data is unavailable. The `season` string should match the
-    `SEASON_ID` values used by `nba_api` (e.g. '2024-25').
-    """
     if not player_id or not season:
         return {}
 
@@ -288,7 +309,6 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     if cache_key in _local_cache:
         return _local_cache[cache_key]
 
-    # Try playercareerstats if available
     if playercareerstats is not None:
         try:
             def _pcs(pid):
@@ -296,15 +316,12 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
                 return pcs.get_data_frames()[0]
 
             df = _with_retries(_pcs, player_id)
-            # Expect df to be a DataFrame-like object
             if df is None:
                 return {}
 
-            # Filter by season id
             try:
                 season_rows = df[df['SEASON_ID'] == season]
             except Exception:
-                # If df indexing fails, fall back to scanning rows
                 season_rows = []
                 try:
                     for r in df.to_dict(orient='records'):
@@ -313,15 +330,12 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
                 except Exception:
                     season_rows = []
 
-            # If season_rows is empty or DataFrame-like with no rows, return {}
             if hasattr(season_rows, 'empty') and season_rows.empty:
                 stats = {}
             else:
-                # Compute basic means
                 import pandas as _pd
 
                 if not hasattr(season_rows, 'to_dict'):
-                    # season_rows is a list of dicts
                     df_season = _pd.DataFrame(season_rows)
                 else:
                     df_season = season_rows if isinstance(season_rows, _pd.DataFrame) else _pd.DataFrame(season_rows)
@@ -337,7 +351,6 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
                             except Exception:
                                 pass
 
-            # persist to caches
             _local_cache[cache_key] = stats
             try:
                 rc = _redis_client()
@@ -350,17 +363,10 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
         except Exception:
             logger.debug('player season stats lookup failed for %s %s', player_id, season, exc_info=True)
 
-    # Not available
     return {}
 
 
 def get_team_stats(team_id: int) -> Dict[str, float]:
-    """Placeholder: return basic team-level metrics if available.
-
-    Currently returns an empty dict when data sources are not present.
-    This is a small helper to be expanded later to call `teamgamelog` or
-    other endpoints to compute offensive/defensive ratings.
-    """
     if not team_id:
         return {}
 
@@ -380,7 +386,6 @@ def get_team_stats(team_id: int) -> Dict[str, float]:
     if cache_key in _local_cache:
         return _local_cache[cache_key]
 
-    # Try to fetch team game logs and compute simple averages (PTS / OPP)
     if teamgamelog is None:
         return {}
 
@@ -393,7 +398,6 @@ def get_team_stats(team_id: int) -> Dict[str, float]:
         if df is None:
             return {}
 
-        # Normalize column names - common variants for opponent points
         opp_cols = [c for c in ("OPP_PTS", "PTS_OPP", "OPPPTS", "PTS_ALLOWED") if c in df.columns]
         pts_col = "PTS" if "PTS" in df.columns else None
 
@@ -426,7 +430,6 @@ def get_team_stats(team_id: int) -> Dict[str, float]:
             except Exception:
                 pass
 
-        # persist to caches
         _local_cache[cache_key] = stats
         try:
             rc = _redis_client()
@@ -440,3 +443,17 @@ def get_team_stats(team_id: int) -> Dict[str, float]:
         logger.debug("team stats lookup failed for %s", team_id, exc_info=True)
 
     return {}
+
+
+__all__ = [
+    "find_player_id_by_name",
+    "find_player_id",
+    "fetch_recent_games",
+    "fetch_recent_games_by_id",
+    "fetch_recent_games_by_name",
+    "fetch_games_by_season",
+    "fetch_career_games_by_id",
+    "get_player_season_stats",
+    "get_team_stats",
+]
+

@@ -101,6 +101,22 @@ export interface OpponentInfo {
   [key: string]: any;
 }
 
+export interface AdvancedMetrics {
+  per?: number | null;
+  tsPct?: number | null;
+  usgPct?: number | null;
+  pie?: number | null;
+  offRating?: number | null;
+  defRating?: number | null;
+}
+
+export interface ContextualFactors {
+  homeAway?: "home" | "away" | null;
+  daysRest?: number | null;
+  isBackToBack?: boolean | null;
+  travelDistanceKm?: number | null;
+}
+
 export interface EnhancedPlayerContext {
   player: string;
   stat: string;
@@ -110,5 +126,6 @@ export interface EnhancedPlayerContext {
   fetchedAt?: string | null;
   rollingAverages?: RollingAverages | null;
   opponentInfo?: OpponentInfo | null;
-  contextualFactors?: { daysRest?: number | null; isBackToBack?: boolean | null } | null;
+  contextualFactors?: ContextualFactors | null;
+  advancedMetrics?: AdvancedMetrics | null;
 }

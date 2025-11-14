@@ -1,0 +1,23 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Player_One\\versions\\0258aac1e2f3\\Player_One_v2bd61e057721.joblib",
+  "created_at": "2025-11-14T07:28:40.604979+00:00",
+  "metadata": {
+    "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2",
+    "hyperparameters": {
+      "max_depth": 19,
+      "min_samples_leaf": 4,
+      "n_estimators": 159
+    },
+    "metrics": {
+      "accuracy": 1.0,
+      "brier": 0.10604557856117015,
+      "logloss": 0.39400067821746537,
+      "roc_auc": null
+    },
+    "model_type": "random_forest:RandomForestClassifier",
+    "notes": "trained from test_dataset.csv",
+    "schema_version": 1
+  },
+  "name": "Player_One",
+  "version_id": "0258aac1e2f3"
+}

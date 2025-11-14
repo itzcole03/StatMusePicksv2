@@ -1,0 +1,542 @@
+[
+  {
+    "GAME_ID": "SYN-2723-0000",
+    "GAME_DATE": "2019-10-01",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 10,
+    "REB": 2,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0001",
+    "GAME_DATE": "2019-10-04",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 11,
+    "REB": 3,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0002",
+    "GAME_DATE": "2019-10-07",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 12,
+    "REB": 4,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0003",
+    "GAME_DATE": "2019-10-10",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 13,
+    "REB": 5,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0004",
+    "GAME_DATE": "2019-10-13",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 14,
+    "REB": 6,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0005",
+    "GAME_DATE": "2019-10-16",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 15,
+    "REB": 7,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0006",
+    "GAME_DATE": "2019-10-19",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 16,
+    "REB": 8,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0007",
+    "GAME_DATE": "2019-10-22",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 17,
+    "REB": 9,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0008",
+    "GAME_DATE": "2019-10-25",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 18,
+    "REB": 10,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0009",
+    "GAME_DATE": "2019-10-28",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 19,
+    "REB": 11,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0010",
+    "GAME_DATE": "2019-10-31",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 20,
+    "REB": 2,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0011",
+    "GAME_DATE": "2019-11-03",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 21,
+    "REB": 3,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0012",
+    "GAME_DATE": "2019-11-06",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 22,
+    "REB": 4,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0013",
+    "GAME_DATE": "2019-11-09",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 23,
+    "REB": 5,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0014",
+    "GAME_DATE": "2019-11-12",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 24,
+    "REB": 6,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0015",
+    "GAME_DATE": "2019-11-15",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 25,
+    "REB": 7,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0016",
+    "GAME_DATE": "2019-11-18",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 26,
+    "REB": 8,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0017",
+    "GAME_DATE": "2019-11-21",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 27,
+    "REB": 9,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0018",
+    "GAME_DATE": "2019-11-24",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 28,
+    "REB": 10,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0019",
+    "GAME_DATE": "2019-11-27",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 29,
+    "REB": 11,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0020",
+    "GAME_DATE": "2019-11-30",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 30,
+    "REB": 2,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0021",
+    "GAME_DATE": "2019-12-03",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 31,
+    "REB": 3,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0022",
+    "GAME_DATE": "2019-12-06",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 32,
+    "REB": 4,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0023",
+    "GAME_DATE": "2019-12-09",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 33,
+    "REB": 5,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0024",
+    "GAME_DATE": "2019-12-12",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 34,
+    "REB": 6,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0025",
+    "GAME_DATE": "2019-12-15",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 35,
+    "REB": 7,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0026",
+    "GAME_DATE": "2019-12-18",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 36,
+    "REB": 8,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0027",
+    "GAME_DATE": "2019-12-21",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 37,
+    "REB": 9,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0028",
+    "GAME_DATE": "2019-12-24",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 38,
+    "REB": 10,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0029",
+    "GAME_DATE": "2019-12-27",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 39,
+    "REB": 11,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0030",
+    "GAME_DATE": "2019-12-30",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2019-20",
+    "PTS": 10,
+    "REB": 2,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0031",
+    "GAME_DATE": "2020-01-02",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 11,
+    "REB": 3,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0032",
+    "GAME_DATE": "2020-01-05",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 12,
+    "REB": 4,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0033",
+    "GAME_DATE": "2020-01-08",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 13,
+    "REB": 5,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0034",
+    "GAME_DATE": "2020-01-11",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 14,
+    "REB": 6,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0035",
+    "GAME_DATE": "2020-01-14",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 15,
+    "REB": 7,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0036",
+    "GAME_DATE": "2020-01-17",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 16,
+    "REB": 8,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0037",
+    "GAME_DATE": "2020-01-20",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 17,
+    "REB": 9,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0038",
+    "GAME_DATE": "2020-01-23",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 18,
+    "REB": 10,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0039",
+    "GAME_DATE": "2020-01-26",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 19,
+    "REB": 11,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0040",
+    "GAME_DATE": "2020-01-29",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 20,
+    "REB": 2,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0041",
+    "GAME_DATE": "2020-02-01",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 21,
+    "REB": 3,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0042",
+    "GAME_DATE": "2020-02-04",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 22,
+    "REB": 4,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0043",
+    "GAME_DATE": "2020-02-07",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 23,
+    "REB": 5,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0044",
+    "GAME_DATE": "2020-02-10",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 24,
+    "REB": 6,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0045",
+    "GAME_DATE": "2020-02-13",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 25,
+    "REB": 7,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0046",
+    "GAME_DATE": "2020-02-16",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 26,
+    "REB": 8,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0047",
+    "GAME_DATE": "2020-02-19",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 27,
+    "REB": 9,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0048",
+    "GAME_DATE": "2020-02-22",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 28,
+    "REB": 10,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0049",
+    "GAME_DATE": "2020-02-25",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 29,
+    "REB": 11,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0050",
+    "GAME_DATE": "2020-02-28",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 30,
+    "REB": 2,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0051",
+    "GAME_DATE": "2020-03-02",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 31,
+    "REB": 3,
+    "AST": 4
+  },
+  {
+    "GAME_ID": "SYN-2723-0052",
+    "GAME_DATE": "2020-03-05",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 32,
+    "REB": 4,
+    "AST": 5
+  },
+  {
+    "GAME_ID": "SYN-2723-0053",
+    "GAME_DATE": "2020-03-08",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 33,
+    "REB": 5,
+    "AST": 6
+  },
+  {
+    "GAME_ID": "SYN-2723-0054",
+    "GAME_DATE": "2020-03-11",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 34,
+    "REB": 6,
+    "AST": 7
+  },
+  {
+    "GAME_ID": "SYN-2723-0055",
+    "GAME_DATE": "2020-03-14",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 35,
+    "REB": 7,
+    "AST": 8
+  },
+  {
+    "GAME_ID": "SYN-2723-0056",
+    "GAME_DATE": "2020-03-17",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 36,
+    "REB": 8,
+    "AST": 1
+  },
+  {
+    "GAME_ID": "SYN-2723-0057",
+    "GAME_DATE": "2020-03-20",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 37,
+    "REB": 9,
+    "AST": 2
+  },
+  {
+    "GAME_ID": "SYN-2723-0058",
+    "GAME_DATE": "2020-03-23",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 38,
+    "REB": 10,
+    "AST": 3
+  },
+  {
+    "GAME_ID": "SYN-2723-0059",
+    "GAME_DATE": "2020-03-26",
+    "PLAYER_ID": 2723,
+    "SEASON_ID": "2020-21",
+    "PTS": 39,
+    "REB": 11,
+    "AST": 4
+  }
+]

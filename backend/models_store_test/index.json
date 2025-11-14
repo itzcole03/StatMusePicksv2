@@ -1,0 +1,136 @@
+{
+  "Player_One": [
+    {
+      "player_name": "Player One",
+      "version": "5d273b16b1cb",
+      "model_path": "backend\\models_store_test\\Player_One_v5d273b16b1cb.joblib",
+      "created_at": "2025-11-14T07:20:07.119152",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.028177452899000935,
+        "logloss": 0.18375627726961588,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 186,
+        "max_depth": 10,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.5054945054945055,
+        "feature2": 0.4945054945054945
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    },
+    {
+      "player_name": "Player One",
+      "version": "8f8b32142e41",
+      "model_path": "backend\\models_store_test\\Player_One_v8f8b32142e41.joblib",
+      "created_at": "2025-11-14T07:21:01.015193",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.028177452899000824,
+        "logloss": 0.18375627726961546,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 186,
+        "max_depth": 10,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.5054945054945055,
+        "feature2": 0.4945054945054945
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ],
+  "Player_Two": [
+    {
+      "player_name": "Player Two",
+      "version": "0c118a113ca4",
+      "model_path": "backend\\models_store_test\\Player_Two_v0c118a113ca4.joblib",
+      "created_at": "2025-11-14T07:20:07.782268",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.027481483599759708,
+        "logloss": 0.1812526096050493,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 15,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.3125,
+        "feature2": 0.6875
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    },
+    {
+      "player_name": "Player Two",
+      "version": "f17c2b760402",
+      "model_path": "backend\\models_store_test\\Player_Two_vf17c2b760402.joblib",
+      "created_at": "2025-11-14T07:21:01.656011",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.027481483599759708,
+        "logloss": 0.1812526096050493,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 15,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.3125,
+        "feature2": 0.6875
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ],
+  "Player_Three": [
+    {
+      "player_name": "Player Three",
+      "version": "976013473f0b",
+      "model_path": "backend\\models_store_test\\Player_Three_v976013473f0b.joblib",
+      "created_at": "2025-11-14T07:21:01.936868",
+      "model_type": "mean_baseline",
+      "notes": "fallback baseline from test_dataset.csv",
+      "metrics": {},
+      "hyperparameters": null,
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": null,
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ]
+}

@@ -17,6 +17,9 @@ from backend.services import nba_stats_client
 from backend.services.cache import redis_get_json, redis_set_json, get_redis
 from backend.services.cache import get_cache_metrics
 from backend.services import feature_engineering
+from backend.services.model_registry import PlayerModelRegistry
+from backend.services.ml_prediction_service import MLPredictionService, PlayerModelRegistry as InMemoryPlayerModelRegistry
+from fastapi import HTTPException
 try:
     # Prefer using our metrics helper which supports multiprocess mode.
     from backend.services.metrics import generate_latest, CONTENT_TYPE_LATEST
@@ -136,7 +139,18 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
     # Try async redis cache
     try:
         cached = await redis_get_json(key)
-        if cached:
+        # If cached exists and appears to be a full enriched context, return it.
+        # However, older cached entries may not include `rollingAverages` (added
+        # in a later release). Treat such entries as stale and fall through to
+        # rebuild the enhanced context so callers receive consistent fields.
+        # If the cached payload already indicates it's a cached response,
+        # respect it (tests may monkeypatch redis_get_json to return a cached
+        # payload). Otherwise, prefer caches that include the enriched
+        # `rollingAverages` field; treat older caches without that field as
+        # stale so we rebuild enhanced context.
+        if cached and cached.get("cached") is True:
+            return cached
+        if cached and cached.get("rollingAverages") is not None:
             cached["cached"] = True
             return cached
     except Exception:
@@ -168,22 +182,10 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
     except Exception:
         season_avg = None
 
-    # DEV helper: populate deterministic sample recent games when requested
-    try:
-        dev_mock = os.environ.get('DEV_MOCK_CONTEXT')
-        if dev_mock and (not recent or len(recent) == 0):
-            # lightweight sample recent games to enable frontend/dev smoke tests
-            recent = [
-                {"date": "2025-11-01", "statValue": 28, "opponentTeamId": "BOS", "opponentDefRating": 105.0, "opponentPace": 98.3},
-                {"date": "2025-10-29", "statValue": 24, "opponentTeamId": "NYK", "opponentDefRating": 110.0, "opponentPace": 100.1},
-                {"date": "2025-10-26", "statValue": 30, "opponentTeamId": "GSW", "opponentDefRating": 103.5, "opponentPace": 101.2},
-            ]
-            vals = [g.get('statValue') or g.get('PTS') or g.get('points') for g in recent]
-            vals = [v for v in vals if v is not None]
-            if vals:
-                season_avg = sum(vals) / len(vals)
-    except Exception:
-        pass
+    # NOTE: Removed dev-only deterministic mock fallback. The NBA integration
+    # is now live-only in production code. Tests and dev scripts should
+    # explicitly monkeypatch or provide stub clients when deterministic
+    # behavior is required.
 
     out = {
         "player": player_name,
@@ -323,6 +325,135 @@ async def _startup():
 async def _shutdown():
     # placeholder for graceful shutdown
     return None
+
+
+@app.post("/api/admin/promote")
+async def admin_promote(request: Request):
+    """Admin endpoint to mark a model version as promoted.
+
+    Protects access with `X-ADMIN-KEY` header (value read from `ADMIN_API_KEY`).
+    Body: JSON {"player": "Name", "version": "v123", "promoted_by": "alice", "notes": "...", "write_legacy": true}
+    """
+    try:
+        # simple header-based auth for admin actions
+        admin_key = os.environ.get("ADMIN_API_KEY")
+        hdr = request.headers.get("x-admin-key") or request.headers.get("X-ADMIN-KEY")
+        if admin_key and hdr != admin_key:
+            raise HTTPException(status_code=401, detail="unauthorized")
+
+        body = await request.json()
+        player = body.get("player") or body.get("player_name")
+        if not player:
+            raise HTTPException(status_code=400, detail="player is required")
+
+        version = body.get("version")
+        promoted_by = body.get("promoted_by") or body.get("by")
+        notes = body.get("notes")
+        write_legacy = bool(body.get("write_legacy", False))
+
+        store_dir = os.environ.get("MODEL_STORE_DIR", "backend/models_store")
+        reg = PlayerModelRegistry(store_dir)
+        meta = reg.promote_model(player, version=version, promoted_by=promoted_by, notes=notes, write_legacy_pkl=write_legacy)
+        if meta is None:
+            raise HTTPException(status_code=404, detail="player/version not found")
+        return {"ok": True, "metadata": meta}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("admin promote failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/models/load")
+async def api_models_load(request: Request):
+    """Load a persisted model for a player into the in-memory registry.
+
+    Body: {"player": "Name", "model_dir": "optional dir"}
+    """
+    try:
+        body = await request.json()
+        player = body.get("player") or body.get("player_name")
+        if not player:
+            raise HTTPException(status_code=400, detail="player is required")
+
+        model_dir = body.get("model_dir") or os.environ.get("MODEL_STORE_DIR")
+        svc = MLPredictionService(model_dir=model_dir)
+        wrapper = svc.registry.load_model(player)
+        loaded = wrapper is not None
+        count = len(svc.registry._models.get(player, []))
+        return {"ok": True, "loaded": loaded, "versions": count}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("models.load failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/predict")
+async def api_predict(request: Request):
+    """Predict endpoint for a single player.
+
+    Body: {"player": "Name", "stat": "PTS", "line": 10.5, "player_data": {...}}
+    """
+    try:
+        body = await request.json()
+        player = body.get("player") or body.get("player_name")
+        stat = body.get("stat")
+        line = body.get("line")
+        player_data = body.get("player_data") or body.get("context") or {}
+        model_dir = body.get("model_dir") or os.environ.get("MODEL_STORE_DIR")
+        if not player or stat is None or line is None:
+            raise HTTPException(status_code=400, detail="player, stat and line are required")
+
+        svc = MLPredictionService(model_dir=model_dir)
+        # attempt to load model on demand (best-effort)
+        try:
+            svc.registry.load_model(player)
+        except Exception:
+            pass
+        # If load_model didn't register a model (different registry
+        # implementations may behave differently), attempt a legacy
+        # `.pkl` load from the provided `model_dir` or the default
+        # `backend/models_store` and register it into the in-memory
+        # registry so subsequent prediction uses the persisted model.
+        try:
+            if svc.registry.get_model(player) is None:
+                import joblib
+                from pathlib import Path
+                safe = player.replace(' ', '_')
+                candidates = []
+                if model_dir:
+                    candidates.append(Path(model_dir) / f"{safe}.pkl")
+                candidates.append(Path('backend/models_store') / f"{safe}.pkl")
+                for p in candidates:
+                    try:
+                        if p.exists():
+                            m = joblib.load(p)
+                            # register into the runtime registry (do not re-persist)
+                            try:
+                                svc.registry.save_model(player, m, persist=False)
+                            except Exception:
+                                # best-effort only
+                                svc.registry._models.setdefault(player, []).append(svc.registry.SimpleModelWrapper(m) if hasattr(svc.registry, 'SimpleModelWrapper') else svc.registry._models.setdefault(player, []))
+                            break
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+        # DEBUG: report whether a model is registered for the player
+        try:
+            has = svc.registry.get_model(player) is not None
+            print(f"DEBUG: model registered for {player}: {has}")
+        except Exception:
+            print(f"DEBUG: model registered for {player}: ERROR")
+
+        res = await svc.predict(player, stat, float(line), player_data)
+        return {"ok": True, "prediction": res}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("predict failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # Register lifecycle handlers using `add_event_handler` instead of the

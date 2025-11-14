@@ -1,0 +1,56 @@
+[
+  {
+    "game_id": null,
+    "date": null,
+    "home_team": null,
+    "away_team": null,
+    "statValue": 29,
+    "opponentTeamId": null,
+    "opponentDefRating": null
+  },
+  {
+    "game_id": null,
+    "date": null,
+    "home_team": null,
+    "away_team": null,
+    "statValue": 20,
+    "opponentTeamId": null,
+    "opponentDefRating": null
+  },
+  {
+    "game_id": null,
+    "date": null,
+    "home_team": null,
+    "away_team": null,
+    "statValue": 20,
+    "opponentTeamId": null,
+    "opponentDefRating": null
+  },
+  {
+    "game_id": null,
+    "date": null,
+    "home_team": null,
+    "away_team": null,
+    "statValue": 25,
+    "opponentTeamId": null,
+    "opponentDefRating": null
+  },
+  {
+    "game_id": null,
+    "date": null,
+    "home_team": null,
+    "away_team": null,
+    "statValue": 20,
+    "opponentTeamId": null,
+    "opponentDefRating": null
+  },
+  {
+    "game_id": null,
+    "date": null,
+    "home_team": null,
+    "away_team": null,
+    "statValue": 4,
+    "opponentTeamId": null,
+    "opponentDefRating": null
+  }
+]

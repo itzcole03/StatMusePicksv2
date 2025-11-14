@@ -407,12 +407,18 @@ export default function AnalysisSection({
 
                             {ctx.opponent && (
                               <div className="text-xs mt-1">
-                                Opponent:{" "}
+                                Opponent: {" "}
                                 <span className="italic">
                                   {ctx.opponent.name ?? "Unknown"}
                                 </span>{" "}
                                 — DRtg: {ctx.opponent.defensiveRating ?? "null"}{" "}
                                 | Pace: {ctx.opponent.pace ?? "null"}
+                                {((ctx.opponent as any).avg_vs_current_opponent != null) && (
+                                  <div className="mt-1">Avg vs this opponent: <span className="font-medium">{Number((ctx.opponent as any).avg_vs_current_opponent).toFixed(2)}</span></div>
+                                )}
+                                {((ctx.opponent as any).avg_vs_stronger_def != null) && (
+                                  <div className="mt-1">Avg vs stronger defenses: <span className="font-medium">{Number((ctx.opponent as any).avg_vs_stronger_def).toFixed(2)}</span></div>
+                                )}
                               </div>
                             )}
 
@@ -428,12 +434,21 @@ export default function AnalysisSection({
                             {ctx.rollingAverages && Object.keys(ctx.rollingAverages).length > 0 && (
                               <div className="text-xs mt-1">
                                 <strong>Rolling averages:</strong>
-                                <div className="mt-1 flex flex-wrap gap-2">
+                                <div className="mt-1 flex flex-wrap gap-2 items-center">
                                   {Object.entries(ctx.rollingAverages).map(([k, v]: any) => (
                                     <div key={k} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
                                       {k}: {v != null ? Number(v).toFixed(2) : "null"}
                                     </div>
                                   ))}
+                                  {/* Trend indicator if slope_10 present */}
+                                  {((ctx.rollingAverages as any).slope_10 !== undefined) && (
+                                    <div className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs flex items-center">
+                                      <span className="mr-2">Trend:</span>
+                                      <span className={`font-semibold ${((ctx.rollingAverages as any).slope_10 ?? 0) > 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                        {((ctx.rollingAverages as any).slope_10 ?? 0) > 0 ? '↑' : '↓'} {Math.abs(((ctx.rollingAverages as any).slope_10 ?? 0)).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -593,6 +608,7 @@ export default function AnalysisSection({
                           </div>
                           <div className="text-right">
                             <div
+                              data-test="recommendation"
                               className={`inline-block px-3 py-1 rounded-full font-semibold ${
                                 r.recommendation === "OVER"
                                   ? "bg-green-100 text-green-800"
@@ -613,53 +629,43 @@ export default function AnalysisSection({
                         </div>
 
                         {r.numericEvidence && (
-                          <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
+                          <div data-test="numeric-evidence" className="mt-3 text-xs text-gray-600 dark:text-gray-300">
                             <div>
                               <strong>Numeric evidence:</strong>
                             </div>
                             <div>
-                              seasonAvg: {r.numericEvidence.seasonAvg ?? "null"}
+                              seasonAvg: <span data-test="seasonAvg">{r.numericEvidence.seasonAvg ?? "null"}</span>
                             </div>
                             <div>
-                              recentGames:{" "}
-                              {Array.isArray(r.numericEvidence.recentGames)
+                              recentGames: <span data-test="recentGames">{Array.isArray(r.numericEvidence.recentGames)
                                 ? `${r.numericEvidence.recentGames
                                     .map((g: any) => g.statValue)
                                     .join(", ")}`
-                                : "null"}
+                                : "null"}</span>
                             </div>
                             {r.numericEvidence.opponent && (
                               <div>
-                                opponent:{" "}
-                                {r.numericEvidence.opponent.name ?? "null"} —
-                                DRtg:{" "}
-                                {r.numericEvidence.opponent.defensiveRating ??
-                                  "null"}{" "}
-                                | Pace:{" "}
-                                {r.numericEvidence.opponent.pace ?? "null"}
+                                opponent: <span data-test="opponent-name">{r.numericEvidence.opponent.name ?? "null"}</span> —
+                                DRtg: <span data-test="opponent-drtg">{r.numericEvidence.opponent.defensiveRating ?? "null"}</span> | Pace: <span data-test="opponent-pace">{r.numericEvidence.opponent.pace ?? "null"}</span>
                               </div>
                             )}
                             <div>
-                              projectedMinutes:{" "}
-                              {r.numericEvidence.projectedMinutes ?? "null"}
+                              projectedMinutes: <span data-test="projectedMinutes">{r.numericEvidence.projectedMinutes ?? "null"}</span>
                             </div>
                           </div>
                         )}
 
                         {v2Predictions && v2Predictions[idx] && (
-                          <div className="mt-3 text-xs text-gray-600 dark:text-gray-300">
+                          <div data-test="statistical-model" className="mt-3 text-xs text-gray-600 dark:text-gray-300">
                             <div>
-                              <strong>Statistical model:</strong>{" "}
-                              {v2Predictions[idx].recommendation ?? "NO LEAN"} —
-                              Prob(OVER):{" "}
-                              {(
+                              <strong>Statistical model:</strong> <span data-test="stat-model-reco">{v2Predictions[idx].recommendation ?? "NO LEAN"}</span> — Prob(OVER): <span data-test="stat-model-prob">{(
                                 v2Predictions[idx].overProbability ?? 0
-                              ).toFixed(2)}
+                              ).toFixed(2)}</span>
                             </div>
                           </div>
                         )}
                         {r.flaggedForReview && (
-                          <div className="mt-3 text-xs text-yellow-700 dark:text-yellow-300">
+                          <div data-test="flagged" className="mt-3 text-xs text-yellow-700 dark:text-yellow-300">
                             <strong>Flagged for review:</strong> The model's
                             recommendation disagrees with the trusted numeric
                             evidence. Recommendation has been nulled to avoid
@@ -680,6 +686,10 @@ export default function AnalysisSection({
                         )}
                       </div>
                     ))}
+                    {/* Hidden machine-readable JSON for end-to-end tests */}
+                    <div data-test="analysis-json" style={{ display: "none" }}>
+                      {JSON.stringify(parsedResults)}
+                    </div>
                   </div>
                 ) : (
                   <div>

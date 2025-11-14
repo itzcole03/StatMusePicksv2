@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 import backend.main as main_mod
 from backend.main import app
+from backend.services import cache
 
 
 def test_player_context_with_monkeypatched_nba_client(monkeypatch):
@@ -27,6 +28,9 @@ def test_player_context_with_monkeypatched_nba_client(monkeypatch):
     monkeypatch.setattr(main_mod, 'nba_stats_client', DummyClient)
 
     client = TestClient(app)
+    # Ensure any cached entry from earlier tests is removed so we exercise
+    # the fresh fetch+feature-engineering path (delete all player_context keys).
+    cache.redis_delete_prefix_sync("player_context:")
     resp = client.get('/api/player_context?player_name=Test+Player&limit=2')
     assert resp.status_code == 200
     data = resp.json()

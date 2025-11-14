@@ -7,7 +7,7 @@
 // module mocks.
 
 vi.mock('../../services/nbaService', () => ({
-  buildExternalContextForProjections: async (projs: any[], settings: any) => {
+  buildExternalContextForProjections: async (projs: any[], _settings: any) => {
     const contexts: Record<string, any> = {};
     for (const p of projs) {
       contexts[p.id] = {
@@ -25,7 +25,7 @@ vi.mock('../../services/nbaService', () => ({
     }
     return contexts;
   },
-  fetchPlayerContextFromNBA: async (proj: any, settings: any) => {
+  fetchPlayerContextFromNBA: async (proj: any, _settings: any) => {
     return {
       player: proj.player,
       stat: proj.stat,
@@ -42,7 +42,7 @@ vi.mock('../../services/nbaService', () => ({
 }));
 
 vi.mock('../../services/aiService', () => ({
-  analyzeWithLocalLLM: async (prompt: string, settings: any, onChunk: any) => {
+  analyzeWithLocalLLM: async (_prompt: string, _settings: any, onChunk: any) => {
     const arr = [
       {
         player: 'Test Player',
@@ -56,18 +56,18 @@ vi.mock('../../services/aiService', () => ({
     ];
     onChunk(JSON.stringify(arr));
   },
-  buildAnalysisPromptAsync: async (projs: any[], settings: any) => {
-    const nba = await vi.importMock('../../services/nbaService');
-    const contexts = await nba.buildExternalContextForProjections(projs, settings);
+  buildAnalysisPromptAsync: async (projs: any[], _settings: any) => {
+    const nba: any = await vi.importMock('../../services/nbaService');
+    const contexts = await nba.buildExternalContextForProjections(projs, _settings);
     return { prompt: 'ok', externalUsed: true, contexts };
   },
-  scoreModelOutput: (parsed: any[], projections: any[], contextsMap: Record<string, any> | null) => {
+  scoreModelOutput: (parsed: any[], _projections: any[], _contextsMap: Record<string, any> | null) => {
     const items = parsed.map((p, idx) => ({ index: idx, expectedRec: null, modelRec: p.recommendation || null, match: true, trustedAvg: null, heuristicScore: 50, modelScore: p.modelConfidenceScore || null }));
     return { items, agreement: 100 };
   }
 }));
 
-vi.mock('../../services/aiService.v2', () => ({ buildPredictionFromFeatures: (player: string) => ({ recommendation: 'OVER', calibratedConfidence: 70 }) }));
+vi.mock('../../services/aiService.v2', () => ({ buildPredictionFromFeatures: (_player: string) => ({ recommendation: 'OVER', calibratedConfidence: 70 }) }));
 
 vi.mock('../../services/analysisValidator', () => ({ validateOutput: () => ({ ok: true }) }));
 

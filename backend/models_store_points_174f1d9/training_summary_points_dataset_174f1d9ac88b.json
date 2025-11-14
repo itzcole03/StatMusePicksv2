@@ -1,0 +1,132 @@
+{
+  "player_1001": {
+    "version": "a6e74bd8de02",
+    "metrics": {
+      "val_mae": 0.0021915435791015625,
+      "test_mae": 0.012833499908447265
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1002": {
+    "version": "13ff599d64b5",
+    "metrics": {
+      "val_mae": 0.0021250247955322266,
+      "test_mae": 0.012541675567626953
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1003": {
+    "version": "d77fe611a023",
+    "metrics": {
+      "val_mae": 0.0021250247955322266,
+      "test_mae": 0.012541484832763673
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1004": {
+    "version": "1ab74406faf7",
+    "metrics": {
+      "val_mae": 0.0021262168884277344,
+      "test_mae": 0.01254119873046875
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1005": {
+    "version": "3ba659ed1388",
+    "metrics": {
+      "val_mae": 0.0021233558654785156,
+      "test_mae": 0.01254100799560547
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1006": {
+    "version": "9765f2799c00",
+    "metrics": {
+      "val_mae": 0.0021915435791015625,
+      "test_mae": 0.012833499908447265
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1007": {
+    "version": "de707d739b78",
+    "metrics": {
+      "val_mae": 0.0021250247955322266,
+      "test_mae": 0.012541675567626953
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1008": {
+    "version": "2dd1f3f0eea0",
+    "metrics": {
+      "val_mae": 0.0021250247955322266,
+      "test_mae": 0.012541484832763673
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1009": {
+    "version": "1f56d9ef6989",
+    "metrics": {
+      "val_mae": 0.0021262168884277344,
+      "test_mae": 0.01254119873046875
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  },
+  "player_1010": {
+    "version": "d81314f50efa",
+    "metrics": {
+      "val_mae": 0.0021233558654785156,
+      "test_mae": 0.01254100799560547
+    },
+    "hyperparameters": {
+      "n_estimators": 85,
+      "max_depth": 4,
+      "learning_rate": 0.09010572616812898,
+      "subsample": 1.0
+    }
+  }
+}

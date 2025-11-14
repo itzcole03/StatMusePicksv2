@@ -225,6 +225,62 @@ Notes:
 - Per-player time-based splitting and a conservative filter for players with insufficient games are applied in the pipeline. See `backend/services/training_data_service.py` for details.
 - The CLI writes a small JSON metadata file alongside each dataset containing `version_id`, `rows`, and `created_at`.
 
+Seeding synthetic development data
+---------------------------------
+
+For local development and CI smoke-tests you can populate the dev database with safe,
+reversible synthetic data using the bundled seeding helper `backend/scripts/seed_synthetic_players.py`.
+
+Usage (PowerShell):
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+$env:DATABASE_URL = 'postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_dev'
+python backend/scripts/seed_synthetic_players.py --players 10 --games 60 --stat points
+```
+
+What it does:
+- Inserts `players`, `games`, and `player_stats` rows using high ID offsets to avoid
+    colliding with existing data.
+- Uses `ON CONFLICT DO NOTHING` for idempotent re-runs.
+
+Notes & best practices:
+- This script is strictly for local/dev use. Do not run it against production databases.
+- The inserted players use the display name pattern `Synth Player <id>` so you can filter
+    or remove them later if needed (for example, `DELETE FROM players WHERE name LIKE 'Synth Player %'`).
+- The seeding helper is intentionally conservative; it does not attempt to remove or alter
+    existing production rows.
+
+Removing synthetic rows (cleanup helper)
+
+You can remove seeded synthetic rows using the included cleanup helper `backend/scripts/remove_synthetic_players.py`.
+
+Usage (PowerShell - interactive):
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+$env:DATABASE_URL = 'postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_dev'
+python backend/scripts/remove_synthetic_players.py
+```
+
+Usage (PowerShell - non-interactive):
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+$env:DATABASE_URL = 'postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_dev'
+python backend/scripts/remove_synthetic_players.py --yes
+```
+
+Alternatively, a direct SQL example using `psql` is shown below if you prefer a manual approach:
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+$env:DATABASE_URL = 'postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_dev'
+psql "postgresql://postgres:postgres@localhost:5432/statmuse_dev" -c "DELETE FROM player_stats WHERE player_id IN (SELECT id FROM players WHERE name LIKE 'Synth Player %'); DELETE FROM players WHERE name LIKE 'Synth Player %';"
+```
+
+After seeding, re-run the dataset generation CLI to produce training artifacts for model experiments.
+
 Quick programmatic usage (from Python):
 
 ```python

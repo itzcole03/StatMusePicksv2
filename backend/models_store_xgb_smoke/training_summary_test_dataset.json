@@ -1,0 +1,34 @@
+{
+  "Player One": {
+    "version": "fdb1b40c7b1e",
+    "metrics": {
+      "brier": 0.10604557856117001,
+      "logloss": 0.39400067821746504,
+      "roc_auc": null,
+      "accuracy": 1.0
+    },
+    "hyperparameters": {
+      "n_estimators": 159,
+      "max_depth": 19,
+      "min_samples_leaf": 4
+    }
+  },
+  "Player Two": {
+    "version": "a4462fdf4315",
+    "metrics": {
+      "brier": 0.02748148359975971,
+      "logloss": 0.1812526096050493,
+      "roc_auc": null,
+      "accuracy": 1.0
+    },
+    "hyperparameters": {
+      "n_estimators": 187,
+      "max_depth": 15,
+      "min_samples_leaf": 3
+    }
+  },
+  "Player Three": {
+    "version": "c073cfac5aae",
+    "metrics": {}
+  }
+}

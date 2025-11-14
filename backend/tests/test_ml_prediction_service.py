@@ -3,6 +3,28 @@ import asyncio
 from backend.services.ml_prediction_service import MLPredictionService
 
 
+def test_fallback_prediction_uses_last5():
+    svc = MLPredictionService()
+    player_data = {
+        "rollingAverages": {"last5Games": 30.0},
+        "seasonAvg": 28.0,
+    }
+
+    # Run the async predict synchronously for test
+    res = asyncio.get_event_loop().run_until_complete(
+        svc.predict("Anyone", "points", 27.5, player_data)
+    )
+
+    assert "over_probability" in res
+    assert "recommendation" in res
+    # last5=30, line=27.5 -> heuristic favors OVER (over_prob > 0.5)
+    assert res["predicted_value"] == 30.0
+    assert res["over_probability"] > 0.5
+import asyncio
+
+from backend.services.ml_prediction_service import MLPredictionService
+
+
 def test_feature_engineering_and_predict():
     svc = MLPredictionService()
 

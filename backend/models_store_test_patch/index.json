@@ -1,0 +1,80 @@
+{
+  "Player_One": [
+    {
+      "player_name": "Player One",
+      "version": "2bd61e057721",
+      "model_path": "backend\\models_store_test_patch\\Player_One_v2bd61e057721.joblib",
+      "created_at": "2025-11-14T07:28:40.597995",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.10604557856117015,
+        "logloss": 0.39400067821746537,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 159,
+        "max_depth": 19,
+        "min_samples_leaf": 4
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.6666666666666666,
+        "feature2": 0.3333333333333333
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ],
+  "Player_Two": [
+    {
+      "player_name": "Player Two",
+      "version": "53fb0f5cd840",
+      "model_path": "backend\\models_store_test_patch\\Player_Two_v53fb0f5cd840.joblib",
+      "created_at": "2025-11-14T07:28:41.634307",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.027481483599759708,
+        "logloss": 0.1812526096050493,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 15,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.3125,
+        "feature2": 0.6875
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ],
+  "Player_Three": [
+    {
+      "player_name": "Player Three",
+      "version": "6a87c9e47786",
+      "model_path": "backend\\models_store_test_patch\\Player_Three_v6a87c9e47786.joblib",
+      "created_at": "2025-11-14T07:28:42.273655",
+      "model_type": "mean_baseline",
+      "notes": "fallback baseline from test_dataset.csv",
+      "metrics": {},
+      "hyperparameters": null,
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": null,
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ]
+}

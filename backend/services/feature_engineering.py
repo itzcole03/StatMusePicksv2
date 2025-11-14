@@ -163,8 +163,12 @@ def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3
     values = [g.get("statValue") for g in recent_games if g.get("statValue") is not None]
     out = {}
     for w in windows:
-        if w > 0 and len(values) > 0:
-            slice_vals = values[:w] if len(values) >= w else values[: len(values)]
+        # Compute a windowed average using up to `w` most recent samples.
+        # If fewer than `w` samples are available compute the mean of
+        # the available samples (this is the historic behavior expected
+        # by tests).
+        if w > 0 and values:
+            slice_vals = values[:w] if len(values) >= w else values[:len(values)]
             out[f"last_{w}_avg"] = float(np.mean(slice_vals))
         else:
             out[f"last_{w}_avg"] = None

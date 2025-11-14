@@ -22,7 +22,7 @@ import pandas as pd
 import os
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 from backend.services import feature_engineering
 
@@ -125,7 +125,7 @@ def save_dataset(df: pd.DataFrame, out_dir: str, base_name: str) -> Dict[str, An
     Returns the metadata dict written.
     """
     Path(out_dir).mkdir(parents=True, exist_ok=True)
-    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     parquet_path = Path(out_dir) / f"{base_name}.{ts}.parquet"
     meta_path = Path(out_dir) / f"{base_name}.{ts}.meta.json"
 
@@ -174,7 +174,7 @@ import argparse
 import asyncio
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -255,14 +255,15 @@ def make_time_splits(df: pd.DataFrame) -> pd.DataFrame:
         group.loc[val_end:, "split"] = "test"
         return group
 
-    # Use the new include_groups=False when available to avoid future
-    # deprecation warnings. Fall back to older pandas API if param is
-    # unsupported (TypeError).
-    try:
-        out = df.groupby("player_id", group_keys=False, include_groups=False).apply(assign)
-    except TypeError:
-        out = df.groupby("player_id", group_keys=False).apply(assign)
-    return out
+    # Iterate groups explicitly to avoid DataFrameGroupBy.apply operating
+    # on grouping columns which raises a FutureWarning in newer pandas.
+    parts = []
+    for pid, grp in df.groupby("player_id", sort=False):
+        out_grp = assign(grp)
+        parts.append(out_grp)
+    if not parts:
+        return df
+    return pd.concat(parts, ignore_index=True)
 
 
 def time_series_cv_split(
@@ -357,7 +358,7 @@ def compute_version_id(df: pd.DataFrame) -> str:
     h = hashlib.sha256()
     # Use csv bytes as stable-ish representation
     h.update(df.to_csv(index=False).encode("utf-8"))
-    h.update(datetime.utcnow().isoformat().encode("utf-8"))
+    h.update(datetime.now(timezone.utc).isoformat().encode("utf-8"))
     return h.hexdigest()[:12]
 
 
@@ -387,7 +388,7 @@ def save_dataset_version(df: pd.DataFrame, out_dir: Path, stat_type: str) -> Dic
         "stat_type": stat_type,
         "path": str(path),
         "rows": len(df),
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
     with open(out_dir / f"{stat_type}_dataset_{version}.json", "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2)

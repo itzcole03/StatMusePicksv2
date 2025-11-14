@@ -1,0 +1,67 @@
+name: Playwright Smoke Test
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main, feat/** ]
+  pull_request:
+    branches: [ main, feat/** ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend Python deps
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: Start backend (uvicorn)
+        run: |
+          . .venv/bin/activate
+          nohup uvicorn backend.main:app --host 127.0.0.1 --port 8000 > backend.log 2>&1 &
+          # wait for health
+          npx wait-on http://127.0.0.1:8000/health --timeout 15000
+        env:
+          PYTHONUNBUFFERED: 1
+
+      - name: Start frontend (Vite)
+        run: |
+          nohup npm run dev -- --port 5173 > frontend.log 2>&1 &
+          npx wait-on http://127.0.0.1:5173/ --timeout 20000
+
+      - name: Run Playwright smoke script
+        run: node scripts/playwright_smoke.mjs
+
+      - name: Upload logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-logs
+          path: |
+            backend.log
+            frontend.log
+

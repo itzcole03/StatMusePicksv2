@@ -1,0 +1,45 @@
+name: Backend dataset smoke test
+
+on:
+  push:
+    branches: [ main, feat/** ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  dataset-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Create venv
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+
+      - name: Install backend requirements
+        run: |
+          . .venv/bin/activate
+          pip install -r backend/requirements.txt
+
+      - name: Run sample ingestion + dataset generation
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          . .venv/bin/activate
+          python backend/scripts/ingest_sample_data.py
+          python backend/services/training_data_service.py --all --out-dir backend/data/training_datasets --min-games 5
+
+      - name: Run backend unit tests (fast)
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          . .venv/bin/activate
+          python -m pytest backend/tests/test_training_data_service.py -q

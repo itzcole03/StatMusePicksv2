@@ -1,0 +1,10 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\toy-points-model\\versions\\813265969b63\\toy_model_1.joblib",
+  "created_at": "2025-11-14T06:38:13.426675+00:00",
+  "metadata": {
+    "model_type": "sklearn.DummyRegressor",
+    "source": "persist_toy_model.py"
+  },
+  "name": "toy-points-model",
+  "version_id": "813265969b63"
+}

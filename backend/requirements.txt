@@ -19,3 +19,6 @@ joblib
 prometheus_client
 requests==2.31.0
 urllib3==1.26.16
+pyarrow
+optuna
+tqdm

@@ -1,3 +1,5 @@
+[![Playwright Smoke Test](https://github.com/itzcole03/StatMusePicksv2/actions/workflows/playwright-smoke.yml/badge.svg)](https://github.com/itzcole03/StatMusePicksv2/actions/workflows/playwright-smoke.yml)
+ 
 Development README — StatMusePicksv2
 
 This short developer guide covers the common local dev tasks: creating/activating the Python venv, starting the backend and frontend in dev, running tests, and quick API examples used for smoke checks.

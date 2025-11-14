@@ -1,0 +1,152 @@
+{
+  "Player_One": [
+    {
+      "player_name": "Player One",
+      "version": "079c59f62779",
+      "model_path": "backend\\models_store_test_full\\Player_One_v079c59f62779.joblib",
+      "created_at": "2025-11-14T07:24:20.788921",
+      "model_type": "xgboost:XGBClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.11111109786563489,
+        "logloss": 0.40546507830584244,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 9,
+        "learning_rate": 0.07768811685516967
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.0,
+        "feature2": 0.0
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    },
+    {
+      "player_name": "Player One",
+      "version": "4203ed9ac09e",
+      "model_path": "backend\\models_store_test_full\\Player_One_v4203ed9ac09e.joblib",
+      "created_at": "2025-11-14T07:35:03.329571",
+      "model_type": "xgboost:XGBClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.11111109786563489,
+        "logloss": 0.40546507830584244,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 9,
+        "learning_rate": 0.07768811685516967
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.0,
+        "feature2": 0.0
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ],
+  "Player_Two": [
+    {
+      "player_name": "Player Two",
+      "version": "102e68a5d442",
+      "model_path": "backend\\models_store_test_full\\Player_Two_v102e68a5d442.joblib",
+      "created_at": "2025-11-14T07:24:28.675483",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.027481483599759708,
+        "logloss": 0.1812526096050493,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 15,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.3125,
+        "feature2": 0.6875
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    },
+    {
+      "player_name": "Player Two",
+      "version": "68d27110000a",
+      "model_path": "backend\\models_store_test_full\\Player_Two_v68d27110000a.joblib",
+      "created_at": "2025-11-14T07:35:11.090404",
+      "model_type": "random_forest:RandomForestClassifier",
+      "notes": "trained from test_dataset.csv",
+      "metrics": {
+        "brier": 0.027481483599759715,
+        "logloss": 0.1812526096050493,
+        "roc_auc": null,
+        "accuracy": 1.0
+      },
+      "hyperparameters": {
+        "n_estimators": 187,
+        "max_depth": 15,
+        "min_samples_leaf": 3
+      },
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": {
+        "feature1": 0.3125,
+        "feature2": 0.6875
+      },
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ],
+  "Player_Three": [
+    {
+      "player_name": "Player Three",
+      "version": "6bdeb3c2d72a",
+      "model_path": "backend\\models_store_test_full\\Player_Three_v6bdeb3c2d72a.joblib",
+      "created_at": "2025-11-14T07:24:35.268768",
+      "model_type": "mean_baseline",
+      "notes": "fallback baseline from test_dataset.csv",
+      "metrics": {},
+      "hyperparameters": null,
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": null,
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    },
+    {
+      "player_name": "Player Three",
+      "version": "93b4942d9ea6",
+      "model_path": "backend\\models_store_test_full\\Player_Three_v93b4942d9ea6.joblib",
+      "created_at": "2025-11-14T07:35:17.615497",
+      "model_type": "mean_baseline",
+      "notes": "fallback baseline from test_dataset.csv",
+      "metrics": {},
+      "hyperparameters": null,
+      "feature_columns": [
+        "feature1",
+        "feature2"
+      ],
+      "feature_importances": null,
+      "dataset_version": "f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+player_id,n_samples,model,brier,logloss,roc_auc,accuracy,best_params,timestamp
+Player One,6,xgboost,0.11111109786563489,0.40546507830584244,,1.0,"{""n_estimators"": 187, ""max_depth"": 9, ""learning_rate"": 0.07768811685516967}","""f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"""
+Player Two,6,random_forest,0.027481483599759708,0.1812526096050493,,1.0,"{""n_estimators"": 187, ""max_depth"": 15, ""min_samples_leaf"": 3}","""f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"""
+Player One,6,xgboost,0.11111109786563489,0.40546507830584244,,1.0,"{""n_estimators"": 187, ""max_depth"": 9, ""learning_rate"": 0.07768811685516967}","""f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"""
+Player Two,6,random_forest,0.027481483599759715,0.1812526096050493,,1.0,"{""n_estimators"": 187, ""max_depth"": 15, ""min_samples_leaf"": 3}","""f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"""

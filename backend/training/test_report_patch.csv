@@ -1,0 +1,3 @@
+player_id,n_samples,model,brier,logloss,roc_auc,accuracy,best_params,timestamp
+Player One,6,random_forest,0.10604557856117015,0.39400067821746537,,1.0,"{""n_estimators"": 159, ""max_depth"": 19, ""min_samples_leaf"": 4}","""f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"""
+Player Two,6,random_forest,0.027481483599759708,0.1812526096050493,,1.0,"{""n_estimators"": 187, ""max_depth"": 15, ""min_samples_leaf"": 3}","""f5654c7ba52848d183a110295c8425c5b03932ddfd11e32b0b0e9feaf84b4cf2"""

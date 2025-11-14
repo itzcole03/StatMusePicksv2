@@ -1039,3 +1039,5 @@ By following these recommendations, the service can achieve significantly higher
 
 - Model artifact note: a persisted toy model for dev/testing is stored at `backend/models_store/LeBron_James.pkl` (tracked via Git LFS). Use this artifact for local integration smoke tests when appropriate.
 
+- Promotion note: the `PlayerModelRegistry` now supports promotion metadata (who/when/notes) and there is a small CLI `backend/scripts/promote_model.py` to mark a model version as promoted for production. Unit tests were added under `backend/tests/test_model_promotion.py`.
+
