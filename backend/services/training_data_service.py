@@ -75,6 +75,10 @@ def generate_samples_from_game_history(
         sample_row["player"] = player_name
         sample_row["game_date"] = games[i].get("date")
         sample_row["target"] = games[i].get(stat_field)
+        # Preserve source game identifier when available so downstream
+        # integration tests and per-player splits can reference original
+        # game rows. Accept common keys: 'gameId' or 'game_id'.
+        sample_row["game_id"] = games[i].get("gameId") or games[i].get("game_id")
         samples.append(sample_row)
 
     if not samples:
@@ -196,7 +200,7 @@ async def fetch_player_stat_rows(
         p.name AS player_name,
         p.team AS player_team,
         p.position AS player_position,
-        g.id AS game_id,
+        ps.game_id AS game_id,
         g.game_date AS game_date,
         g.home_team AS home_team,
         g.away_team AS away_team,
@@ -204,7 +208,7 @@ async def fetch_player_stat_rows(
         ps.value AS stat_value
     FROM player_stats ps
     JOIN players p ON ps.player_id = p.id
-    JOIN games g ON ps.game_id = g.id
+    LEFT JOIN games g ON ps.game_id = g.id
     WHERE ps.stat_type = :stat_type
     """
     params = {"stat_type": stat_type}
@@ -410,16 +414,68 @@ async def generate_and_save_dataset(
         if col not in df.columns:
             raise RuntimeError(f"Missing expected column in query results: {col}")
 
+    # Rename stat column to target for compatibility
     df = df.rename(columns={"stat_value": "target"})
 
-    df = make_time_splits(df)
+    # Build per-player feature samples using the pure-Python generator which
+    # relies on `feature_engineering.engineer_features`.
+    samples_list: List[pd.DataFrame] = []
 
-    # Filter out players with too few games
-    counts = df.groupby("player_id").size()
-    good_players = counts[counts >= min_games_per_player].index.tolist()
-    filtered = df[df["player_id"].isin(good_players)].reset_index(drop=True)
+    # Group rows by player and prepare a newest-first games list for each
+    grouped = df.groupby(["player_id", "player_name"])  # keep name for samples
+    for (pid, pname), group in grouped:
+        # sort newest-first by game_date
+        grp = group.sort_values("game_date", ascending=False)
+        # build the 'games' list expected by generate_samples_from_game_history
+        games = []
+        for _, r in grp.iterrows():
+            games.append({
+                "date": r.get("game_date"),
+                "gameId": r.get("game_id") if "game_id" in r.index else r.get("game_id"),
+                "statValue": r.get("target"),
+                "homeTeam": r.get("home_team"),
+                "awayTeam": r.get("away_team"),
+            })
 
-    meta = save_dataset_version(filtered, Path(out_dir), stat_type)
+        # Skip players with too few total games
+        if len(games) < min_games_per_player:
+            continue
+
+        # Use the existing generator to compute features+target per game
+        df_samples = generate_samples_from_game_history(pname, games, lookback=10, min_lookback=1, stat_field="statValue")
+        if not df_samples.empty:
+            samples_list.append(df_samples)
+
+    if not samples_list:
+        raise RuntimeError(f"No players with >={min_games_per_player} games produced samples for stat_type={stat_type}")
+
+    all_samples = pd.concat(samples_list, ignore_index=True)
+
+    # Ensure datetime and apply time-based splitting per player
+    all_samples = all_samples.reset_index(drop=True)
+    all_samples["game_date"] = pd.to_datetime(all_samples["game_date"])
+
+    # Assign splits per player using make_time_splits on the raw rows (player_id required)
+    # Note: `all_samples` contains `player` (name) but not `player_id`; map names back to ids
+    # Build mapping from player name -> player_id from the grouped keys ((pid, pname) tuples).
+    name_to_id = {}
+    try:
+        # grouped.groups.keys() yields tuples of (player_id, player_name)
+        name_to_id = {pname: pid for (pid, pname) in grouped.groups.keys()}
+    except Exception:
+        # Fall back to empty mapping if grouping structure unexpected
+        name_to_id = {}
+
+    if "player" in all_samples.columns:
+        all_samples["player_id"] = all_samples["player"].map(lambda nm: name_to_id.get(nm))
+
+    # Fallback: if player_id missing, skip make_time_splits and just save
+    try:
+        all_with_splits = make_time_splits(all_samples)
+    except Exception:
+        all_with_splits = all_samples
+
+    meta = save_dataset_version(all_with_splits, Path(out_dir), stat_type)
     return meta
 
 
