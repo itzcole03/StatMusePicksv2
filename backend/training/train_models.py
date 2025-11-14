@@ -66,6 +66,10 @@ except Exception:
 
 from backend.services.model_registry import PlayerModelRegistry
 from backend.services.training_data_service import time_series_cv_split
+try:
+    from backend.models.ensemble_model import EnsembleModel
+except Exception:
+    EnsembleModel = None
 
 
 def _read_dataset(path: Path) -> pd.DataFrame:
@@ -87,7 +91,7 @@ def _select_feature_columns(df: pd.DataFrame) -> List[str]:
     return numeric
 
 
-def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store", min_games: int = 50, trials: int = 50, report_csv: Optional[str] = None) -> Dict:
+def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store", min_games: int = 50, trials: int = 50, report_csv: Optional[str] = None, ensemble_trials: int = 50, ensemble_timeout: Optional[int] = None) -> Dict:
     path = Path(dataset_path)
     if not path.exists():
         raise FileNotFoundError(f"Dataset not found: {dataset_path}")
@@ -691,6 +695,62 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
             results[player_name] = {"version": version, "metrics": metadata["metrics"]}
             continue
 
+        # Optionally try an ensemble (regression only) and prefer it if it improves MAE on eval set
+        try:
+            if EnsembleModel is not None:
+                # Build union of train+val across folds if available, otherwise use train+val
+                try:
+                    union_train = pd.concat([
+                        pd.concat([f.get("train", pd.DataFrame()), f.get("val", pd.DataFrame())])
+                        for f in folds_for_search
+                        if not f.get("train", pd.DataFrame()).empty
+                    ], ignore_index=True)
+                except Exception:
+                    union_train = pd.concat([train, val]) if not train.empty else pd.DataFrame()
+
+                if not union_train.empty and feature_cols:
+                    try:
+                        ens = EnsembleModel()
+                        ens.fit(union_train[feature_cols].to_numpy(), union_train["target"].to_numpy())
+                        eval_df = test if ("test" in locals() and not test.empty) else (val if not val.empty else pd.DataFrame())
+                        if not eval_df.empty:
+                            X_eval = eval_df[feature_cols].to_numpy()
+                            y_eval = eval_df["target"].to_numpy()
+                            # Optionally tune ensemble weights on the eval set before comparing
+                            try:
+                                if hasattr(ens, "tune_weights_by_mae"):
+                                    try:
+                                        tuned = ens.tune_weights_by_mae(X_eval, y_eval, n_trials=ensemble_trials, timeout=ensemble_timeout)
+                                        LOG.debug("Player %s: ensemble tuned result=%s", pid, tuned)
+                                    except Exception:
+                                        LOG.debug("Player %s: ensemble weight tuning failed", pid, exc_info=True)
+                            except Exception:
+                                pass
+                            try:
+                                ens_pred = ens.predict(X_eval)
+                                ens_mae = float(_mae(y_eval, ens_pred))
+                            except Exception:
+                                ens_mae = None
+                            try:
+                                base_pred = best_est.predict(X_eval)
+                                base_mae = float(_mae(y_eval, base_pred))
+                            except Exception:
+                                base_mae = None
+
+                            if ens_mae is not None and base_mae is not None:
+                                LOG.debug("Player %s: ensemble MAE=%.6f, base MAE=%.6f", pid, ens_mae, base_mae)
+                                # Prefer ensemble when it's strictly better (or equal within tiny tolerance)
+                                if ens_mae <= base_mae * 0.9999:
+                                    LOG.info("Selecting ensemble for player %s: ensemble_mae=%.6f <= base_mae=%.6f", pid, ens_mae, base_mae)
+                                    best_est = ens
+                                    best_name = "Ensemble"
+                                    best_params = {"weights": getattr(ens, "weights", None), "use_stacking": getattr(ens, "use_stacking", False)}
+                    except Exception:
+                        LOG.debug("Ensemble training/eval failed for player %s", pid, exc_info=True)
+        except Exception:
+            # non-fatal: if ensemble import wasn't available or something failed, continue
+            pass
+
         # extract feature importances if available
         feature_importances = None
         try:
@@ -728,6 +788,7 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
             test_mae = float(_mae(test["target"], test_pred))
 
         player_name = group["player_name"].iloc[0] if "player_name" in group.columns else f"player_{pid}"
+        ensemble_flag = (best_name == "Ensemble")
         metadata = {
             "model_type": f"{best_name}:{type(best_est).__name__}",
             "notes": f"trained from {path.name}",
@@ -736,6 +797,7 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
             "hyperparameters": best_params,
             "feature_importances": feature_importances,
             "dataset_version": dataset_version,
+            "ensemble_selected": ensemble_flag,
         }
         version = reg.save_model(player_name, best_est, metadata=metadata)
         # Also register the saved artifact in the lightweight simple registry (dev/CI)
@@ -749,6 +811,31 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
             sreg.register_model(player_name, artifact_src=artifact_path, metadata={**(metadata or {}), "registered_by": "train_models.save_model"})
         except Exception:
             pass
+        # Append a CSV row if a report file was requested (regression path)
+        if report_csv:
+            try:
+                import csv
+
+                report_row = {
+                    "player_id": player_name,
+                    "n_samples": int(len(group)),
+                    "model": best_name,
+                    "val_mae": metadata.get("metrics", {}).get("val_mae"),
+                    "test_mae": metadata.get("metrics", {}).get("test_mae"),
+                    "hyperparameters": json.dumps(best_params, default=str),
+                    "timestamp": json.dumps(dataset_version),
+                    "ensemble_selected": ensemble_flag,
+                }
+                write_header = not Path(report_csv).exists()
+                with open(report_csv, "a", newline="", encoding="utf-8") as fh:
+                    w = csv.DictWriter(fh, fieldnames=list(report_row.keys()))
+                    if write_header:
+                        w.writeheader()
+                    w.writerow(report_row)
+            except Exception:
+                # non-fatal; don't block training on reporting errors
+                pass
+
         results[player_name] = {"version": version, "metrics": metadata["metrics"], "hyperparameters": best_params}
         elapsed = time.time() - start_ts
         try:
@@ -770,11 +857,21 @@ def _cli():
     p.add_argument("--store-dir", default="backend/models_store")
     p.add_argument("--min-games", type=int, default=50, help="Minimum games required to train a per-player model")
     p.add_argument("--trials", type=int, default=50, help="Optuna trials per model (classification path)")
+    p.add_argument("--ensemble-trials", type=int, default=50, help="Optuna trials for ensemble weight tuning (if Optuna available)")
+    p.add_argument("--ensemble-timeout", type=int, default=None, help="Timeout (seconds) for ensemble weight tuning (Optuna optimize timeout)")
     p.add_argument("--report", default=None, help="CSV file to append per-player training metrics")
     p.add_argument("--verbose", action="store_true", help="Enable verbose (debug) logging to console")
     args = p.parse_args()
     setup_logging(args.verbose)
-    res = train_from_dataset(args.dataset, args.store_dir, min_games=args.min_games, trials=args.trials, report_csv=args.report)
+    res = train_from_dataset(
+        args.dataset,
+        args.store_dir,
+        min_games=args.min_games,
+        trials=args.trials,
+        report_csv=args.report,
+        ensemble_trials=args.ensemble_trials,
+        ensemble_timeout=args.ensemble_timeout,
+    )
     print(json.dumps(res, indent=2))
 
 

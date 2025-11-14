@@ -1,0 +1,22 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\player_1007\\versions\\fd80bae4d52b\\player_1007_vb008f3bb0533.joblib",
+  "created_at": "2025-11-14T19:45:31.060845+00:00",
+  "metadata": {
+    "dataset_version": "782c4e2d4e7fa6ff9bf2d34cffad5ad286e8a19ae5ccd230678df5a09309ebd4",
+    "hyperparameters": {
+      "learning_rate": 0.09493732706631618,
+      "max_depth": 6,
+      "n_estimators": 65,
+      "subsample": 0.6
+    },
+    "metrics": {
+      "test_mae": 0.06633710861206055,
+      "val_mae": 0.006102800369262695
+    },
+    "model_type": "XGBoost:XGBRegressor",
+    "notes": "trained from points_dataset_174f1d9ac88b.csv",
+    "schema_version": 1
+  },
+  "name": "player_1007",
+  "version_id": "fd80bae4d52b"
+}

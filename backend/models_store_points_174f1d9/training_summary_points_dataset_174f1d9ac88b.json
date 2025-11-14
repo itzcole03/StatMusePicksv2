@@ -1,132 +1,132 @@
 {
   "player_1001": {
-    "version": "a6e74bd8de02",
+    "version": "4b68b29fc8c4",
     "metrics": {
-      "val_mae": 0.0021915435791015625,
-      "test_mae": 0.012833499908447265
+      "val_mae": 0.006103038787841797,
+      "test_mae": 0.06633710861206055
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1002": {
-    "version": "13ff599d64b5",
+    "version": "f22266cf0be2",
     "metrics": {
-      "val_mae": 0.0021250247955322266,
-      "test_mae": 0.012541675567626953
+      "val_mae": 0.006102800369262695,
+      "test_mae": 0.06633710861206055
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1003": {
-    "version": "d77fe611a023",
+    "version": "3cb35eb512e4",
     "metrics": {
-      "val_mae": 0.0021250247955322266,
-      "test_mae": 0.012541484832763673
+      "val_mae": 0.006102800369262695,
+      "test_mae": 0.06633663177490234
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1004": {
-    "version": "1ab74406faf7",
+    "version": "471f55c690f3",
     "metrics": {
-      "val_mae": 0.0021262168884277344,
-      "test_mae": 0.01254119873046875
+      "val_mae": 0.006101846694946289,
+      "test_mae": 0.06633682250976562
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1005": {
-    "version": "3ba659ed1388",
+    "version": "1858a291f500",
     "metrics": {
-      "val_mae": 0.0021233558654785156,
-      "test_mae": 0.01254100799560547
+      "val_mae": 0.0061037540435791016,
+      "test_mae": 0.06633777618408203
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1006": {
-    "version": "9765f2799c00",
+    "version": "68e41a36769d",
     "metrics": {
-      "val_mae": 0.0021915435791015625,
-      "test_mae": 0.012833499908447265
+      "val_mae": 0.006103038787841797,
+      "test_mae": 0.06633710861206055
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1007": {
-    "version": "de707d739b78",
+    "version": "2422d36e762e",
     "metrics": {
-      "val_mae": 0.0021250247955322266,
-      "test_mae": 0.012541675567626953
+      "val_mae": 0.006102800369262695,
+      "test_mae": 0.06633710861206055
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1008": {
-    "version": "2dd1f3f0eea0",
+    "version": "150118ea158c",
     "metrics": {
-      "val_mae": 0.0021250247955322266,
-      "test_mae": 0.012541484832763673
+      "val_mae": 0.006102800369262695,
+      "test_mae": 0.06633663177490234
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1009": {
-    "version": "1f56d9ef6989",
+    "version": "eda0c2878389",
     "metrics": {
-      "val_mae": 0.0021262168884277344,
-      "test_mae": 0.01254119873046875
+      "val_mae": 0.006101846694946289,
+      "test_mae": 0.06633682250976562
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   },
   "player_1010": {
-    "version": "d81314f50efa",
+    "version": "2fe69c4398d7",
     "metrics": {
-      "val_mae": 0.0021233558654785156,
-      "test_mae": 0.01254100799560547
+      "val_mae": 0.0061037540435791016,
+      "test_mae": 0.06633777618408203
     },
     "hyperparameters": {
-      "n_estimators": 85,
-      "max_depth": 4,
-      "learning_rate": 0.09010572616812898,
-      "subsample": 1.0
+      "n_estimators": 65,
+      "max_depth": 6,
+      "learning_rate": 0.09493732706631618,
+      "subsample": 0.6
     }
   }
 }

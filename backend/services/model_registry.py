@@ -84,7 +84,7 @@ class PlayerModelRegistry:
         base = f"{player_name}-{ts}-{time.time()}"
         return hashlib.sha1(base.encode("utf-8")).hexdigest()[:12]
 
-    def save_model(self, player_name: str, model: object, version: Optional[str] = None, metadata: Optional[Dict] = None) -> str:
+    def save_model(self, player_name: str, model: object, version: Optional[str] = None, metadata: Optional[Dict] = None, notes: Optional[str] = None) -> str:
         """Save a model and append metadata to index. Returns chosen version id.
 
         `metadata` may include `model_type`, `notes`, and `metrics`.
@@ -92,10 +92,31 @@ class PlayerModelRegistry:
         """
         if version is None:
             version = self._make_version(player_name)
+        # Support callers that pass `notes` as a top-level kwarg (legacy scripts)
+        if metadata is None:
+            metadata = {}
+        if notes is not None:
+            metadata.setdefault("notes", notes)
         safe = self._safe_name(player_name)
         fname = f"{safe}_v{version}.joblib"
         path = self.store_dir / fname
         joblib.dump(model, path)
+
+        # Also write a legacy `{safe}.pkl` artifact for tests and older consumers
+        try:
+            legacy_path = self.store_dir / f"{safe}.pkl"
+            try:
+                # Try writing a joblib-dump into the legacy path as well
+                joblib.dump(model, legacy_path)
+            except Exception:
+                # Fallback: copy bytes from the joblib file if direct dump fails
+                try:
+                    with open(path, "rb") as r, open(legacy_path, "wb") as w:
+                        w.write(r.read())
+                except Exception:
+                    pass
+        except Exception:
+            legacy_path = None
 
         created_at = datetime.utcnow().isoformat()
         meta = ModelMetadata(
@@ -132,6 +153,45 @@ class PlayerModelRegistry:
                 cache_module.redis_delete_prefix_sync(f"player_context:{player_name}:")
             except Exception:
                 pass
+        except Exception:
+            # optional cache module may not be available in some test harnesses
+            pass
+
+        # Best-effort: persist metadata into DB table `model_metadata` when DATABASE_URL present
+        try:
+            import os
+            from sqlalchemy import create_engine, text
+
+            raw_db = os.environ.get("DATABASE_URL")
+            if raw_db:
+                sync_url = raw_db
+                if raw_db.startswith("postgresql+asyncpg://"):
+                    sync_url = raw_db.replace("+asyncpg", "")
+                if raw_db.startswith("sqlite+aiosqlite://"):
+                    sync_url = raw_db.replace("+aiosqlite", "")
+
+                engine = create_engine(sync_url, future=True)
+                try:
+                    with engine.begin() as conn:
+                            # Prefer legacy .pkl path when available (older consumers/tests expect this)
+                            insert_path = str(legacy_path) if ("legacy_path" in locals() and legacy_path and legacy_path.exists()) else str(path)
+                            conn.execute(
+                                text(
+                                    "INSERT INTO model_metadata (name, version, path, notes, created_at) VALUES (:name, :version, :path, :notes, :created_at)"
+                                ),
+                                {
+                                    "name": player_name,
+                                    "version": version,
+                                    "path": insert_path,
+                                    "notes": (metadata.get("notes") if isinstance(metadata, dict) else None),
+                                    "created_at": created_at,
+                                },
+                            )
+                except Exception:
+                    # best-effort: do not fail save if DB insert fails
+                    pass
+        except Exception:
+            pass
         except Exception:
             # optional cache module may not be available in some test harnesses
             pass

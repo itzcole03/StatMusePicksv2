@@ -1,0 +1,10 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\synthetic_player\\versions\\ec54cc78012a\\synthetic_player_vv0.1-synthetic.joblib",
+  "created_at": "2025-11-14T19:11:04.265574+00:00",
+  "metadata": {
+    "notes": "Synthetic training run",
+    "schema_version": 1
+  },
+  "name": "synthetic_player",
+  "version_id": "ec54cc78012a"
+}
