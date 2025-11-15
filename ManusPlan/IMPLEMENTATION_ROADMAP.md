@@ -786,6 +786,36 @@ Notes:
 **Assigned To:** ******\_******  
 **Completion Date:** ******\_******
 
+### Task 2.2.4: Implement Ensemble Model
+
+- [x] Create `backend/models/ensemble_model.py`
+- [x] Implement `VotingRegressor` combining Random Forest, XGBoost, Elastic Net with default weights `[0.4, 0.4, 0.2]`
+- [x] Implement Optuna-based weight tuning (`tune_weights_by_mae`) with a candidate-grid fallback when Optuna is unavailable
+- [x] Wrap ensemble in a `Pipeline` including `SimpleImputer(strategy='mean')` to handle NaNs in union-train features
+- [x] Optionally support stacking (meta-learner) and a `use_stacking` flag (stacking implemented but not always used)
+- [x] Expose CLI flags in `backend/training/train_models.py`: `--ensemble-trials` and `--ensemble-timeout`
+- [x] Add unit tests: `backend/tests/test_ensemble_model.py`, `backend/tests/test_ensemble_tuning.py`, and `backend/tests/test_ensemble_imputer.py`
+- [x] Integrate ensemble into per-player training loop; record `ensemble_selected` in model metadata and CSV reports
+- [x] Validate with targeted player run (Stephen Curry) and production-style runs (10-player dataset). Artifacts saved to `backend/models_store/` and reports under `backend/training/`
+- [x] Commit and pushed on branch `feat/ensemble-optuna-tuning`
+
+**Acceptance Criteria:**
+
+- ✅ Ensemble trains and predicts successfully
+- ✅ Optuna weight tuning functions and falls back to a grid search when necessary
+- ✅ Ensemble selection logic implemented (ensemble selected when ensemble_mae <= base_mae)
+- ✅ Robustness to NaNs via internal imputer
+- ✅ Unit tests and full test suite passing (see test results: `127 passed, 2 skipped`)
+
+**Status:** 🟢 Completed (dev)
+**Assigned To:** Backend Team
+**Completion Date:** Nov 14, 2025
+
+**Notes / Next Steps:**
+
+- [ ] Add a short PR note documenting the imputer addition and rationale (in-progress)
+- Consider promoting tuned ensembles to staging and running a larger training pass with the same imputer-enabled ensemble to validate cross-player stability.
+
 ---
 
 ## 2.3 Model Calibration

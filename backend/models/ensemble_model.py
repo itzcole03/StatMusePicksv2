@@ -21,6 +21,7 @@ from sklearn.ensemble import VotingRegressor
 from sklearn.linear_model import ElasticNet, Ridge
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
 
 try:
     from xgboost import XGBRegressor  # type: ignore
@@ -96,11 +97,16 @@ class EnsembleModel:
         if self.use_stacking and _STACKING_AVAILABLE:
             from sklearn.ensemble import StackingRegressor
 
-            self.model = StackingRegressor(estimators=estimators, final_estimator=Ridge())
+            base = StackingRegressor(estimators=estimators, final_estimator=Ridge(), n_jobs=-1)
+            # wrap with a simple imputer so downstream estimators don't fail on NaNs
+            self.model = Pipeline([("imputer", SimpleImputer(strategy="mean")), ("ens", base)])
         else:
             # VotingRegressor expects (name, estimator) pairs
-            self.model = VotingRegressor(estimators=estimators, weights=weights)
+            base = VotingRegressor(estimators=estimators, weights=weights)
+            # wrap with a simple imputer so downstream estimators don't fail on NaNs
+            self.model = Pipeline([("imputer", SimpleImputer(strategy="mean")), ("ens", base)])
 
+        # Fit the pipeline (imputer + ensemble)
         self.model.fit(X, y)
         return self
 
@@ -137,9 +143,11 @@ class EnsembleModel:
         # Helper to evaluate a candidate weight vector (already normalized)
         def _eval_weights(w_tuple) -> Optional[float]:
             try:
-                if hasattr(self.model, "weights"):
+                # The fitted object may be a Pipeline wrapping the ensemble under step 'ens'
+                ensemble_obj = getattr(self.model, "named_steps", {}).get("ens", self.model)
+                if hasattr(ensemble_obj, "weights"):
                     # VotingRegressor accepts plain list weights
-                    self.model.weights = list(w_tuple)
+                    ensemble_obj.weights = list(w_tuple)
                 preds = self.model.predict(X_val)
                 return float(mean_absolute_error(y_val, preds))
             except Exception:

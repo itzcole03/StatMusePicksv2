@@ -64,6 +64,12 @@ except Exception:
     optuna = None
     OPTUNA_AVAILABLE = False
 
+try:
+    from backend.services.calibration_service import fit_isotonic_and_register, CalibratorRegistry
+except Exception:
+    fit_isotonic_and_register = None
+    CalibratorRegistry = None
+
 from backend.services.model_registry import PlayerModelRegistry
 from backend.services.training_data_service import time_series_cv_split
 try:
@@ -550,6 +556,28 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
                 feature_importances = None
 
             player_name = group["player_name"].iloc[0] if "player_name" in group.columns else f"player_{pid}"
+            # Attempt to fit an isotonic calibrator on the validation set (classification only)
+            calib_version = None
+            try:
+                if fit_isotonic_and_register is not None:
+                    # prefer validation set for calibration, fallback to test
+                    eval_for_cal = val if ("val" in locals() and not val.empty) else (test if ("test" in locals() and not test.empty) else pd.DataFrame())
+                    if not eval_for_cal.empty and hasattr(best_est, "predict_proba"):
+                        try:
+                            Xcal = eval_for_cal[feature_cols].to_numpy()
+                            ycal = eval_for_cal["target"].to_numpy()
+                            # fit_isotonic_and_register expects raw preds and true labels
+                            rawp = best_est.predict_proba(Xcal)[:, 1]
+                            # register calibrator under the player_name namespace
+                            reg_client = CalibratorRegistry() if CalibratorRegistry is not None else None
+                            calib_meta = fit_isotonic_and_register(player_name, rawp, ycal, registry=reg_client, metadata={"trained_with": dataset_version})
+                            calib_version = getattr(calib_meta, "version_id", None)
+                        except Exception:
+                            LOG.debug("Calibrator fitting failed for player %s", player_name, exc_info=True)
+            except Exception:
+                # non-fatal; continue training
+                calib_version = None
+
             metadata = {
                 "model_type": f"{best_name}:{type(best_est).__name__}",
                 "notes": f"trained from {path.name}",
@@ -558,6 +586,7 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
                 "hyperparameters": best_hparams,
                 "feature_importances": feature_importances,
                 "dataset_version": dataset_version,
+                "calibrator_version": calib_version,
             }
             version = reg.save_model(player_name, best_est, metadata=metadata)
 

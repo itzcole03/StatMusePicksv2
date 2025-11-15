@@ -1,0 +1,12 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Alice\\versions\\9da7f23dff0d\\Alice_v9e6bc090facf.joblib",
+  "created_at": "2025-11-14T22:33:19.621110+00:00",
+  "metadata": {
+    "dataset_version": "78b9adf3ee8428bcaa9d1fd164d36bb03dc72f8861f236bb442ec9831b6f5e3a",
+    "model_type": "mean_baseline",
+    "notes": "fallback baseline from sample_dataset4.csv",
+    "schema_version": 1
+  },
+  "name": "Alice",
+  "version_id": "9da7f23dff0d"
+}

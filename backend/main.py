@@ -381,7 +381,15 @@ async def api_models_load(request: Request):
         wrapper = svc.registry.load_model(player)
         loaded = wrapper is not None
         count = len(svc.registry._models.get(player, []))
-        return {"ok": True, "loaded": loaded, "versions": count}
+        # Persist the runtime registry onto the app so subsequent requests
+        # (e.g., /api/predict) can reuse the loaded models without re-loading
+        # from disk on every request. This is intentionally best-effort and
+        # only affects the in-process runtime used in dev and tests.
+        try:
+            app.state.model_registry = svc.registry
+        except Exception:
+            pass
+        return {"ok": True, "player": player, "loaded": loaded, "versions": count}
     except HTTPException:
         raise
     except Exception as e:
@@ -405,7 +413,12 @@ async def api_predict(request: Request):
         if not player or stat is None or line is None:
             raise HTTPException(status_code=400, detail="player, stat and line are required")
 
-        svc = MLPredictionService(model_dir=model_dir)
+        # Prefer a shared runtime registry when available so we avoid
+        # re-loading artifacts repeatedly in tests/dev.
+        if getattr(app.state, "model_registry", None) is not None:
+            svc = MLPredictionService(registry=app.state.model_registry)
+        else:
+            svc = MLPredictionService(model_dir=model_dir)
         # attempt to load model on demand (best-effort)
         try:
             svc.registry.load_model(player)

@@ -37,6 +37,7 @@ class ModelMetadata:
     feature_columns: Optional[List[str]] = None
     feature_importances: Optional[Dict[str, float]] = None
     dataset_version: Optional[str] = None
+    calibrator_version: Optional[str] = None
 
 
 class PlayerModelRegistry:
@@ -131,6 +132,7 @@ class PlayerModelRegistry:
             feature_columns=(metadata.get("feature_columns") if metadata else None),
             feature_importances=(metadata.get("feature_importances") if metadata else None),
             dataset_version=(metadata.get("dataset_version") if metadata else None),
+            calibrator_version=(metadata.get("calibrator_version") if metadata else None),
         )
 
         # append to index

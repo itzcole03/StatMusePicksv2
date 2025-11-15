@@ -25,6 +25,11 @@ import joblib
 
 logger = logging.getLogger(__name__)
 
+try:
+    from backend.services.calibration_service import CalibratorRegistry as GlobalCalibratorRegistry
+except Exception:
+    GlobalCalibratorRegistry = None
+
 # Ensure a default event loop exists for test environments that call
 # ``asyncio.get_event_loop().run_until_complete(...)`` without an existing loop.
 try:
@@ -347,64 +352,91 @@ class MLPredictionService:
         a `transform(p: float) -> float` method or be a callable that accepts a
         single probability and returns a calibrated probability.
         """
-        # Per-player calibrator takes precedence
+        # Per-player calibrator takes precedence. Prefer the central CalibratorRegistry
+        # (created by training) if available, then fallback to registry persisted calibrator
+        # files saved alongside models (legacy behavior).
         try:
-            if player_name and self.registry is not None:
-                cal = None
+            if player_name:
+                # Try central registry first (recommended):
                 try:
-                    cal = self.registry.load_calibrator(player_name)
-                except Exception:
-                    cal = None
-
-                if cal is not None:
-                    # calibrator can be a callable or an object with `transform` or `predict_proba`.
-                    try:
-                        res = None
-                        if callable(cal):
-                            res = cal(prob)
-                        elif hasattr(cal, "transform"):
-                            # expect transform to return iterable-like
-                            tmp = cal.transform([prob])
-                            res = tmp[0] if hasattr(tmp, '__iter__') else tmp
-                        elif hasattr(cal, "predict_proba"):
-                            out = cal.predict_proba([[prob]])
-                            # expect array-like [[p0, p1]]; take class 1 probability when available
-                            try:
-                                res = out[0][-1]
-                            except Exception:
-                                res = out
-
-                        # Validate and coerce the result to a float. Treat NaN/Inf or
-                        # uncoercible values as a signal to fall back to scalar
-                        # calibration.
+                    if GlobalCalibratorRegistry is not None:
                         try:
-                            # If iterable with single entry (e.g., [0.8]), pick it
-                            if hasattr(res, '__iter__') and not isinstance(res, (str, bytes)):
-                                # try to extract a single sensible value
-                                try:
-                                    candidate = list(res)[0]
-                                except Exception:
-                                    candidate = None
-                            else:
-                                candidate = res
-
-                            cand_float = float(candidate) if candidate is not None else None
-                            # reject NaN/Inf
-                            if cand_float is None or (
-                                cand_float != cand_float or
-                                cand_float == float('inf') or
-                                cand_float == float('-inf')
-                            ):
-                                raise ValueError("invalid calibrator output")
-
-                            # clamp to [0,1]
-                            cand_float = max(0.0, min(1.0, cand_float))
-                            return float(cand_float)
+                            greg = GlobalCalibratorRegistry()
+                            gcal = greg.load_calibrator(player_name)
                         except Exception:
-                            # fall through to scalar fallback below
-                            logger.warning("Per-player calibrator produced invalid output for %s, falling back", player_name)
+                            gcal = None
+                    else:
+                        gcal = None
+                except Exception:
+                    gcal = None
+
+                if gcal is not None:
+                    try:
+                        # Our Calibrator exposes `predict` accepting array-like
+                        out = gcal.predict([prob])
+                        val = float(out[0]) if hasattr(out, '__iter__') else float(out)
+                        val = max(0.0, min(1.0, val))
+                        return val
                     except Exception:
-                        logger.exception("Error applying per-player calibrator for %s", player_name)
+                        logger.exception("Error applying global calibrator for %s", player_name)
+
+                # Legacy: try registry persisted calibrator saved alongside model artifacts
+                if self.registry is not None:
+                    cal = None
+                    try:
+                        cal = self.registry.load_calibrator(player_name)
+                    except Exception:
+                        cal = None
+
+                    if cal is not None:
+                        # calibrator can be a callable or an object with `transform` or `predict_proba`.
+                        try:
+                            res = None
+                            if callable(cal):
+                                res = cal(prob)
+                            elif hasattr(cal, "transform"):
+                                # expect transform to return iterable-like
+                                tmp = cal.transform([prob])
+                                res = tmp[0] if hasattr(tmp, '__iter__') else tmp
+                            elif hasattr(cal, "predict_proba"):
+                                out = cal.predict_proba([[prob]])
+                                # expect array-like [[p0, p1]]; take class 1 probability when available
+                                try:
+                                    res = out[0][-1]
+                                except Exception:
+                                    res = out
+
+                            # Validate and coerce the result to a float. Treat NaN/Inf or
+                            # uncoercible values as a signal to fall back to scalar
+                            # calibration.
+                            try:
+                                # If iterable with single entry (e.g., [0.8]), pick it
+                                if hasattr(res, '__iter__') and not isinstance(res, (str, bytes)):
+                                    # try to extract a single sensible value
+                                    try:
+                                        candidate = list(res)[0]
+                                    except Exception:
+                                        candidate = None
+                                else:
+                                    candidate = res
+
+                                cand_float = float(candidate) if candidate is not None else None
+                                # reject NaN/Inf
+                                if cand_float is None or (
+                                    cand_float != cand_float or
+                                    cand_float == float('inf') or
+                                    cand_float == float('-inf')
+                                ):
+                                    raise ValueError("invalid calibrator output")
+
+                                # clamp to [0,1]
+                                cand_float = max(0.0, min(1.0, cand_float))
+                                return float(cand_float)
+                            except Exception:
+                                # fall through to scalar fallback below
+                                logger.warning("Per-player calibrator produced invalid output for %s, falling back", player_name)
+                        except Exception:
+                            logger.exception("Error applying per-player calibrator for %s", player_name)
 
             # fallback to global scalar-based calibration
             return self._apply_calibration_scalar(prob)

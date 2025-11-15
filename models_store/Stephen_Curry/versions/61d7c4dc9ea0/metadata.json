@@ -1,0 +1,24 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Stephen_Curry\\versions\\61d7c4dc9ea0\\Stephen_Curry_v50f249a68a8b.joblib",
+  "created_at": "2025-11-14T22:12:50.451707+00:00",
+  "metadata": {
+    "dataset_version": "3bce79ffe3c5cb003a7aa4fc74f24a635001a2920107aa3749f13d68f9b19c81",
+    "hyperparameters": {
+      "use_stacking": false,
+      "weights": [
+        0.4008702053264006,
+        0.29217828361710996,
+        0.3069515110564894
+      ]
+    },
+    "metrics": {
+      "test_mae": 2.415098120462788,
+      "val_mae": 0.9113722808141365
+    },
+    "model_type": "Ensemble:EnsembleModel",
+    "notes": "trained from stephen_curry_dataset.csv",
+    "schema_version": 1
+  },
+  "name": "Stephen_Curry",
+  "version_id": "61d7c4dc9ea0"
+}
