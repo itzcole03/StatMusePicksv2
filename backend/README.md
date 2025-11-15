@@ -281,6 +281,45 @@ psql "postgresql://postgres:postgres@localhost:5432/statmuse_dev" -c "DELETE FRO
 
 After seeding, re-run the dataset generation CLI to produce training artifacts for model experiments.
 
+## Calibration metrics persisted by training
+
+When training classification models, the training pipeline attempts to fit an isotonic regression
+calibrator using the validation (or test) split. When a calibrator is fitted, the training script
+computes calibration metrics and persists them in the model registry metadata.
+
+Where to find calibration results
+- The legacy file-backed registry writes an `index.json` into `backend/models_store/`.
+- Each player has a safe-name key (spaces replaced by underscores). Each entry is a metadata
+    object; look for the top-level `calibration` key which has the form:
+
+```json
+{
+    "calibrator_version": "<hex>",
+    "raw": { "brier": 0.12, "ece": 0.08 },
+    "calibrated": { "brier": 0.09, "ece": 0.04 }
+}
+```
+
+Notes
+- If the calibrator could not be fit (insufficient data or single-class), the `calibration` value
+    may be `null` and `calibrator_version` will be `null`.
+- The `calibrator_version` references a per-player calibrator artifact saved under
+    `calibrators_store/<player_safe>/versions/<version_id>/calibrator.joblib` when available.
+
+How to reproduce locally
+1. Create a small training dataset for a player (see `training_data_service`), then run:
+
+```pwsh
+& .venv\Scripts\Activate.ps1
+python -m backend.training.train_models --dataset path\to\your_dataset.parquet --store-dir backend/models_store --min-games 10
+```
+
+2. Inspect `backend/models_store/index.json` for the player entry and `calibration` key.
+
+3. If you need to inspect the calibrator object, load the calibrator file with `joblib.load(...)`
+     from the `calibrators_store` directory.
+
+
 Quick programmatic usage (from Python):
 
 ```python
