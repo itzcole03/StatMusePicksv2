@@ -1,76 +1,97 @@
-from __future__ import annotations
+"""Clean calibration metrics implementation.
 
+This module is used as the authoritative implementation to avoid issues
+with earlier corrupted files in the package root.
+"""
 from typing import Tuple
 
 import numpy as np
 
 
-def brier_score(y_true: np.ndarray, p_pred: np.ndarray) -> float:
-    """Compute the Brier score for binary outcomes.
-
-    Args:
-        y_true: array-like of shape (n,) with binary labels {0,1}
-        p_pred: array-like of shape (n,) with predicted probabilities in [0,1]
-
-    Returns:
-        float Brier score (mean squared error between p_pred and y_true)
-    """
-    y = np.asarray(y_true).ravel()
-    p = np.asarray(p_pred).ravel()
-    return float(np.mean((p - y) ** 2))
+def brier_score(y_true, y_prob) -> float:
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.asarray(y_prob, dtype=float)
+    if y_true.shape != y_prob.shape:
+        raise ValueError("y_true and y_prob must have the same shape")
+    return float(np.mean((y_prob - y_true) ** 2))
 
 
-def expected_calibration_error(y_true: np.ndarray, p_pred: np.ndarray, n_bins: int = 10) -> float:
-    """Compute Expected Calibration Error (ECE).
+def expected_calibration_error(y_true, y_prob, n_bins: int = 10) -> float:
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.asarray(y_prob, dtype=float)
+    if y_true.shape != y_prob.shape:
+        raise ValueError("y_true and y_prob must have the same shape")
+    if n_bins < 1:
+        raise ValueError("n_bins must be >= 1")
 
-    Bins predictions into `n_bins` equal-width bins between 0 and 1. For each bin,
-    compute the absolute difference between average predicted probability and
-    empirical accuracy, then return a weighted average by bin size.
-    """
-    y = np.asarray(y_true).ravel()
-    p = np.asarray(p_pred).ravel()
-    assert y.shape == p.shape
+    N = y_true.shape[0]
+    if N == 0:
+        return 0.0
 
-    # Bin edges (include 1.0 in last bin)
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    bin_idxs = np.digitize(p, bins, right=True) - 1
+    bin_edges = np.linspace(0.0, 1.0, n_bins + 1)
+    bin_ids = np.digitize(y_prob, bin_edges, right=True)
+
     ece = 0.0
-    n = len(p)
-    for i in range(n_bins):
-        mask = bin_idxs == i
-        if not mask.any():
+    for i in range(1, n_bins + 1):
+        idx = bin_ids == i
+        if not np.any(idx):
             continue
-        bin_size = mask.sum()
-        avg_p = float(p[mask].mean())
-        acc = float(y[mask].mean())
-        ece += (bin_size / n) * abs(avg_p - acc)
+        avg_pred = float(np.mean(y_prob[idx]))
+        acc = float(np.mean(y_true[idx]))
+        prop = idx.sum() / N
+        ece += prop * abs(avg_pred - acc)
     return float(ece)
 
 
-def reliability_diagram_data(y_true: np.ndarray, p_pred: np.ndarray, n_bins: int = 10) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Return data useful for plotting a reliability diagram.
+def reliability_diagram(y_true, y_prob, n_bins: int = 10, ax=None) -> Tuple[object, object]:
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as exc:
+        raise RuntimeError("matplotlib is required for plotting reliability diagrams") from exc
 
-    Returns:
-        bin_centers, avg_pred_per_bin, acc_per_bin, counts_per_bin
-    """
-    y = np.asarray(y_true).ravel()
-    p = np.asarray(p_pred).ravel()
-    bins = np.linspace(0.0, 1.0, n_bins + 1)
-    bin_idxs = np.digitize(p, bins, right=True) - 1
-    centers = (bins[:-1] + bins[1:]) / 2.0
-    avg_preds = np.zeros(n_bins, dtype=float)
-    accs = np.zeros(n_bins, dtype=float)
-    counts = np.zeros(n_bins, dtype=int)
-    for i in range(n_bins):
-        mask = bin_idxs == i
-        counts[i] = int(mask.sum())
-        if counts[i] > 0:
-            avg_preds[i] = float(p[mask].mean())
-            accs[i] = float(y[mask].mean())
-        else:
-            avg_preds[i] = np.nan
-            accs[i] = np.nan
-    return centers, avg_preds, accs, counts
+    y_true = np.asarray(y_true, dtype=float)
+    y_prob = np.asarray(y_prob, dtype=float)
+    if y_true.shape != y_prob.shape:
+        raise ValueError("y_true and y_prob must have the same shape")
+
+    N = y_true.shape[0]
+    if N == 0:
+        fig = plt.figure()
+        ax = fig.add_subplot(1, 1, 1)
+        return fig, ax
+
+    bin_edges = np.linspace(0.0, 1.0, n_bins + 1)
+    bin_ids = np.digitize(y_prob, bin_edges, right=True)
+
+    avg_pred_per_bin = []
+    acc_per_bin = []
+    for i in range(1, n_bins + 1):
+        idx = bin_ids == i
+        if not np.any(idx):
+            avg_pred_per_bin.append(np.nan)
+            acc_per_bin.append(np.nan)
+            continue
+        avg_pred_per_bin.append(float(np.mean(y_prob[idx])))
+        acc_per_bin.append(float(np.mean(y_true[idx])))
+
+    fig = None
+    if ax is None:
+        fig = plt.figure(figsize=(6, 6))
+        ax = fig.add_subplot(1, 1, 1)
+
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+    ax.plot([0, 1], [0, 1], linestyle="--", color="gray", label="Perfectly calibrated")
+    ax.plot(bin_centers, acc_per_bin, marker="o", label="Observed accuracy")
+    ax.bar(bin_centers, np.nan_to_num(avg_pred_per_bin, nan=0.0) - np.nan_to_num(acc_per_bin, nan=0.0),
+           width=1.0 / n_bins, alpha=0.3, align="center", label="Pred - Observed")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_xlabel("Predicted probability")
+    ax.set_ylabel("Observed frequency")
+    ax.set_title("Reliability Diagram")
+    ax.legend()
+
+    return (fig if fig is not None else ax.get_figure()), ax
 
 
-__all__ = ["brier_score", "expected_calibration_error", "reliability_diagram_data"]
+__all__ = ["brier_score", "expected_calibration_error", "reliability_diagram"]

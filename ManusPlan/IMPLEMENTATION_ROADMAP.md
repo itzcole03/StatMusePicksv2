@@ -853,16 +853,16 @@ Notes:
 ---
 
 ### Task 2.3.2: Implement Calibration Metrics
-
-- [ ] Create `backend/evaluation/calibration_metrics.py`
-- [ ] Implement Brier Score calculation:
-  - [ ] Formula: `(1/N) * Σ(predicted_prob - actual)²`
-- [ ] Implement Expected Calibration Error (ECE):
-  - [ ] Bin predictions into 10 buckets
-  - [ ] Calculate accuracy per bucket
-  - [ ] Compute weighted average error
-- [ ] Implement reliability diagram plotting
-- [ ] Test on validation data
+ 
+- [x] Create `backend/evaluation/calibration_metrics.py`
+- [x] Implement Brier Score calculation:
+  - [x] Formula: `(1/N) * Σ(predicted_prob - actual)²`
+- [x] Implement Expected Calibration Error (ECE):
+  - [x] Bin predictions into 10 buckets
+  - [x] Calculate accuracy per bucket
+  - [x] Compute weighted average error
+- [x] Implement reliability diagram plotting
+- [x] Test on validation data
 
 **Acceptance Criteria:**
 
@@ -870,9 +870,9 @@ Notes:
 - ✅ Reliability diagrams generated
 - ✅ Can compare calibrated vs uncalibrated
 
-**Status:** 🔴 Not Started  
-**Assigned To:** ******\_******  
-**Completion Date:** ******\_******
+**Status:** 🟢 Completed (dev)  
+**Assigned To:** Backend Team  
+**Completion Date:** Nov 14, 2025
 
 ---
 

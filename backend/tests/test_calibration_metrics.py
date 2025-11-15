@@ -1,3 +1,41 @@
+import math
+
+import numpy as np
+import pytest
+
+from backend.evaluation import calibration_metrics
+
+
+def test_brier_score_simple():
+    y_true = [0, 1, 1]
+    y_prob = [0.2, 0.8, 0.6]
+    # expected: ((0.2-0)^2 + (0.8-1)^2 + (0.6-1)^2)/3 = (0.04+0.04+0.16)/3 = 0.08
+    expected = 0.08
+    val = calibration_metrics.brier_score(y_true, y_prob)
+    assert math.isclose(val, expected, rel_tol=1e-6)
+
+
+def test_ece_two_bins():
+    y_prob = [0.1, 0.2, 0.9, 0.8]
+    y_true = [0, 0, 1, 1]
+    # With 2 bins: bin1 avg_pred=0.15 acc=0 -> err=0.15 * 0.5 = 0.075
+    # bin2 avg_pred=0.85 acc=1 -> err=0.15 * 0.5 = 0.075 => total 0.15
+    val = calibration_metrics.expected_calibration_error(y_true, y_prob, n_bins=2)
+    assert pytest.approx(val, rel=1e-6) == 0.15
+
+
+def test_reliability_diagram_smoke():
+    pytest.importorskip("matplotlib")
+    y_prob = np.linspace(0.05, 0.95, 20)
+    # generate synthetic labels with probability = y_prob
+    rng = np.random.RandomState(0)
+    y_true = rng.binomial(1, y_prob)
+    fig, ax = calibration_metrics.reliability_diagram(y_true, y_prob, n_bins=10)
+    # basic smoke checks
+    import matplotlib.figure
+
+    assert isinstance(fig, matplotlib.figure.Figure)
+    assert hasattr(ax, "plot")
 import numpy as np
 
 from backend.evaluation.calibration_metrics import expected_calibration_error, brier_score
