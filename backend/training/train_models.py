@@ -70,6 +70,12 @@ except Exception:
     fit_isotonic_and_register = None
     CalibratorRegistry = None
 
+try:
+    from backend.evaluation.calibration_metrics import expected_calibration_error, brier_score as brier_score_fn
+except Exception:
+    expected_calibration_error = None
+    brier_score_fn = None
+
 from backend.services.model_registry import PlayerModelRegistry
 from backend.services.training_data_service import time_series_cv_split
 try:
@@ -144,6 +150,59 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
         start_ts = time.time()
         LOG.info("Starting training for player_id=%s (n=%d)", pid, len(group))
 
+        # Compute fallback coverage stats for this player's raw data.
+        def _compute_fallback_coverage(df_group):
+            cols = set(df_group.columns.tolist())
+            # canonical column candidates
+            season_cols = [c for c in cols if c.lower() in ("seasonavg", "season_avg", "seasonaverage", "seasonavg")]
+            last5_cols = [c for c in cols if any(tok in c.lower() for tok in ("last5", "last_5", "last5games", "last_5_games", "last_5game"))]
+            last3_cols = [c for c in cols if any(tok in c.lower() for tok in ("last3", "last_3", "last3games", "last_3_games"))]
+
+            def _pct_notnull(cols_list):
+                if not cols_list:
+                    return 0.0
+                # consider first matching column
+                c = cols_list[0]
+                try:
+                    return float(df_group[c].notnull().sum()) / max(1, len(df_group))
+                except Exception:
+                    return 0.0
+
+            pct_season = _pct_notnull(season_cols)
+            pct_last5 = _pct_notnull(last5_cols)
+            pct_last3 = _pct_notnull(last3_cols)
+
+            fully_missing = 0
+            for _, row in df_group.iterrows():
+                has = False
+                if season_cols:
+                    for c in season_cols:
+                        if not pd.isna(row.get(c)):
+                            has = True
+                            break
+                if not has and last5_cols:
+                    for c in last5_cols:
+                        if not pd.isna(row.get(c)):
+                            has = True
+                            break
+                if not has and last3_cols:
+                    for c in last3_cols:
+                        if not pd.isna(row.get(c)):
+                            has = True
+                            break
+                if not has:
+                    fully_missing += 1
+
+            return {
+                "pct_with_seasonAvg": round(pct_season, 4),
+                "pct_with_last5": round(pct_last5, 4),
+                "pct_with_last3": round(pct_last3, 4),
+                "pct_fully_missing": round(float(fully_missing) / max(1, len(df_group)), 4),
+                "n_rows": int(len(df_group)),
+            }
+
+        fallback_coverage = _compute_fallback_coverage(group)
+
         # If split col exists, use it; otherwise split randomly (time-ordering not enforced here)
         if "split" in group.columns:
             train = group[group["split"] == "train"]
@@ -183,6 +242,7 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
                 "feature_columns": [],
                 "hyperparameters": None,
                 "dataset_version": dataset_version,
+                "fallback_coverage": fallback_coverage,
             }
             version = reg.save_model(player_name, model, metadata=metadata)
             # Also register the saved artifact in the lightweight simple registry (dev/CI)
@@ -531,6 +591,7 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
                     "hyperparameters": None,
                     "feature_importances": None,
                     "dataset_version": dataset_version,
+                    "fallback_coverage": fallback_coverage,
                 }
                 version = reg.save_model(player_name, model, metadata=metadata)
                 results[player_name] = {"version": version, "metrics": metadata["metrics"]}
@@ -558,7 +619,9 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
             player_name = group["player_name"].iloc[0] if "player_name" in group.columns else f"player_{pid}"
             # Attempt to fit an isotonic calibrator on the validation set (classification only)
             calib_version = None
+            calibration_summary = None
             try:
+                reg_client = CalibratorRegistry() if CalibratorRegistry is not None else None
                 if fit_isotonic_and_register is not None:
                     # prefer validation set for calibration, fallback to test
                     eval_for_cal = val if ("val" in locals() and not val.empty) else (test if ("test" in locals() and not test.empty) else pd.DataFrame())
@@ -569,13 +632,43 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
                             # fit_isotonic_and_register expects raw preds and true labels
                             rawp = best_est.predict_proba(Xcal)[:, 1]
                             # register calibrator under the player_name namespace
-                            reg_client = CalibratorRegistry() if CalibratorRegistry is not None else None
                             calib_meta = fit_isotonic_and_register(player_name, rawp, ycal, registry=reg_client, metadata={"trained_with": dataset_version})
                             calib_version = getattr(calib_meta, "version_id", None)
+
+                            # If calibration metric helpers are available, compute raw and calibrated metrics
+                            if calib_version and expected_calibration_error is not None and brier_score_fn is not None:
+                                try:
+                                    ece_raw = float(expected_calibration_error(ycal, rawp, n_bins=10))
+                                    brier_raw = float(brier_score_fn(ycal, rawp))
+
+                                    # load calibrator and compute calibrated probabilities
+                                    calib_obj = reg_client.load_calibrator(player_name, version_id=calib_version) if reg_client is not None else None
+                                    calibrated_p = None
+                                    if calib_obj is not None and hasattr(calib_obj, "predict"):
+                                        try:
+                                            calibrated_p = calib_obj.predict(rawp)
+                                        except Exception:
+                                            calibrated_p = None
+
+                                    if calibrated_p is not None:
+                                        ece_cal = float(expected_calibration_error(ycal, calibrated_p, n_bins=10))
+                                        brier_cal = float(brier_score_fn(ycal, calibrated_p))
+                                        calibration_summary = {
+                                            "calibrator_version": calib_version,
+                                            "raw": {"brier": brier_raw, "ece": ece_raw},
+                                            "calibrated": {"brier": brier_cal, "ece": ece_cal},
+                                        }
+                                    else:
+                                        calibration_summary = {
+                                            "calibrator_version": calib_version,
+                                            "raw": {"brier": brier_raw, "ece": ece_raw},
+                                            "calibrated": None,
+                                        }
+                                except Exception:
+                                    LOG.debug("Failed computing calibration metrics for player %s", player_name, exc_info=True)
                         except Exception:
                             LOG.debug("Calibrator fitting failed for player %s", player_name, exc_info=True)
             except Exception:
-                # non-fatal; continue training
                 calib_version = None
 
             metadata = {
@@ -587,6 +680,8 @@ def train_from_dataset(dataset_path: str, store_dir: str = "backend/models_store
                 "feature_importances": feature_importances,
                 "dataset_version": dataset_version,
                 "calibrator_version": calib_version,
+                "calibration": calibration_summary,
+                "fallback_coverage": fallback_coverage,
             }
             version = reg.save_model(player_name, best_est, metadata=metadata)
 

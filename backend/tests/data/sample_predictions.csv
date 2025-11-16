@@ -1,0 +1,5 @@
+player,game_date,line,predicted_value,over_probability,expected_value
+Integration_Season,2025-11-01,15,16.5,0.7,0.2
+Integration_Last5,2025-11-01,15,14.0,0.45,-0.1
+Integration_Mixed,2025-11-01,15,15.5,0.55,0.05
+Integration_NoData,2025-11-01,15,,0.5,0.0

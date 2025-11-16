@@ -1,0 +1,23 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Test_Player\\versions\\7dca3b67f206\\Test_Player_vb1bf445b4cab.joblib",
+  "created_at": "2025-11-15T05:18:25.880550+00:00",
+  "metadata": {
+    "dataset_version": "b5ae6130a6964fe2ac21f2f8ab03b1d186357c5f9c6d88847191a120475a8558",
+    "hyperparameters": {
+      "max_depth": 15,
+      "min_samples_leaf": 3,
+      "n_estimators": 187
+    },
+    "metrics": {
+      "accuracy": 1.0,
+      "brier": 0.0,
+      "logloss": 2.220446049250313e-16,
+      "roc_auc": null
+    },
+    "model_type": "random_forest:RandomForestClassifier",
+    "notes": "trained from sample_classification.parquet",
+    "schema_version": 1
+  },
+  "name": "Test_Player",
+  "version_id": "7dca3b67f206"
+}

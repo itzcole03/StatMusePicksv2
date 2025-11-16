@@ -1,3 +1,66 @@
+# Development README
+
+This file contains quick developer instructions for running the backend and integration tests locally, including a small Docker Compose snippet to start a Redis service used by the prediction caching integration test.
+
+## Start Redis (for integration tests)
+
+Create a `docker-compose.redis.yml` with the following content (or copy the snippet below):
+
+```yaml
+version: '3.8'
+services:
+	redis:
+		image: redis:6
+		ports:
+			- "6379:6379"
+		healthcheck:
+			test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+			interval: 5s
+			timeout: 2s
+			retries: 5
+
+# Optionally run with: docker-compose -f docker-compose.redis.yml up -d
+```
+
+On Windows PowerShell, run:
+
+```pwsh
+# Start Redis in background
+docker-compose -f docker-compose.redis.yml up -d
+
+# Verify Redis is healthy
+docker-compose -f docker-compose.redis.yml ps
+```
+
+## Activate virtualenv & run Redis integration test
+
+Make sure you have the project's virtual environment activated and `PYTHONPATH` set so tests import the `backend` package correctly.
+
+```pwsh
+# Activate venv (Windows PowerShell)
+& .\.venv\Scripts\Activate.ps1
+
+# Ensure PYTHONPATH points to the repo root
+$env:PYTHONPATH = "$PWD"
+
+# Run only the Redis integration test
+pytest backend/tests/test_api_predict_redis_integration.py -q
+```
+
+If you prefer one-off Docker usage without creating the compose file, run:
+
+```pwsh
+# Run Redis container (temporary)
+docker run -d -p 6379:6379 --name statmuse_dev_redis redis:6
+
+# Stop and remove when done
+docker rm -f statmuse_dev_redis
+```
+
+## Notes
+
+- The integration test expects Redis reachable at `localhost:6379`. If your Docker host differs (WSL2/network config), set `REDIS_HOST`/`REDIS_PORT` environment variables before running the test.
+- The repo contains CI workflows that start Redis for the integration job; local steps above mirror that setup for developer convenience.
 Development README — StatMusePicksv2
 
 This short developer guide covers the common local dev tasks: creating/activating the Python venv, starting the backend and frontend in dev, running tests, and quick API examples used for smoke checks.

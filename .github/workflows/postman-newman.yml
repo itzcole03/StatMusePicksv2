@@ -1,0 +1,55 @@
+name: Postman Collection Smoke (Newman)
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  run-postman-collection:
+    name: Run Postman collection (newman) smoke checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Python dependencies
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Start backend (uvicorn)
+        run: |
+          . .venv/bin/activate
+          nohup ./.venv/bin/python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 > backend_uvicorn.log 2>&1 &
+          # simple wait-for-it loop to ensure server is accepting connections
+          for i in {1..20}; do
+            if curl -sSf http://127.0.0.1:8000/health >/dev/null 2>&1 || curl -sSf http://127.0.0.1:8000/api/predict >/dev/null 2>&1; then
+              echo "backend started"
+              break
+            fi
+            sleep 1
+          done
+
+      - name: Install newman
+        run: npm install -g newman
+
+      - name: Run Postman collection (newman)
+        env:
+          BASE_URL: http://127.0.0.1:8000
+        run: |
+          # Run the Postman collection against the local backend
+          newman run docs/postman_predict_collection.json --env-var "base_url=$BASE_URL" --bail

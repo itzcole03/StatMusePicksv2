@@ -1,0 +1,16 @@
+{
+  "training_csv": "backend\\data\\training_datasets\\points_dataset_174f1d9ac88b.csv",
+  "line_shift": 1.5,
+  "decimal_odds": 2.2,
+  "split": "test",
+  "calibrated": false,
+  "calibration_params": null,
+  "max_fraction_per_bet": 0.02,
+  "min_confidence": 0.25,
+  "initial_bankroll": 1000.0,
+  "predictions_rows": 100,
+  "actuals_rows": 100,
+  "run_dir": "backend\\evaluation\\backtest_reports\\sweeps_broad\\backtest_20251116T052539Z",
+  "timestamp_utc": "2025-11-16T05:25:40.308393+00:00",
+  "python_executable": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\.venv\\Scripts\\python.exe"
+}

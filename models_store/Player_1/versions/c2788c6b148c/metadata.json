@@ -1,0 +1,16 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Player_1\\versions\\c2788c6b148c\\Player_1_vd3e7378ad555.joblib",
+  "created_at": "2025-11-15T07:02:04.542097+00:00",
+  "metadata": {
+    "dataset_version": "c2f4cb903dda4a2ea8dd1c98c1fc9d21a077abca5eb283d1e17a817a925bf196",
+    "metrics": {
+      "test_mae": 3.5,
+      "val_mae": 2.5
+    },
+    "model_type": "mean_baseline",
+    "notes": "trained from small_dataset.csv",
+    "schema_version": 1
+  },
+  "name": "Player_1",
+  "version_id": "c2788c6b148c"
+}

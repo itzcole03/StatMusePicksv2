@@ -1,0 +1,48 @@
+{
+  "info": {
+    "name": "StatMusePicks - Predict",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Predict",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"player\": \"LeBron James\",\n  \"stat\": \"points\",\n  \"line\": 25.5,\n  \"player_data\": { \"rollingAverages\": { \"last5Games\": 27.0 }, \"seasonAvg\": 27.0 },\n  \"opponent_data\": {}\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/predict",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api","predict"]
+        }
+      }
+    },
+    {
+      "name": "Batch Predict",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  { \"player\": \"LeBron James\", \"stat\": \"points\", \"line\": 25.5 },\n  { \"player\": \"Stephen Curry\", \"stat\": \"points\", \"line\": 29.5 }\n]"
+        },
+        "url": {
+          "raw": "http://localhost:8000/api/batch_predict",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000",
+          "path": ["api","batch_predict"]
+        }
+      }
+    }
+  ]
+}

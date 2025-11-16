@@ -11,9 +11,9 @@ import hashlib
 import json
 import time
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import joblib
 
@@ -38,6 +38,7 @@ class ModelMetadata:
     feature_importances: Optional[Dict[str, float]] = None
     dataset_version: Optional[str] = None
     calibrator_version: Optional[str] = None
+    calibration: Optional[Dict[str, Any]] = None
 
 
 class PlayerModelRegistry:
@@ -81,7 +82,7 @@ class PlayerModelRegistry:
         return player_name.replace(" ", "_")
 
     def _make_version(self, player_name: str) -> str:
-        ts = datetime.utcnow().isoformat(timespec="seconds")
+        ts = datetime.now(timezone.utc).isoformat(timespec="seconds")
         base = f"{player_name}-{ts}-{time.time()}"
         return hashlib.sha1(base.encode("utf-8")).hexdigest()[:12]
 
@@ -119,7 +120,7 @@ class PlayerModelRegistry:
         except Exception:
             legacy_path = None
 
-        created_at = datetime.utcnow().isoformat()
+        created_at = datetime.now(timezone.utc).isoformat()
         meta = ModelMetadata(
             player_name=player_name,
             version=version,
@@ -133,6 +134,7 @@ class PlayerModelRegistry:
             feature_importances=(metadata.get("feature_importances") if metadata else None),
             dataset_version=(metadata.get("dataset_version") if metadata else None),
             calibrator_version=(metadata.get("calibrator_version") if metadata else None),
+            calibration=(metadata.get("calibration") if metadata else None),
         )
 
         # append to index
@@ -367,7 +369,7 @@ class PlayerModelRegistry:
                 return None
 
         entry = entries[idx]
-        promoted_at = datetime.utcnow().isoformat()
+        promoted_at = datetime.now(timezone.utc).isoformat()
         # attach promotion fields
         entry["promoted"] = True
         entry["promoted_at"] = promoted_at
@@ -414,7 +416,7 @@ class PlayerModelRegistry:
                     sync_url = raw_db.replace("+aiosqlite", "")
 
                 engine = create_engine(sync_url, future=True)
-                promoted_at_dt = datetime.utcnow()
+                promoted_at_dt = datetime.now(timezone.utc)
                 try:
                     with engine.begin() as conn:
                         conn.execute(

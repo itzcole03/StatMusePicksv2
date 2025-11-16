@@ -7,6 +7,9 @@ from fastapi import FastAPI, Response, Request
 from pydantic import BaseModel
 from typing import List
 from backend.schemas.player_context import PlayerContextResponse
+from backend.schemas.monitoring import TrainingSummaryResponse
+from fastapi.responses import FileResponse
+from typing import List
 import os
 import importlib
 import pathlib
@@ -466,6 +469,111 @@ async def api_predict(request: Request):
         raise
     except Exception as e:
         logger.exception("predict failed")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/monitoring/training_summary", response_model=TrainingSummaryResponse)
+async def api_training_summary(summary_path: Optional[str] = None):
+    """Return aggregated training summary (fallback coverage & calibration aggregates).
+
+    - `summary_path` query param: optional explicit path to a training_summary JSON.
+    - If not provided, `TRAINING_SUMMARY_PATH` env var is consulted.
+    - Fallback: search `MODEL_STORE_DIR` for the most recent `training_summary_*.json`.
+    """
+    try:
+        import os
+        from backend.monitoring.model_monitor import aggregate_training_summary
+
+        path = None
+        if summary_path:
+            path = summary_path
+        else:
+            env_path = os.environ.get("TRAINING_SUMMARY_PATH")
+            if env_path:
+                path = env_path
+            else:
+                store = os.environ.get("MODEL_STORE_DIR", "backend/models_store")
+                p = pathlib.Path(store)
+                matches = list(p.glob("training_summary_*.json"))
+                if matches:
+                    matches.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+                    path = str(matches[0])
+
+        if not path:
+            raise HTTPException(status_code=404, detail="training_summary not found")
+
+        agg = aggregate_training_summary(path)
+        return {"ok": True, "aggregates": agg, "summary_path": path}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("failed to load training summary")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/monitoring/fallback_plots")
+async def api_list_fallback_plots(model_store_dir: Optional[str] = None) -> dict:
+    """Return a list of available fallback plot files (PNG).
+
+    - `model_store_dir`: optional path to search; otherwise uses `MODEL_STORE_DIR` or `backend/tests/data`.
+    """
+    try:
+        store = model_store_dir or os.environ.get("MODEL_STORE_DIR", "backend/models_store")
+        candidates = [pathlib.Path(store), pathlib.Path("backend/tests/data")]
+        found = []
+        for base in candidates:
+            if not base.exists():
+                continue
+            for p in base.glob("out_backtest*.png"):
+                try:
+                    found.append(str(p.resolve()))
+                except Exception:
+                    found.append(str(p))
+
+        unique = sorted(list(set(found)), key=lambda x: pathlib.Path(x).stat().st_mtime if pathlib.Path(x).exists() else 0, reverse=True)
+        return {"ok": True, "plots": unique}
+    except Exception as e:
+        logger.exception("failed to list fallback plots")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/monitoring/fallback_plot")
+async def api_get_fallback_plot(name: Optional[str] = None, model_store_dir: Optional[str] = None):
+    """Serve a single fallback plot PNG file. Provide `name` as a filename or absolute path.
+
+    If `name` is omitted, the most-recent `out_backtest*.png` found will be returned.
+    """
+    try:
+        store = model_store_dir or os.environ.get("MODEL_STORE_DIR", "backend/models_store")
+        candidates = [pathlib.Path(store), pathlib.Path("backend/tests/data")]
+        files: List[pathlib.Path] = []
+        for base in candidates:
+            if not base.exists():
+                continue
+            for p in base.glob("out_backtest*.png"):
+                files.append(p)
+
+        if name:
+            for f in files:
+                if f.name == name or str(f) == name:
+                    return FileResponse(path=str(f), media_type="image/png")
+            cand = pathlib.Path(name)
+            if cand.exists() and cand.suffix.lower() == ".png":
+                repo_root = pathlib.Path(__file__).resolve().parents[2]
+                if repo_root in cand.resolve().parents or str(cand.resolve()).startswith(str(repo_root)):
+                    return FileResponse(path=str(cand), media_type="image/png")
+                else:
+                    raise HTTPException(status_code=400, detail="requested file outside repository")
+            raise HTTPException(status_code=404, detail="plot not found")
+
+        if not files:
+            raise HTTPException(status_code=404, detail="no plots found")
+        files.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        return FileResponse(path=str(files[0]), media_type="image/png")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("failed to serve fallback plot")
         raise HTTPException(status_code=500, detail=str(e))
 
 

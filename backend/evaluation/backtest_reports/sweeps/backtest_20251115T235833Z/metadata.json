@@ -1,0 +1,13 @@
+{
+  "training_csv": "backend\\data\\training_datasets\\points_dataset_174f1d9ac88b.csv",
+  "line_shift": 1.0,
+  "decimal_odds": 2.2,
+  "split": "test",
+  "min_confidence": 0.2,
+  "initial_bankroll": 1000.0,
+  "predictions_rows": 100,
+  "actuals_rows": 100,
+  "run_dir": "backend\\evaluation\\backtest_reports\\sweeps\\backtest_20251115T235833Z",
+  "timestamp_utc": "2025-11-15T23:58:34.115028+00:00",
+  "python_executable": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\.venv\\Scripts\\python.exe"
+}

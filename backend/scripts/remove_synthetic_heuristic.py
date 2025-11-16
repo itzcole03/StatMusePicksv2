@@ -114,7 +114,7 @@ def main(argv=None):
     if args.backup:
         dbfile = Path("./dev.db")
         if dbfile.exists():
-            ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+            ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             bak = dbfile.with_name(f"dev.db.{ts}.bak")
             print(f"Backing up {dbfile} -> {bak}")
             shutil.copy(dbfile, bak)

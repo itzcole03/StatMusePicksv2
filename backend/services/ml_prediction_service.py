@@ -42,15 +42,46 @@ except RuntimeError:
 # directly). We override the function at import-time so tests that call
 # `asyncio.get_event_loop()` after importing this module get a usable loop.
 _orig_get_event_loop = _asyncio.get_event_loop
+
+
 def _get_event_loop_compat():
     try:
-        return _orig_get_event_loop()
-    except RuntimeError:
-        loop = _asyncio.new_event_loop()
-        _asyncio.set_event_loop(loop)
+        loop = _orig_get_event_loop()
+        # If the returned loop is closed, create and set a fresh one.
+        try:
+            is_closed = False
+            try:
+                is_closed = loop.is_closed()
+            except Exception:
+                # If checking raises, treat as closed to be safe
+                is_closed = True
+            if is_closed:
+                raise RuntimeError('Event loop is closed')
+        except Exception:
+            new_loop = _asyncio.new_event_loop()
+            try:
+                _asyncio.set_event_loop(new_loop)
+            except Exception:
+                pass
+            return new_loop
         return loop
+    except Exception:
+        new_loop = _asyncio.new_event_loop()
+        try:
+            _asyncio.set_event_loop(new_loop)
+        except Exception:
+            pass
+        return new_loop
 
-_asyncio.get_event_loop = _get_event_loop_compat
+
+# Patch the real asyncio.get_event_loop so callers in other modules receive
+# a live event loop even if previous tests closed the default loop. This is a
+# defensive compatibility shim for the test harness and lightweight dev use.
+try:
+    _asyncio.get_event_loop = _get_event_loop_compat
+except Exception:
+    # best-effort: if assignment fails, ignore and continue
+    pass
 
 
 @dataclass
@@ -297,10 +328,12 @@ class MLPredictionService:
                     "line": line,
                     "predicted_value": raw,
                     "over_probability": float(over_prob),
-                    "under_probability": float(1.0 - over_prob),
+                    "under_probability": float(max(0.0, min(1.0, 1.0 - over_prob))),
                     "recommendation": recommendation,
-                    "expected_value": None,
-                    "confidence": float(abs(over_prob - 0.5) * 200.0),
+                    # expected_value: simple EV assuming even-money payout: prob_over - 0.5
+                    "expected_value": float(round(over_prob - 0.5, 4)),
+                    # confidence expressed as percentage (0-100)
+                    "confidence": float(round(over_prob * 100.0, 2)),
                 }
 
             return await self._fallback_prediction(player_name, stat_type, player_data, line)
@@ -311,7 +344,12 @@ class MLPredictionService:
 
     async def _fallback_prediction(self, player_name: str, stat_type: str, player_data: Dict, line: float) -> Dict:
         rolling = player_data.get("rollingAverages") or {}
-        recent_avg = rolling.get("last5Games") if rolling.get("last5Games") is not None else player_data.get("seasonAvg")
+        # Prefer last5Games when available, then last3Games, then seasonAvg.
+        recent_avg = None
+        if rolling is not None:
+            recent_avg = rolling.get("last5Games") if rolling.get("last5Games") is not None else rolling.get("last3Games")
+        if recent_avg is None:
+            recent_avg = player_data.get("seasonAvg")
 
         # Always include the request context keys so FastAPI response validation
         # (which requires `player`, `stat`, and `line`) succeeds.
@@ -338,9 +376,10 @@ class MLPredictionService:
             **base,
             "predicted_value": float(recent_avg),
             "over_probability": float(over_prob),
-            "under_probability": float(1.0 - over_prob),
+            "under_probability": float(max(0.0, min(1.0, 1.0 - over_prob))),
             "recommendation": recommendation,
-            "confidence": float(abs(over_prob - 0.5) * 200.0),
+            "expected_value": float(round(over_prob - 0.5, 4)),
+            "confidence": float(round(over_prob * 100.0, 2)),
         }
 
     # legacy scalar calibration is handled by `_apply_calibration_scalar`.

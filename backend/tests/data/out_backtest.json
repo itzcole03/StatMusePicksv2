@@ -1,0 +1,48 @@
+{
+  "starting_bankroll": 1000.0,
+  "final_bankroll": 1001.8181818,
+  "roi": 0.0018181818000000476,
+  "bets": 2,
+  "wins": 2,
+  "losses": 0,
+  "ev_sum": 0.25,
+  "training_summary_aggregates": {
+    "n_players": 4,
+    "avg_pct_with_last5": 0.625,
+    "avg_pct_with_last3": 0.55,
+    "avg_pct_with_seasonAvg": 0.525,
+    "avg_pct_fully_missing": 0.25,
+    "players_with_calibration": 0,
+    "avg_raw_ece": 0.0,
+    "per_player": [
+      {
+        "player": "Integration_Season",
+        "pct_with_last5": 1.0,
+        "pct_with_last3": 0.8,
+        "pct_with_seasonAvg": 1.0,
+        "pct_fully_missing": 0.0
+      },
+      {
+        "player": "Integration_Last5",
+        "pct_with_last5": 1.0,
+        "pct_with_last3": 0.9,
+        "pct_with_seasonAvg": 0.2,
+        "pct_fully_missing": 0.0
+      },
+      {
+        "player": "Integration_Mixed",
+        "pct_with_last5": 0.5,
+        "pct_with_last3": 0.5,
+        "pct_with_seasonAvg": 0.9,
+        "pct_fully_missing": 0.0
+      },
+      {
+        "player": "Integration_NoData",
+        "pct_with_last5": 0.0,
+        "pct_with_last3": 0.0,
+        "pct_with_seasonAvg": 0.0,
+        "pct_fully_missing": 1.0
+      }
+    ]
+  }
+}
