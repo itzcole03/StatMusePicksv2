@@ -32,7 +32,7 @@ def test_get_player_summary_happy_path(monkeypatch, tmp_path):
     # Mock nba_stats_client functions
     monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 123)
 
-    def fake_fetch(pid, limit):
+    def fake_fetch(pid, limit, season=None):
         # return list of dict-like rows consistent with nba_api DataFrame->to_dict
         return [
             {"GAME_DATE": "2025-11-10", "MATCHUP": "TEAM A vs TEAM B", "PTS": 25},
@@ -47,7 +47,7 @@ def test_get_player_summary_happy_path(monkeypatch, tmp_path):
     assert out["seasonAvg"] == 27.5
     assert out["recentGames"][0]["gameDate"] == "2025-11-10"
     # Ensure it wrote into fake redis
-    key = f"player_summary:LeBron James:points:2"
+    key = f"player_summary:LeBron James:points:2:any"
     assert key in fake_rc.store
 
 

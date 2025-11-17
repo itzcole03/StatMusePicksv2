@@ -6,7 +6,7 @@ from backend.services import nba_stats_client as client
 def test_get_team_stats_computes_averages_and_caches(monkeypatch):
     # Fake TeamGameLog that returns two games
     class FakeTG:
-        def __init__(self, team_id):
+        def __init__(self, team_id, **kwargs):
             self.team_id = team_id
 
         def get_data_frames(self):

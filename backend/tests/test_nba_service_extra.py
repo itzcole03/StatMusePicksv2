@@ -14,7 +14,7 @@ def test_get_player_summary_playercareerstats_fallback(monkeypatch):
     monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 999)
 
     # Return no recent games so code attempts playercareerstats path
-    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim: [])
+    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim, season=None: [])
 
     # Fake playercareerstats.PlayerCareerStats -> object with get_data_frames()
     class FakeDF:
@@ -59,7 +59,7 @@ def test_get_player_summary_redis_errors_fallback(monkeypatch):
 
     # Mock nba_stats_client to return a simple recent list
     monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 321)
-    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim: [
+    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim, season=None: [
         {"GAME_DATE": "2025-10-01", "MATCHUP": "A vs B", "PTS": 10}
     ])
 

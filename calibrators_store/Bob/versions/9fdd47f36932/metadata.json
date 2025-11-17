@@ -1,0 +1,9 @@
+{
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\calibrators_store\\Bob\\versions\\9fdd47f36932\\calibrator.joblib",
+  "created_at": "2025-11-15T21:40:39.112682+00:00",
+  "metadata": {
+    "trained_with": "78b9adf3ee8428bcaa9d1fd164d36bb03dc72f8861f236bb442ec9831b6f5e3a"
+  },
+  "name": "Bob",
+  "version_id": "9fdd47f36932"
+}
