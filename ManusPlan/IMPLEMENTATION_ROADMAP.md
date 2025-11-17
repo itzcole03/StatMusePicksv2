@@ -11,7 +11,7 @@
 - **Next steps:** attach these artifacts to the Phase 2 PR for review (they're on branch `feat/isotonic-ci-tests` and will update the PR automatically after push). Consider expanding dataset or lowering `--min-confidence` to increase bet coverage for broader validation.
 
 **Version:** 1.0  
-**Last Updated:** November 13, 2025
+**Last Updated:** November 16, 2025
 **Estimated Timeline:** 6-9 months  
 **Status:** 🟡 In Progress
 
@@ -22,7 +22,7 @@
 | Phase                          | Status         | Progress | Start Date | End Date | Notes                           |
 | ------------------------------ | -------------- | -------- | ---------- | -------- | ------------------------------- |
 | **Phase 1: Foundation**        | 🟡 In Progress | 72%      | -          | -        | Backend & Data Infrastructure   |
-| **Phase 2: Core ML**           | 🔴 Not Started | 0%       | -          | -        | Per-Player Models & Calibration |
+| **Phase 2: Core ML**           | 🟡 In Progress | 80%      | -          | -        | Per-Player Models & Calibration |
 | **Phase 3: Advanced Features** | 🔴 Not Started | 0%       | -          | -        | Feature Engineering & Ensemble  |
 | **Phase 4: Production**        | 🔴 Not Started | 0%       | -          | -        | MLOps & Automation              |
 
@@ -559,7 +559,7 @@ Scheduling guidance (example):
 
 **Objective:** Implement per-player ML models with proper calibration  
 **Status:** 🟡 In Progress  
-**Progress:** 3/20 tasks completed
+**Progress:** 16/20 tasks completed
 
 ## 2.1 Model Training Infrastructure
 
