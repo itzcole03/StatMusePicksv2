@@ -1,4 +1,5 @@
 [![Playwright Smoke Test](https://github.com/itzcole03/StatMusePicksv2/actions/workflows/playwright-smoke.yml/badge.svg)](https://github.com/itzcole03/StatMusePicksv2/actions/workflows/playwright-smoke.yml)
+[![Backtest & Monitoring](https://github.com/itzcole03/StatMusePicksv2/actions/workflows/backtest-monitoring.yml/badge.svg)](https://github.com/itzcole03/StatMusePicksv2/actions/workflows/backtest-monitoring.yml)
  
 Development README — StatMusePicksv2
 
@@ -160,6 +161,19 @@ curl example:
 ```bash
 echo '[{"player_name":"LeBron James","limit":3},{"player_name":"Stephen Curry","limit":3}]' > /tmp/batch.json
 curl -s -X POST "http://localhost:8000/api/batch_player_context" -H "Content-Type: application/json" -d @/tmp/batch.json | jq .
+```
+
+Postman Collection
+
+- **File:** `docs/postman_predict_collection.json` — import this JSON into Postman to get the `/api/predict` and `/api/batch_predict` examples (single + batch requests) used for smoke checks and CI.
+- **Import in Postman UI:** Open Postman -> Import -> Select `docs/postman_predict_collection.json` -> Import.
+- **Run from CLI (optional):** If you have `newman` installed, run the collection with:
+
+```powershell
+# Install newman if needed
+npm install -g newman
+# Run the collection (assumes backend running at http://localhost:8000)
+newman run docs/postman_predict_collection.json --env-var "base_url=http://localhost:8000"
 ```
 
 Run tests

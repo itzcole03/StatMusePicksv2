@@ -682,10 +682,12 @@ if ConfigDict is not None:
             "player": "LeBron James",
             "stat": "points",
             "line": 25.5,
-            "predicted_value": 26.2,
-            "over_probability": 0.56,
-            "recommendation": "over",
-            "confidence": 0.8,
+            "predicted_value": 27.3,
+            "over_probability": 0.68,
+            "under_probability": 0.32,
+            "recommendation": "OVER",
+            "expected_value": 0.18,
+            "confidence": 68.0,
         }
     })
 
@@ -694,8 +696,51 @@ class BatchPredictResponse(BaseModel):
     predictions: List[PredictionResponse]
 
 
-@app.post('/api/predict', responses={503: {"description": "ML service unavailable"}})
-async def api_predict(req: PredictionRequest):
+@app.post('/api/predict', responses={
+    200: {
+        "description": "Prediction result",
+        "content": {
+            "application/json": {
+                "example": {
+                    "ok": True,
+                    "prediction": {
+                        "player": "LeBron James",
+                        "stat": "points",
+                        "line": 25.5,
+                        "predicted_value": 27.3,
+                        "over_probability": 0.68,
+                        "under_probability": 0.32,
+                        "recommendation": "OVER",
+                        "expected_value": 0.18,
+                        "confidence": 68.0
+                    },
+                    "player": "LeBron James",
+                    "stat": "points",
+                    "line": 25.5,
+                    "predicted_value": 27.3,
+                    "over_probability": 0.68,
+                    "under_probability": 0.32,
+                    "recommendation": "OVER",
+                    "expected_value": 0.18,
+                    "confidence": 68.0
+                }
+            }
+        }
+    },
+    503: {"description": "ML service unavailable"}
+})
+async def api_predict(req: PredictionRequest = Body(..., examples={
+    "basic": {
+        "summary": "Predict example",
+        "value": {
+            "player": "LeBron James",
+            "stat": "points",
+            "line": 25.5,
+            "player_data": {},
+            "opponent_data": {}
+        }
+    }
+} )):
     if MLPredictionService is None:
         raise HTTPException(status_code=503, detail='ML service unavailable')
 
@@ -734,6 +779,34 @@ async def api_predict(req: PredictionRequest):
             svc = MLPredictionService(model_dir=model_dir)
         except Exception:
             svc = ml_service
+    # Basic request validation (guardrail for malformed/abusive requests)
+    # Keep validation lightweight to avoid duplicating Pydantic version logic.
+    try:
+        if not req.player or not isinstance(req.player, str) or not req.player.strip():
+            raise HTTPException(status_code=400, detail='player is required and must be a non-empty string')
+        # numeric line must be finite and non-negative
+        try:
+            if req.line is None:
+                raise HTTPException(status_code=400, detail='line is required')
+            if not (isinstance(req.line, (int, float))):
+                raise HTTPException(status_code=400, detail='line must be a number')
+            if req.line < 0 or req.line != req.line:
+                raise HTTPException(status_code=400, detail='line must be a non-negative finite number')
+        except HTTPException:
+            raise
+        except Exception:
+            raise HTTPException(status_code=400, detail='invalid line value')
+
+        # stat should map to a supported stat when possible; accept unknown but normalize
+        if req.stat and isinstance(req.stat, str):
+            _stat_norm = req.stat.lower()
+            if _stat_norm not in STAT_MAP and _stat_norm not in (s.lower() for s in STAT_MAP.keys()):
+                # allow unknown stat but warn via headerless response; do not reject to remain flexible
+                pass
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail='invalid request')
 
     # Simple caching by player|stat|line when Redis is available.
     cache_key = f"predict:{req.player}:{req.stat}:{req.line}"
@@ -811,30 +884,146 @@ async def api_predict(req: PredictionRequest):
     return out
 
 
-@app.post('/api/batch_predict', response_model=BatchPredictResponse, responses={503: {"description": "ML service unavailable"}})
-async def api_batch_predict(requests: List[PredictionRequest]):
+@app.post('/api/batch_predict', response_model=BatchPredictResponse, responses={
+    200: {
+        "description": "Batch predictions",
+        "content": {
+            "application/json": {
+                "example": {
+                    "predictions": [
+                        {
+                            "player": "LeBron James",
+                            "stat": "points",
+                            "line": 25.5,
+                            "predicted_value": 27.3,
+                            "over_probability": 0.68,
+                            "under_probability": 0.32,
+                            "recommendation": "OVER",
+                            "expected_value": 0.18,
+                            "confidence": 68.0
+                        },
+                        {
+                            "player": "Stephen Curry",
+                            "stat": "points",
+                            "line": 29.5,
+                            "predicted_value": 28.1,
+                            "over_probability": 0.42,
+                            "under_probability": 0.58,
+                            "recommendation": "UNDER",
+                            "expected_value": -0.08,
+                            "confidence": 42.0
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    503: {"description": "ML service unavailable"}
+})
+async def api_batch_predict(requests: List[PredictionRequest], max_concurrency: int = Query(6, description="Max concurrent predictions"), timeout_seconds: int = Query(30, description="Per-prediction timeout in seconds"), max_requests: int = Query(50, description="Maximum number of requests allowed in a single batch"), overall_timeout_seconds: int = Query(0, description="Optional overall batch timeout in seconds (0 = disabled)")):
+    """Accepts a list of prediction requests and processes them concurrently.
+
+    If individual predictions time out or fail, the response will include an
+    entry with an `error` key to allow partial results handling on the client.
+    """
+    import asyncio
+
+    if len(requests) == 0:
+        return BatchPredictResponse(predictions=[])
+
+    # Guard against huge batches
+    if max_requests and len(requests) > max_requests:
+        raise HTTPException(status_code=413, detail=f'Batch size {len(requests)} exceeds max_requests {max_requests}')
+
+    semaphore = asyncio.Semaphore(max_concurrency)
     results: List[PredictionResponse] = []
-    for r in requests:
+
+    async def _call_predict(r: PredictionRequest):
+        if ml_service is None:
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='ML service unavailable')
+
         try:
-            if ml_service is None:
-                results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='ML service unavailable'))
-            else:
-                res = await ml_service.predict(
-                    player_name=r.player,
-                    stat_type=r.stat,
-                    line=r.line,
-                    player_data=r.player_data or {},
-                    opponent_data=r.opponent_data or {}
+            async with semaphore:
+                # enforce per-call timeout
+                res = await asyncio.wait_for(
+                    ml_service.predict(
+                        player_name=r.player,
+                        stat_type=r.stat,
+                        line=r.line,
+                        player_data=r.player_data or {},
+                        opponent_data=r.opponent_data or {}
+                    ),
+                    timeout=timeout_seconds,
                 )
-                # coerce into PredictionResponse when possible
-                if isinstance(res, dict):
-                    results.append(PredictionResponse(**res))
-                else:
-                    # unknown shape, wrap minimally
-                    results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result format'))
+
+            if isinstance(res, dict):
+                return PredictionResponse(**res)
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result format')
+        except asyncio.TimeoutError:
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='prediction timeout')
         except Exception as e:
-            results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=str(e)))
-    return BatchPredictResponse(predictions=results)
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=str(e))
+
+    tasks = [asyncio.create_task(_call_predict(r)) for r in requests]
+
+    # Support optional overall batch timeout. If set and the overall wait
+    # exceeds the timeout, cancel remaining tasks and return partial
+    # results with an `error: 'batch timeout'` marker for cancelled items.
+    try:
+        if overall_timeout_seconds and overall_timeout_seconds > 0:
+            try:
+                gathered = await asyncio.wait_for(asyncio.gather(*tasks), timeout=overall_timeout_seconds)
+            except asyncio.TimeoutError:
+                # Cancel pending tasks
+                for t in tasks:
+                    if not t.done():
+                        try:
+                            t.cancel()
+                        except Exception:
+                            pass
+                # Collect whatever finished + exceptions for the rest
+                gathered = await asyncio.gather(*tasks, return_exceptions=True)
+        else:
+            gathered = await asyncio.gather(*tasks)
+    except Exception:
+        # Fallback: ensure tasks are cancelled on unexpected error
+        for t in tasks:
+            if not t.done():
+                try:
+                    t.cancel()
+                except Exception:
+                    pass
+        gathered = await asyncio.gather(*tasks, return_exceptions=True)
+
+    # Normalize gathered results into PredictionResponse objects.
+    out_preds: List[PredictionResponse] = []
+    for idx, res in enumerate(gathered):
+        if isinstance(res, PredictionResponse):
+            out_preds.append(res)
+        elif isinstance(res, Exception):
+            # If task was cancelled due to overall timeout, present a batch-level error
+            err_msg = 'batch timeout' if isinstance(res, asyncio.CancelledError) or isinstance(res, asyncio.TimeoutError) else str(res)
+            try:
+                r = requests[idx]
+                out_preds.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=err_msg))
+            except Exception:
+                out_preds.append(PredictionResponse(player='unknown', stat='unknown', line=0.0, error=err_msg))
+        else:
+            # Unexpected: try to coerce dict-like results
+            try:
+                if isinstance(res, dict):
+                    out_preds.append(PredictionResponse(**res))
+                else:
+                    r = requests[idx]
+                    out_preds.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result'))
+            except Exception:
+                r = requests[idx] if idx < len(requests) else None
+                if r:
+                    out_preds.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result'))
+                else:
+                    out_preds.append(PredictionResponse(player='unknown', stat='unknown', line=0.0, error='unexpected result'))
+
+    return BatchPredictResponse(predictions=out_preds)
 
 
 # Model management API

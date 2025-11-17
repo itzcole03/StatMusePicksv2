@@ -1,0 +1,2 @@
+game_date,player,line,predicted_value,over_probability,confidence,expected_value,stake,won,profit,bankroll
+2024-01-01,Test Player,20,21,0.7,0.8,0.05,20.0,True,20.0,1020.0

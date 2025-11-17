@@ -1,0 +1,47 @@
+name: Backend Tests + Backtest Smoke
+
+on:
+  push:
+    branches: [ main, feat/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          if [ -f backend/requirements.dev.txt ]; then pip install -r backend/requirements.dev.txt; fi
+
+      - name: Run backend pytest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: pytest -q
+
+      - name: Backtest smoke-run (fixtures)
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          mkdir -p backend/evaluation/backtest_reports
+          python backend/evaluation/backtesting.py \
+            --predictions backend/evaluation/fixtures/predictions_sample.csv \
+            --actuals backend/evaluation/fixtures/actuals_sample.csv \
+            --outdir backend/evaluation/backtest_reports
+
+      - name: Upload backtest artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-reports
+          path: backend/evaluation/backtest_reports

@@ -1,0 +1,2 @@
+run_dir,line_shift,decimal_odds,min_confidence,predictions_rows,actuals_rows,initial_bankroll,final_bankroll,roi,brier_score,win_rate,total_bets,sharpe,max_drawdown,cagr,timestamp
+backend\evaluation\backtest_reports\sweeps\backtest_20251116T065243Z,0.5,1.9,0.1,100,100,1000.0,545.4843193824373,-0.4545156806175627,0.2945364388435237,0.0,30.0,-31.419018428324296,0.4433833475689415,-1.0,2025-11-16T06:52:44.424610+00:00

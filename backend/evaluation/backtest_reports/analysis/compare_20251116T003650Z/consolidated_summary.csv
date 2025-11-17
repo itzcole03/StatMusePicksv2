@@ -1,0 +1,3 @@
+variant,run_dir,initial_bankroll,final_bankroll,roi,win_rate,total_bets,sharpe,max_drawdown,cagr
+baseline,backend\evaluation\backtest_reports\analysis\compare_20251116T003634Z,,,,,,,,
+calibrated,backend\evaluation\backtest_reports\analysis\compare_20251116T003634Z,,,,,,,,

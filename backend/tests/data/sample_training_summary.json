@@ -1,0 +1,48 @@
+{
+  "Integration_Season": {
+    "version": "v1",
+    "metrics": {
+      "val_mae": 1.2
+    },
+    "fallback_coverage": {
+      "pct_with_seasonAvg": 1.0,
+      "pct_with_last5": 1.0,
+      "pct_with_last3": 0.8,
+      "pct_fully_missing": 0.0,
+      "n_rows": 82
+    }
+  },
+  "Integration_Last5": {
+    "version": "v1",
+    "metrics": {},
+    "fallback_coverage": {
+      "pct_with_seasonAvg": 0.2,
+      "pct_with_last5": 1.0,
+      "pct_with_last3": 0.9,
+      "pct_fully_missing": 0.0,
+      "n_rows": 60
+    }
+  },
+  "Integration_Mixed": {
+    "version": "v1",
+    "metrics": {},
+    "fallback_coverage": {
+      "pct_with_seasonAvg": 0.9,
+      "pct_with_last5": 0.5,
+      "pct_with_last3": 0.5,
+      "pct_fully_missing": 0.0,
+      "n_rows": 40
+    }
+  },
+  "Integration_NoData": {
+    "version": "v1",
+    "metrics": {},
+    "fallback_coverage": {
+      "pct_with_seasonAvg": 0.0,
+      "pct_with_last5": 0.0,
+      "pct_with_last3": 0.0,
+      "pct_fully_missing": 1.0,
+      "n_rows": 10
+    }
+  }
+}

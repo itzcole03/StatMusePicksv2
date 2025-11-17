@@ -1,0 +1,10 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Meta_Player\\versions\\217bb1cb2afd\\Meta_Player_v8eaa9c7deb9a.joblib",
+  "created_at": "2025-11-15T20:29:32.579605+00:00",
+  "metadata": {
+    "model_type": "mean_baseline",
+    "schema_version": 1
+  },
+  "name": "Meta_Player",
+  "version_id": "217bb1cb2afd"
+}

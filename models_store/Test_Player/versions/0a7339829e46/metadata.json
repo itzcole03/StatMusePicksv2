@@ -1,0 +1,24 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Test_Player\\versions\\0a7339829e46\\Test_Player_v714890e4d86d.joblib",
+  "created_at": "2025-11-15T01:29:31.874688+00:00",
+  "metadata": {
+    "dataset_version": "779c575aafe47c9458404de7e09c6fc6f1f25665d173f847a6a98f733724a91a",
+    "hyperparameters": {
+      "use_stacking": false,
+      "weights": [
+        0.2677740714949618,
+        0.7306660152344803,
+        0.0015599132705579148
+      ]
+    },
+    "metrics": {
+      "test_mae": 0.013355201360228719,
+      "val_mae": 0.11983715642604764
+    },
+    "model_type": "Ensemble:EnsembleModel",
+    "notes": "trained from ds.parquet",
+    "schema_version": 1
+  },
+  "name": "Test_Player",
+  "version_id": "0a7339829e46"
+}

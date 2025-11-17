@@ -1,0 +1,22 @@
+{
+  "artifact_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\models_store\\Bob\\versions\\6ac970e8e48e\\Bob_va2551f3d1a2a.joblib",
+  "created_at": "2025-11-15T21:24:20.428825+00:00",
+  "metadata": {
+    "dataset_version": "78b9adf3ee8428bcaa9d1fd164d36bb03dc72f8861f236bb442ec9831b6f5e3a",
+    "hyperparameters": {
+      "C": 0.13130280280658593,
+      "l1_ratio": 0.6458941130666561
+    },
+    "metrics": {
+      "accuracy": 0.0,
+      "brier": 0.4501826992944523,
+      "logloss": 1.111565486615114,
+      "roc_auc": null
+    },
+    "model_type": "elasticnet:LogisticRegression",
+    "notes": "trained from sample_dataset3.csv",
+    "schema_version": 1
+  },
+  "name": "Bob",
+  "version_id": "6ac970e8e48e"
+}

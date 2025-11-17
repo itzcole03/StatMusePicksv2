@@ -1,0 +1,2 @@
+initial_bankroll,final_bankroll,roi,win_rate,total_bets,sharpe,max_drawdown,cagr,brier_score
+1000.0,545.4843193824373,-0.4545156806175627,0.0,30,-31.419018428324296,0.4433833475689415,-1.0,0.29453643884352376
