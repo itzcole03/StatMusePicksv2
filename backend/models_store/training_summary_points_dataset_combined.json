@@ -1,0 +1,182 @@
+{
+  "LeBron James": {
+    "version": "a49ace310b58",
+    "metrics": {
+      "val_mae": 0.0010166039580579668,
+      "test_mae": 0.0016497542496578532
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9980160735393827,
+        0.0015229014206468306,
+        0.0004610250399704658
+      ],
+      "use_stacking": false
+    }
+  },
+  "Stephen Curry": {
+    "version": "59fe8d7f56b2",
+    "metrics": {
+      "val_mae": 0.18455132851362777,
+      "test_mae": 2.4153202283060438
+    },
+    "hyperparameters": {
+      "weights": [
+        0.5841487929891177,
+        0.3739027665273661,
+        0.041948440483516335
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1001": {
+    "version": "4fba36658d94",
+    "metrics": {
+      "val_mae": 0.03286113800877377,
+      "test_mae": 0.13715653985957524
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9833163196002773,
+        3.277623666581227e-05,
+        0.01665090416305686
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1002": {
+    "version": "f6594d41ba92",
+    "metrics": {
+      "val_mae": 0.029558687603817635,
+      "test_mae": 0.1354040366295246
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9422917417172931,
+        0.039608913958343955,
+        0.01809934432436291
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1003": {
+    "version": "13c18a7e60ba",
+    "metrics": {
+      "val_mae": 0.03170895909191085,
+      "test_mae": 0.1368409641327693
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9464818537588792,
+        0.03842016551592504,
+        0.015097980725195746
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1004": {
+    "version": "439ef07b01f3",
+    "metrics": {
+      "val_mae": 0.03284753024549225,
+      "test_mae": 0.13585526855867885
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9672780336012654,
+        0.020203457791346528,
+        0.012518508607388058
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1005": {
+    "version": "e7614f5686b4",
+    "metrics": {
+      "val_mae": 0.050619352387451855,
+      "test_mae": 0.19216343789682
+    },
+    "hyperparameters": {
+      "weights": [
+        0.594084330978593,
+        0.22269391642050382,
+        0.18322175260090318
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1006": {
+    "version": "32410d384ed6",
+    "metrics": {
+      "val_mae": 0.033426457353790795,
+      "test_mae": 0.13636903182727397
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9741233101556632,
+        0.015653785600115624,
+        0.010222904244221188
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1007": {
+    "version": "b0bf036052de",
+    "metrics": {
+      "val_mae": 0.020003542011722164,
+      "test_mae": 0.14281204457346455
+    },
+    "hyperparameters": {
+      "weights": [
+        0.8386137852629602,
+        0.09661729003934402,
+        0.06476892469769584
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1008": {
+    "version": "6f42ff4bfc4a",
+    "metrics": {
+      "val_mae": 0.022536997894206934,
+      "test_mae": 0.14147466001757608
+    },
+    "hyperparameters": {
+      "weights": [
+        0.8637927915978163,
+        0.07795439068814247,
+        0.05825281771404112
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1009": {
+    "version": "aab0505fc649",
+    "metrics": {
+      "val_mae": 0.01974445376133316,
+      "test_mae": 0.1512836613577358
+    },
+    "hyperparameters": {
+      "weights": [
+        0.8066627321201406,
+        0.1181950050689731,
+        0.0751422628108864
+      ],
+      "use_stacking": false
+    }
+  },
+  "Synth Player 1010": {
+    "version": "73afd0e07e8c",
+    "metrics": {
+      "val_mae": 0.031229983442971676,
+      "test_mae": 0.13613987813683065
+    },
+    "hyperparameters": {
+      "weights": [
+        0.9517265260543711,
+        0.028399221669522762,
+        0.019874252276106105
+      ],
+      "use_stacking": false
+    }
+  }
+}

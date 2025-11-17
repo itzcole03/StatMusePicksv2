@@ -1,0 +1,65 @@
+{
+  "artifact_path": "backend\\models_store\\Stephen Curry\\versions\\22ef1e730cbd\\Stephen_Curry_v59fe8d7f56b2.joblib",
+  "created_at": "2025-11-17T06:11:14.958738+00:00",
+  "metadata": {
+    "dataset_version": "9e384d55c9476c999fd3f3b1fdcf39118c52d1de3d7973750e95939908347e1f",
+    "ensemble_selected": true,
+    "feature_columns": [
+      "player_position",
+      "game_id",
+      "recent_mean",
+      "recent_std",
+      "season_avg",
+      "is_home",
+      "days_rest",
+      "is_back_to_back",
+      "last_3_avg",
+      "last_5_avg",
+      "last_10_avg",
+      "exponential_moving_avg",
+      "wma_3",
+      "wma_5",
+      "last_3_std",
+      "last_3_min",
+      "last_3_max",
+      "last_3_median",
+      "last_5_std",
+      "last_5_min",
+      "last_5_max",
+      "last_5_median",
+      "last_10_std",
+      "last_10_min",
+      "last_10_max",
+      "last_10_median",
+      "slope_10",
+      "momentum_vs_5_avg",
+      "opp_def_rating",
+      "opp_pace",
+      "games_vs_current_opponent",
+      "avg_vs_current_opponent",
+      "avg_vs_stronger_def",
+      "avg_vs_similar_def",
+      "last_game_vs_current_opponent_date",
+      "last_game_vs_current_opponent_stat",
+      "group_key"
+    ],
+    "feature_importances": null,
+    "hyperparameters": {
+      "use_stacking": false,
+      "weights": [
+        0.5841487929891177,
+        0.3739027665273661,
+        0.041948440483516335
+      ]
+    },
+    "metrics": {
+      "test_mae": 2.4153202283060438,
+      "val_mae": 0.18455132851362777
+    },
+    "model_type": "Ensemble:EnsembleModel",
+    "notes": "trained from points_dataset_combined.csv",
+    "registered_by": "train_models.save_model"
+  },
+  "name": "Stephen Curry",
+  "version_id": "22ef1e730cbd"
+}

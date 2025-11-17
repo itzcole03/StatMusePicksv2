@@ -12,9 +12,8 @@ def test_load_saved_model():
 
     safe = player.replace(" ", "_")
     model_path = _os.path.join(reg.model_dir, f"{safe}.pkl")
-    if not _os.path.exists(model_path):
-        # write a trivial stub so load_model succeeds
-        joblib.dump({"stub": True}, model_path)
+    # Always overwrite any existing model file to make the test deterministic
+    joblib.dump({"stub": True}, model_path)
 
     model = reg.load_model(player)
     assert model is not None

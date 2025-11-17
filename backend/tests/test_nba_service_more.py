@@ -9,7 +9,7 @@ def test_playercareerstats_empty_frames(monkeypatch):
 
     # Resolve player id, but return no recent games so code hits playercareerstats
     monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 777)
-    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim: [])
+    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim, season=None: [])
 
     class EmptyDF:
         def __init__(self):
@@ -37,7 +37,7 @@ def test_playercareerstats_raises_exception(monkeypatch):
     monkeypatch.setattr(nba_service, "_redis_client", lambda: None)
 
     monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 888)
-    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim: [])
+    monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", lambda pid, lim, season=None: [])
 
     # Make PlayerCareerStats constructor raise
     class BadPCS:

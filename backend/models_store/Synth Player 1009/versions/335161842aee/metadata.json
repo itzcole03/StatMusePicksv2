@@ -1,0 +1,65 @@
+{
+  "artifact_path": "backend\\models_store\\Synth Player 1009\\versions\\335161842aee\\Synth_Player_1009_vaab0505fc649.joblib",
+  "created_at": "2025-11-17T06:11:38.167221+00:00",
+  "metadata": {
+    "dataset_version": "9e384d55c9476c999fd3f3b1fdcf39118c52d1de3d7973750e95939908347e1f",
+    "ensemble_selected": true,
+    "feature_columns": [
+      "player_position",
+      "game_id",
+      "recent_mean",
+      "recent_std",
+      "season_avg",
+      "is_home",
+      "days_rest",
+      "is_back_to_back",
+      "last_3_avg",
+      "last_5_avg",
+      "last_10_avg",
+      "exponential_moving_avg",
+      "wma_3",
+      "wma_5",
+      "last_3_std",
+      "last_3_min",
+      "last_3_max",
+      "last_3_median",
+      "last_5_std",
+      "last_5_min",
+      "last_5_max",
+      "last_5_median",
+      "last_10_std",
+      "last_10_min",
+      "last_10_max",
+      "last_10_median",
+      "slope_10",
+      "momentum_vs_5_avg",
+      "opp_def_rating",
+      "opp_pace",
+      "games_vs_current_opponent",
+      "avg_vs_current_opponent",
+      "avg_vs_stronger_def",
+      "avg_vs_similar_def",
+      "last_game_vs_current_opponent_date",
+      "last_game_vs_current_opponent_stat",
+      "group_key"
+    ],
+    "feature_importances": null,
+    "hyperparameters": {
+      "use_stacking": false,
+      "weights": [
+        0.8066627321201406,
+        0.1181950050689731,
+        0.0751422628108864
+      ]
+    },
+    "metrics": {
+      "test_mae": 0.1512836613577358,
+      "val_mae": 0.01974445376133316
+    },
+    "model_type": "Ensemble:EnsembleModel",
+    "notes": "trained from points_dataset_combined.csv",
+    "registered_by": "train_models.save_model"
+  },
+  "name": "Synth Player 1009",
+  "version_id": "335161842aee"
+}

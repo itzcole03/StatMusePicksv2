@@ -31,13 +31,13 @@ def _redis_client():
     return get_redis()
 
 
-def get_player_summary(player: str, stat: str = 'points', limit: int = 8, debug: bool = False) -> Dict[str, Any]:
+def get_player_summary(player: str, stat: str = 'points', limit: int = 8, season: Optional[str] = None, debug: bool = False) -> Dict[str, Any]:
     """Return a structured player summary dict (sync).
 
     Attempts to read/write Redis when available; otherwise uses the
     `nba_stats_client` functions and returns a best-effort summary.
     """
-    cache_key = f"player_summary:{player}:{stat}:{limit}"
+    cache_key = f"player_summary:{player}:{stat}:{limit}:{season or 'any'}"
 
     # Try redis cache first
     try:
@@ -57,7 +57,7 @@ def get_player_summary(player: str, stat: str = 'points', limit: int = 8, debug:
     if not pid:
         raise ValueError('player not found')
 
-    recent = nba_stats_client.fetch_recent_games(pid, limit)
+    recent = nba_stats_client.fetch_recent_games(pid, limit, season)
     debug_info['recent_count'] = len(recent)
 
     recent_games: List[Dict[str, Any]] = []
@@ -121,6 +121,14 @@ def get_player_summary(player: str, stat: str = 'points', limit: int = 8, debug:
     if debug:
         out['debug'] = debug_info
 
+    # Attach advanced player metrics when available
+    try:
+        adv = nba_stats_client.get_advanced_player_stats(pid, season)
+        if adv:
+            out['advanced'] = adv
+    except Exception:
+        pass
+
     # persist to redis if available
     try:
         rc = _redis_client()
@@ -142,11 +150,12 @@ def build_external_context_for_projections(items: List[Dict[str, Any]], stat: st
     results: List[Dict[str, Any]] = []
     for it in items:
         player = it.get('player') or it.get('player_name')
+        season = it.get('season') or None
         if not player:
             results.append({'error': 'missing player', 'input': it})
             continue
         try:
-            ctx = get_player_summary(player, stat=stat, limit=limit, debug=False)
+            ctx = get_player_summary(player, stat=stat, limit=limit, season=season, debug=False)
             results.append(ctx)
         except Exception as e:
             results.append({'player': player, 'error': str(e)})
@@ -154,3 +163,67 @@ def build_external_context_for_projections(items: List[Dict[str, Any]], stat: st
 
 
 __all__ = ['get_player_summary', 'build_external_context_for_projections']
+
+
+def get_player_context_for_training(
+    player: str,
+    stat: str,
+    game_date: str,
+    season: str,
+) -> Dict[str, Any]:
+    """Dedicated function to fetch all necessary context for a single training sample.
+
+    This explicitly requests season-scoped data and returns a compact, structured
+    context used by ML training pipelines.
+    """
+    if not player or not season:
+        raise ValueError('player and season are required')
+
+    cache_key = f"player_training:{player}:{season}:{stat}:{game_date}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    data = json.loads(raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw)
+                    data['cached'] = True
+                    return data
+                except Exception:
+                    pass
+    except Exception:
+        logger.debug('redis unavailable for player_training cache', exc_info=True)
+
+    pid = nba_stats_client.find_player_id_by_name(player)
+    if not pid:
+        raise ValueError(f'Player not found: {player}')
+
+    # 1. Player Game Log (fetch entire season to allow post-filtering by game_date)
+    recent_games_season = nba_stats_client.fetch_recent_games(pid, 82, season)
+
+    # 2. Season Stats (for the season)
+    season_stats = nba_stats_client.get_player_season_stats(pid, season)
+
+    # 3. Advanced Stats (for the season)
+    advanced_stats = nba_stats_client.get_advanced_player_stats(pid, season)
+
+    out: Dict[str, Any] = {
+        'player': player,
+        'playerId': pid,
+        'season': season,
+        'stat': stat,
+        'gameDate': game_date,
+        'recentGamesRaw': recent_games_season,
+        'seasonStats': season_stats,
+        'advancedStats': advanced_stats,
+        'fetchedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+    }
+
+    try:
+        rc = _redis_client()
+        if rc:
+            rc.setex(cache_key, 60 * 60 * 24, json.dumps(out))
+    except Exception:
+        pass
+
+    return out
