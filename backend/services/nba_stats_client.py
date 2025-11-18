@@ -27,16 +27,20 @@ logger = logging.getLogger(__name__)
 # Try importing nba_api optional dependency
 try:
     from nba_api.stats.static import players
+    from nba_api.stats.static import teams as static_teams
     from nba_api.stats.endpoints import playergamelog
     from nba_api.stats.endpoints import teamgamelog
+    from nba_api.stats.endpoints import leaguegamelog
     from nba_api.stats.endpoints import playercareerstats
     from nba_api.stats.endpoints import leaguedashplayerstats
 except Exception:  # pragma: no cover - optional dep
     players = None
+    static_teams = None
     playergamelog = None
     teamgamelog = None
     playercareerstats = None
     leaguedashplayerstats = None
+    leaguegamelog = None
 
 
 # In-process TTL cache as a fallback when Redis is unavailable
@@ -47,6 +51,9 @@ MAX_REQUESTS_PER_MINUTE = int(os.environ.get("NBA_API_MAX_RPM", "20"))
 _tokens = float(MAX_REQUESTS_PER_MINUTE)
 _last_refill = time.time()
 _rl_lock = threading.Lock()
+
+# Timeout for nba_api HTTP requests (seconds)
+NBA_API_TIMEOUT = int(os.environ.get("NBA_API_TIMEOUT", "120"))
 
 
 def _acquire_token(timeout: float = 5.0) -> bool:
@@ -68,20 +75,53 @@ def _acquire_token(timeout: float = 5.0) -> bool:
     return False
 
 
-def _with_retries(fn, *args, retries: int = 3, backoff: float = 0.5, **kwargs):
+def _with_retries(fn, *args, retries: int = 6, backoff: float = 0.5, max_backoff: float = 120.0, **kwargs):
+    """Invoke `fn` with retries, exponential backoff and jitter.
+
+    - `retries`: number of attempts before giving up
+    - `backoff`: initial backoff in seconds
+    - `max_backoff`: cap for backoff
+    """
+    import random
+    import requests
+    from http.client import RemoteDisconnected as _RemoteDisconnected
+
     last_exc = None
     for attempt in range(retries):
         ok = _acquire_token(timeout=2.0)
         if not ok:
-            time.sleep(backoff * (attempt + 1))
+            # if token not available, wait a bit with jitter
+            sleep_t = backoff * (attempt + 1) * (0.5 + random.random() * 0.5)
+            time.sleep(min(sleep_t, max_backoff))
             continue
         try:
             return fn(*args, **kwargs)
         except Exception as e:
             last_exc = e
-            time.sleep(backoff * (2 ** attempt))
-    # final attempt without waiting for token
+            # If it's a connection-level error, increase backoff and jitter
+            is_conn_err = False
+            try:
+                if isinstance(e, requests.exceptions.ConnectionError):
+                    is_conn_err = True
+            except Exception:
+                pass
+            try:
+                if isinstance(e, _RemoteDisconnected):
+                    is_conn_err = True
+            except Exception:
+                pass
+
+            # exponential backoff with larger cap for connection issues
+            cap = max_backoff if is_conn_err else max_backoff / 2.0
+            sleep_t = min(cap, backoff * (2 ** attempt))
+            # add jitter
+            sleep_t = sleep_t * (0.4 + random.random() * 0.8)
+            time.sleep(sleep_t)
+            continue
+    # final attempt without acquiring token
     try:
+        # final attempt: small pause before final try
+        time.sleep(backoff)
         return fn(*args, **kwargs)
     except Exception:
         if last_exc:
@@ -156,9 +196,15 @@ def find_player_id_by_name(name: str) -> Optional[int]:
         return n
 
     try:
-        allp = players.get_players()
+        # Prefer a cached all-players list via helper which already uses
+        # Redis / local cache and also supports local-file fallback.
+        allp = fetch_all_players()
     except Exception:
-        return None
+        try:
+            # Last-resort: try direct call if available
+            allp = players.get_players() if players is not None else []
+        except Exception:
+            allp = []
 
     target = normalize(name)
     for p in allp:
@@ -208,9 +254,9 @@ def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = N
     try:
         def _fetch(pid, lim, seas):
             if seas:
-                gl = playergamelog.PlayerGameLog(player_id=pid, season=seas)
+                gl = playergamelog.PlayerGameLog(player_id=pid, season=seas, timeout=NBA_API_TIMEOUT)
             else:
-                gl = playergamelog.PlayerGameLog(player_id=pid)
+                gl = playergamelog.PlayerGameLog(player_id=pid, timeout=NBA_API_TIMEOUT)
             df = gl.get_data_frames()[0]
             return df.head(lim).to_dict(orient="records")
 
@@ -225,6 +271,11 @@ def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = N
         return recent
     except Exception:
         logger.exception("Error fetching recent games for player_id=%s", player_id)
+        try:
+            # persist failed id for later retry
+            _record_failed_fetch('player', player_id, 'fetch_recent_games')
+        except Exception:
+            pass
         return []
 
 
@@ -234,7 +285,216 @@ __all__ = [
     "get_player_season_stats",
     "get_team_stats",
     "get_advanced_player_stats",
+    "fetch_all_players",
+    "fetch_all_teams",
+    "fetch_full_player_history",
+    "fetch_full_team_history",
+    "fetch_season_league_player_game_logs",
 ]
+
+
+def get_player_season_stats_multi(player_id: int, seasons: Optional[List[str]]) -> Dict[str, Dict[str, float]]:
+    """Return a mapping season -> basic season stats for the given seasons list.
+
+    If `seasons` is None or empty, returns an empty dict.
+    """
+    out = {}
+    if not player_id or not seasons:
+        return out
+    for s in seasons:
+        try:
+            out[s] = get_player_season_stats(player_id, s) or {}
+        except Exception:
+            out[s] = {}
+    return out
+
+
+def fetch_all_players() -> List[dict]:
+    """Return list of all players known to `nba_api.stats.static.players.get_players()`.
+
+    Uses Redis/in-process cache when available. Returns empty list if dependency
+    is not installed.
+    """
+    cache_key = "nba_all_players"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    if players is None:
+        return []
+
+    try:
+        lst = _with_retries(players.get_players)
+        _local_cache[cache_key] = lst
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 24, json.dumps(lst))
+        except Exception:
+            pass
+        return lst
+    except Exception:
+        logger.exception("fetch_all_players failed")
+        # Attempt to load a shipped/local cache file as a final fallback.
+        try:
+            repo_root = os.path.dirname(os.path.dirname(__file__))
+            local_path = os.path.join(repo_root, 'data', 'all_players.json')
+            if os.path.exists(local_path):
+                with open(local_path, 'r', encoding='utf-8') as fh:
+                    lst = json.load(fh)
+                    _local_cache[cache_key] = lst
+                    return lst
+        except Exception:
+            pass
+        return []
+
+
+def fetch_all_teams() -> List[dict]:
+    """Return list of all teams from `nba_api.stats.static.teams.get_teams()`.
+
+    Uses caching and safe fallback when dependency isn't installed.
+    """
+    cache_key = "nba_all_teams"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    if static_teams is None:
+        return []
+
+    try:
+        lst = _with_retries(static_teams.get_teams)
+        _local_cache[cache_key] = lst
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 24, json.dumps(lst))
+        except Exception:
+            pass
+        return lst
+    except Exception:
+        logger.exception("fetch_all_teams failed")
+        return []
+
+
+def fetch_full_player_history(player_id: int, seasons: Optional[List[str]] = None) -> List[dict]:
+    """Fetch and return aggregated game logs for a player over the provided seasons.
+
+    Returns newest-first list of game dicts.
+    """
+    if not player_id:
+        return []
+    if not seasons:
+        # default to current season only
+        return fetch_recent_games(player_id, limit=500, season=None)
+    return fetch_recent_games_multi(player_id, seasons, limit_per_season=82)
+
+
+def fetch_full_team_history(team_id: int, seasons: Optional[List[str]] = None) -> List[dict]:
+    """Fetch and return aggregated team game logs across seasons."""
+    if not team_id:
+        return []
+    all_games = []
+    if seasons:
+        for s in seasons:
+            try:
+                g = fetch_team_games(team_id, limit=500, season=s)
+                if g:
+                    all_games.extend(g)
+            except Exception:
+                continue
+    else:
+        all_games = fetch_team_games(team_id, limit=500, season=None)
+
+    try:
+        all_games.sort(key=lambda g: g.get('GAME_DATE') or g.get('gameDate') or '', reverse=True)
+    except Exception:
+        pass
+    return all_games
+
+
+def get_team_stats_multi(team_id: int, seasons: Optional[List[str]]) -> Dict[str, Dict[str, float]]:
+    """Return team stats per season for provided seasons."""
+    out = {}
+    if not team_id or not seasons:
+        return out
+    for s in seasons:
+        try:
+            out[s] = get_team_stats(team_id, s) or {}
+        except Exception:
+            out[s] = {}
+    return out
+
+
+def get_advanced_player_stats_multi(player_id: int, seasons: Optional[List[str]], use_fallback: bool = True) -> Dict[str, object]:
+    """Aggregate advanced player stats across multiple seasons.
+
+    Returns a dict with:
+    - `per_season`: mapping season -> advanced stats dict
+    - `aggregated`: averaged numeric values across seasons
+    """
+    result = {"per_season": {}, "aggregated": {}}
+    if not player_id or not seasons:
+        return result
+
+    per_season = {}
+    for s in seasons:
+        try:
+            stats = get_advanced_player_stats(player_id, s) or {}
+            # fallback to computed metrics from game logs when LeagueDash is empty
+            if not stats and use_fallback:
+                try:
+                    stats = get_advanced_player_stats_fallback(player_id, s) or {}
+                except Exception:
+                    stats = {}
+            per_season[s] = stats
+        except Exception:
+            per_season[s] = {}
+
+    # aggregate numeric columns by simple mean across seasons where present
+    agg = {}
+    counts = {}
+    for s, stats in per_season.items():
+        for k, v in (stats or {}).items():
+            try:
+                val = float(v)
+            except Exception:
+                continue
+            agg[k] = agg.get(k, 0.0) + val
+            counts[k] = counts.get(k, 0) + 1
+
+    for k, total in agg.items():
+        c = counts.get(k, 1)
+        try:
+            agg[k] = total / float(c)
+        except Exception:
+            agg[k] = total
+
+    result["per_season"] = per_season
+    result["aggregated"] = agg
+    return result
 
 
 def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
@@ -267,7 +527,7 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     if playercareerstats is not None:
         try:
             def _pcs(pid):
-                pcs = playercareerstats.PlayerCareerStats(player_id=pid)
+                pcs = playercareerstats.PlayerCareerStats(player_id=pid, timeout=NBA_API_TIMEOUT)
                 return pcs.get_data_frames()[0]
 
             df = _with_retries(_pcs, player_id)
@@ -361,8 +621,12 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
 
     try:
         def _fetch(tid, s):
-            # Pass season explicitly to TeamGameLog (may be None)
-            tg = teamgamelog.TeamGameLog(team_id=tid, season=s)
+            # Only pass `season` when truthy; some nba_api versions
+            # expect the argument to be omitted rather than None.
+            if s:
+                tg = teamgamelog.TeamGameLog(team_id=tid, season=s, timeout=NBA_API_TIMEOUT)
+            else:
+                tg = teamgamelog.TeamGameLog(team_id=tid, timeout=NBA_API_TIMEOUT)
             return tg.get_data_frames()[0]
 
         df = _with_retries(_fetch, team_id, season)
@@ -402,6 +666,52 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
             except Exception:
                 pass
 
+        # Additional derived metrics when columns available
+        # Games count
+        try:
+            stats['games'] = int(len(df))
+        except Exception:
+            pass
+
+        # Field goal and free throw percentages if present
+        try:
+            fgm_col = None
+            fga_col = None
+            for c in ("FGM", "FGM_HOME", "FGM_AWAY"):
+                if c in df.columns:
+                    fgm_col = c
+                    break
+            for c in ("FGA", "FGA_HOME", "FGA_AWAY"):
+                if c in df.columns:
+                    fga_col = c
+                    break
+            if fgm_col and fga_col:
+                try:
+                    stats['FG_pct'] = float(df[fgm_col].sum()) / float(df[fga_col].sum()) if float(df[fga_col].sum()) > 0 else None
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        try:
+            ftm_col = None
+            fta_col = None
+            for c in ("FTM", "FTM_HOME", "FTM_AWAY"):
+                if c in df.columns:
+                    ftm_col = c
+                    break
+            for c in ("FTA", "FTA_HOME", "FTA_AWAY"):
+                if c in df.columns:
+                    fta_col = c
+                    break
+            if ftm_col and fta_col:
+                try:
+                    stats['FT_pct'] = float(df[ftm_col].sum()) / float(df[fta_col].sum()) if float(df[fta_col].sum()) > 0 else None
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
         # persist to caches
         _local_cache[cache_key] = stats
         try:
@@ -418,6 +728,290 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
     return {}
 
 
+def fetch_team_games(team_id: int, limit: int = 500, season: Optional[str] = None) -> List[dict]:
+    """Fetch recent team game logs. Returns list of raw game dicts.
+
+    Uses Redis/local cache and `teamgamelog.TeamGameLog` when available.
+    """
+    if not team_id:
+        return []
+
+    cache_key = f"team_games:{team_id}:{limit}:{season or 'any'}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # Check for deterministic cached logs under repo for CI/tests
+    try:
+        repo_root = os.path.dirname(os.path.dirname(__file__))
+        cached_dir = os.path.join(repo_root, 'data', 'cached_game_logs')
+        if season:
+            cached_path = os.path.join(cached_dir, f"team_{team_id}_{season}.json")
+        else:
+            cached_path = os.path.join(cached_dir, f"team_{team_id}.json")
+        if os.path.exists(cached_path):
+            try:
+                with open(cached_path, 'r', encoding='utf-8') as fh:
+                    data = json.load(fh)
+                    _local_cache[cache_key] = data
+                    return data
+            except Exception:
+                pass
+
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    if teamgamelog is None:
+        return []
+
+    try:
+        def _fetch(tid, lim, s):
+            if s:
+                tg = teamgamelog.TeamGameLog(team_id=tid, season=s)
+            else:
+                tg = teamgamelog.TeamGameLog(team_id=tid)
+            df = tg.get_data_frames()[0]
+            return df.head(lim).to_dict(orient='records')
+
+        recent = _with_retries(_fetch, team_id, limit, season)
+        _local_cache[cache_key] = recent
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 10, json.dumps(recent))
+        except Exception:
+            pass
+        return recent
+    except Exception:
+        logger.exception("Error fetching team games for team_id=%s", team_id)
+        try:
+            _record_failed_fetch('team', team_id, 'fetch_team_games')
+        except Exception:
+            pass
+        return []
+
+
+def get_advanced_team_stats_fallback(team_id: int, season: Optional[str]) -> Dict[str, float]:
+    """Compute basic team advanced-like stats from season game logs.
+
+    Returns PTS_avg, OPP_PTS_avg, PTS_diff, games, and TS-like metrics
+    aggregated at the team level when available.
+    """
+    if not team_id or not season:
+        return {}
+
+    cache_key = f"team_advanced_fallback:{team_id}:{season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    games = []
+    try:
+        games = fetch_team_games(team_id, limit=500, season=season)
+    except Exception:
+        games = []
+
+    if not games:
+        return {}
+
+    count = 0
+    sum_pts = 0.0
+    sum_opp = 0.0
+    sum_fga = 0.0
+    sum_fgm = 0.0
+    sum_fta = 0.0
+    sum_ftm = 0.0
+
+    for g in games:
+        try:
+            count += 1
+            # Team PTS column variants
+            pts = g.get('PTS') if 'PTS' in g else g.get('TEAM_PTS') if 'TEAM_PTS' in g else None
+            opp = g.get('OPP_PTS') if 'OPP_PTS' in g else g.get('PTS_OPP') if 'PTS_OPP' in g else None
+            if pts is not None:
+                sum_pts += float(pts)
+            if opp is not None:
+                sum_opp += float(opp)
+
+            fga = g.get('FGA') if 'FGA' in g else None
+            fgm = g.get('FGM') if 'FGM' in g else None
+            fta = g.get('FTA') if 'FTA' in g else None
+            ftm = g.get('FTM') if 'FTM' in g else None
+
+            if fga is not None:
+                try:
+                    sum_fga += float(fga)
+                except Exception:
+                    pass
+            if fgm is not None:
+                try:
+                    sum_fgm += float(fgm)
+                except Exception:
+                    pass
+            if fta is not None:
+                try:
+                    sum_fta += float(fta)
+                except Exception:
+                    pass
+            if ftm is not None:
+                try:
+                    sum_ftm += float(ftm)
+                except Exception:
+                    pass
+        except Exception:
+            continue
+
+    if count == 0:
+        return {}
+
+    stats = {}
+    stats['games'] = count
+    stats['PTS_avg'] = sum_pts / count
+    stats['OPP_PTS_avg'] = sum_opp / count if sum_opp else None
+    if stats.get('OPP_PTS_avg') is not None:
+        stats['PTS_diff'] = stats['PTS_avg'] - stats['OPP_PTS_avg']
+    else:
+        stats['PTS_diff'] = None
+
+    try:
+        stats['FG_pct'] = (sum_fgm / sum_fga) if sum_fga > 0 else None
+    except Exception:
+        stats['FG_pct'] = None
+
+    try:
+        stats['FT_pct'] = (sum_ftm / sum_fta) if sum_fta > 0 else None
+    except Exception:
+        stats['FT_pct'] = None
+
+    # persist
+    _local_cache[cache_key] = stats
+    try:
+        rc = _redis_client()
+        if rc:
+            rc.setex(cache_key, 60 * 60 * 24, json.dumps(stats))
+    except Exception:
+        pass
+
+    return stats
+
+
+def fetch_recent_games_multi(player_id: int, seasons: Optional[List[str]] = None, limit_per_season: int = 82) -> List[dict]:
+    """Fetch and aggregate recent games across multiple seasons.
+
+    Returns games ordered newest-first across the provided seasons. If
+    `seasons` is None or empty, returns an empty list.
+    """
+    if not player_id or not seasons:
+        return []
+
+    cache_key = f"player_recent_multi:{player_id}:{','.join(seasons)}:{limit_per_season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    # Aggregate per-season logs
+    all_games = []
+    try:
+        for s in seasons:
+            try:
+                games = fetch_recent_games(player_id, limit_per_season, season=s)
+                if games:
+                    all_games.extend(games)
+            except Exception:
+                continue
+
+        # Sort by date if GAME_DATE present (newest first)
+        try:
+            all_games.sort(key=lambda g: g.get('GAME_DATE') or g.get('gameDate') or '', reverse=True)
+        except Exception:
+            pass
+
+        _local_cache[cache_key] = all_games
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 12, json.dumps(all_games))
+        except Exception:
+            pass
+
+        return all_games
+    except Exception:
+        logger.exception("Error fetching recent games multi for player_id=%s", player_id)
+        return []
+
+
+def get_advanced_team_stats_multi(team_id: int, seasons: Optional[List[str]], use_fallback: bool = True) -> Dict[str, object]:
+    """Return per-season and aggregated advanced-like team stats across seasons."""
+    result = {"per_season": {}, "aggregated": {}}
+    if not team_id or not seasons:
+        return result
+    per_season = {}
+    for s in seasons:
+        try:
+            stats = get_team_stats(team_id, s) or {}
+            if not stats and use_fallback:
+                try:
+                    stats = get_advanced_team_stats_fallback(team_id, s) or {}
+                except Exception:
+                    stats = {}
+            per_season[s] = stats
+        except Exception:
+            per_season[s] = {}
+
+    # aggregate numeric columns by mean
+    agg = {}
+    counts = {}
+    for s, stats in per_season.items():
+        for k, v in (stats or {}).items():
+            try:
+                val = float(v)
+            except Exception:
+                continue
+            agg[k] = agg.get(k, 0.0) + val
+            counts[k] = counts.get(k, 0) + 1
+
+    for k, total in agg.items():
+        c = counts.get(k, 1)
+        try:
+            agg[k] = total / float(c)
+        except Exception:
+            agg[k] = total
+
+    result['per_season'] = per_season
+    result['aggregated'] = agg
+    return result
+
+
 def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str, float]:
     """Return advanced metrics for a player for a given season using LeagueDashPlayerStats.
 
@@ -427,6 +1021,9 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
     """
     if not player_id or not season:
         return {}
+
+
+    
 
     cache_key = f"player_advanced:{player_id}:{season}"
     try:
@@ -449,8 +1046,31 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
 
     try:
         def _fetch(s):
-            lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame')
-            return lds.get_data_frames()[0]
+            # `nba_api` has changed signatures across versions. Try several
+            # invocation patterns for compatibility.
+            last_err = None
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame', timeout=NBA_API_TIMEOUT)
+                return lds.get_data_frames()[0]
+            except TypeError as e:
+                last_err = e
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame')
+                return lds.get_data_frames()[0]
+            except TypeError as e:
+                last_err = e
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode='PerGame', timeout=NBA_API_TIMEOUT)
+                return lds.get_data_frames()[0]
+            except TypeError as e:
+                last_err = e
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, timeout=NBA_API_TIMEOUT)
+                return lds.get_data_frames()[0]
+            except Exception as e:
+                last_err = e
+            # re-raise the last error to trigger outer retry/backoff
+            raise last_err
 
         df_all = _with_retries(_fetch, season)
         if df_all is None or df_all.empty:
@@ -497,3 +1117,395 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
     except Exception:
         logger.debug('advanced player stats lookup failed for %s %s', player_id, season, exc_info=True)
         return {}
+
+
+def fetch_league_player_advanced(season: str) -> Dict[int, Dict[str, float]]:
+    """Fetch LeagueDashPlayerStats for the whole league for `season` and
+    return a mapping PLAYER_ID -> stats dict.
+
+    Uses caching and falls back to empty dict when dependency unavailable.
+    """
+    out = {}
+    if not season:
+        return out
+
+    cache_key = f"league_player_advanced:{season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if leaguedashplayerstats is None:
+        return out
+
+    try:
+        def _fetch(s):
+            last_err = None
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame', timeout=NBA_API_TIMEOUT)
+                return lds.get_data_frames()[0]
+            except TypeError as e:
+                last_err = e
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame')
+                return lds.get_data_frames()[0]
+            except TypeError as e:
+                last_err = e
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode='PerGame', timeout=NBA_API_TIMEOUT)
+                return lds.get_data_frames()[0]
+            except TypeError as e:
+                last_err = e
+            try:
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, timeout=NBA_API_TIMEOUT)
+                return lds.get_data_frames()[0]
+            except Exception as e:
+                last_err = e
+            raise last_err
+
+        df_all = _with_retries(_fetch, season)
+        if df_all is None:
+            return out
+
+        # normalize to mapping
+        try:
+            rows = df_all.to_dict(orient='records')
+        except Exception:
+            rows = []
+
+        for r in (rows or []):
+            pid = r.get('PLAYER_ID') or r.get('player_id')
+            if not pid:
+                continue
+            stats = {}
+            for col in ('PER', 'TS_PCT', 'USG_PCT', 'PIE', 'OFF_RATING', 'DEF_RATING'):
+                if col in r and r.get(col) is not None:
+                    try:
+                        stats[col] = float(r.get(col))
+                    except Exception:
+                        pass
+            out[int(pid)] = stats
+
+        # persist
+        try:
+            _local_cache[cache_key] = out
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 24, json.dumps(out))
+        except Exception:
+            pass
+
+        return out
+    except Exception:
+        logger.exception('fetch_league_player_advanced failed for %s', season)
+        return {}
+
+
+def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
+    """Fetch league-level player game logs for a season and return mapping
+    PLAYER_ID -> list of game dicts (newest-first).
+
+    Uses `leaguegamelog.LeagueGameLog` when available to retrieve a single
+    table containing player game logs for the whole league for the season,
+    drastically reducing per-player HTTP calls.
+    """
+    out = {}
+    if not season:
+        return out
+
+
+    def get_player_name_by_id(player_id: int, seasons: Optional[List[str]] = None) -> Optional[str]:
+        """Resolve a player name given a numeric NBA player id.
+
+        Strategy:
+        - Check Redis / in-process cache
+        - Use `fetch_all_players()` to find a matching id
+        - If seasons provided, use `fetch_season_league_player_game_logs` to find a PLAYER_NAME
+        - Return None if unresolved
+        """
+        if not player_id:
+            return None
+
+        cache_key = f"player_name:{player_id}"
+        try:
+            rc = _redis_client()
+            if rc:
+                raw = rc.get(cache_key)
+                if raw:
+                    try:
+                        return raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else str(raw)
+                    except Exception:
+                        return str(raw)
+        except Exception:
+            pass
+
+        if cache_key in _local_cache:
+            return _local_cache[cache_key]
+
+        # 1) scan all players
+        try:
+            allp = fetch_all_players() or []
+            for p in allp:
+                try:
+                    if int(p.get('id')) == int(player_id):
+                        name = p.get('full_name') or p.get('fullName') or p.get('display_name')
+                        if name:
+                            _local_cache[cache_key] = name
+                            try:
+                                rc = _redis_client()
+                                if rc:
+                                    rc.setex(cache_key, 60 * 60 * 24, name)
+                            except Exception:
+                                pass
+                            return name
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # 2) use league-level season logs if available
+        try:
+            seasons_to_try = seasons or []
+            for s in seasons_to_try:
+                try:
+                    lg = fetch_season_league_player_game_logs(s)
+                    games = lg.get(int(player_id))
+                    if games and len(games) > 0:
+                        # attempt to extract PLAYER_NAME from a game row
+                        rn = games[0].get('PLAYER_NAME') or games[0].get('player_name') or games[0].get('PLAYER')
+                        if rn:
+                            _local_cache[cache_key] = rn
+                            try:
+                                rc = _redis_client()
+                                if rc:
+                                    rc.setex(cache_key, 60 * 60 * 24, rn)
+                            except Exception:
+                                pass
+                            return rn
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        return None
+
+    cache_key = f"league_player_games:{season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    if leaguegamelog is None:
+        return out
+
+    try:
+        def _fetch(s):
+            lg = leaguegamelog.LeagueGameLog(season=s, timeout=NBA_API_TIMEOUT)
+            return lg.get_data_frames()[0]
+
+        df = _with_retries(_fetch, season)
+        if df is None:
+            return out
+
+        try:
+            rows = df.to_dict(orient='records')
+        except Exception:
+            rows = []
+
+        for r in (rows or []):
+            # PLAYER_ID variants
+            pid = r.get('PLAYER_ID') or r.get('player_id')
+            if not pid:
+                continue
+            try:
+                pid = int(pid)
+            except Exception:
+                continue
+            if pid not in out:
+                out[pid] = []
+            out[pid].append(r)
+
+        # sort each player's list newest-first if date available
+        for pid, games in out.items():
+            try:
+                games.sort(key=lambda g: g.get('GAME_DATE') or g.get('GAME_DATE_EST') or g.get('gameDate') or '', reverse=True)
+            except Exception:
+                pass
+
+        # persist
+        try:
+            _local_cache[cache_key] = out
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 60 * 12, json.dumps(out))
+        except Exception:
+            pass
+
+        return out
+    except Exception:
+        logger.exception('fetch_season_league_player_game_logs failed for %s', season)
+        return {}
+
+
+def _record_failed_fetch(kind: str, entity_id: int, reason: str) -> None:
+    """Append a failed fetch record to a local retry queue file for later retry."""
+    try:
+        repo_root = os.path.dirname(os.path.dirname(__file__))
+        failed_path = os.path.join(repo_root, 'data', 'failed_nba_fetches.jsonl')
+        rec = {'kind': kind, 'id': int(entity_id) if entity_id is not None else None, 'reason': reason}
+        with open(failed_path, 'a', encoding='utf-8') as fh:
+            fh.write(json.dumps(rec) + '\n')
+    except Exception:
+        logger.debug('failed to record failed fetch for %s %s', kind, entity_id, exc_info=True)
+
+
+def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) -> Dict[str, float]:
+    """Derive advanced-like metrics from season game logs when league dash data
+    is unavailable. Computes TS%, FG%, 3P%, FT%, PTS/AST/REB per game and games count.
+    """
+    if not player_id or not season:
+        return {}
+
+    cache_key = f"player_advanced_fallback:{player_id}:{season}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # fetch full season logs (larger limit)
+    games = []
+    try:
+        games = fetch_recent_games(player_id, limit=500, season=season)
+    except Exception:
+        games = []
+
+    if not games:
+        return {}
+
+    # aggregate available columns
+    count = 0
+    sum_pts = 0.0
+    sum_ast = 0.0
+    sum_reb = 0.0
+    sum_fga = 0.0
+    sum_fgm = 0.0
+    sum_fg3m = 0.0
+    sum_fg3a = 0.0
+    sum_fta = 0.0
+    sum_ftm = 0.0
+
+    for g in games:
+        try:
+            count += 1
+            sum_pts += float(g.get('PTS') or g.get('PTS', 0) or 0)
+            sum_ast += float(g.get('AST') or 0)
+            sum_reb += float(g.get('REB') or 0)
+            # many nba_api versions use different keys; attempt variants
+            fga = g.get('FGA') if 'FGA' in g else g.get('FG_ATT') if 'FG_ATT' in g else None
+            fgm = g.get('FGM') if 'FGM' in g else None
+            fg3m = g.get('FG3M') if 'FG3M' in g else None
+            fg3a = g.get('FG3A') if 'FG3A' in g else None
+            fta = g.get('FTA') if 'FTA' in g else None
+            ftm = g.get('FTM') if 'FTM' in g else None
+
+            if fga is not None:
+                try:
+                    sum_fga += float(fga)
+                except Exception:
+                    pass
+            if fgm is not None:
+                try:
+                    sum_fgm += float(fgm)
+                except Exception:
+                    pass
+            if fg3m is not None:
+                try:
+                    sum_fg3m += float(fg3m)
+                except Exception:
+                    pass
+            if fg3a is not None:
+                try:
+                    sum_fg3a += float(fg3a)
+                except Exception:
+                    pass
+            if fta is not None:
+                try:
+                    sum_fta += float(fta)
+                except Exception:
+                    pass
+            if ftm is not None:
+                try:
+                    sum_ftm += float(ftm)
+                except Exception:
+                    pass
+        except Exception:
+            continue
+
+    if count == 0:
+        return {}
+
+    stats = {}
+    stats['games'] = count
+    stats['PTS_per_game'] = sum_pts / count
+    stats['AST_per_game'] = sum_ast / count
+    stats['REB_per_game'] = sum_reb / count
+
+    # FG%
+    try:
+        stats['FG_pct'] = (sum_fgm / sum_fga) if sum_fga > 0 else None
+    except Exception:
+        stats['FG_pct'] = None
+
+    # 3P%
+    try:
+        stats['FG3_pct'] = (sum_fg3m / sum_fg3a) if sum_fg3a > 0 else None
+    except Exception:
+        stats['FG3_pct'] = None
+
+    # FT%
+    try:
+        stats['FT_pct'] = (sum_ftm / sum_fta) if sum_fta > 0 else None
+    except Exception:
+        stats['FT_pct'] = None
+
+    # True Shooting % approx if we have FGA and FTA
+    try:
+        if sum_fga > 0:
+            ts = sum_pts / (2.0 * (sum_fga + 0.44 * sum_fta))
+            stats['TS_PCT'] = float(ts)
+        else:
+            stats['TS_PCT'] = None
+    except Exception:
+        stats['TS_PCT'] = None
+
+    # persist to caches
+    _local_cache[cache_key] = stats
+    try:
+        rc = _redis_client()
+        if rc:
+            rc.setex(cache_key, 60 * 60 * 24, json.dumps(stats))
+    except Exception:
+        pass
+
+    return stats

@@ -77,6 +77,13 @@ export interface NBAPlayerContext {
   fetchedAt?: string | null;
   recentSource?: string | null;
   seasonSource?: string | null;
+  // Multi-season aggregated contexts (training-scoped responses)
+  seasonsConsidered?: string[] | null;
+  seasonStatsMulti?: Record<string, Record<string, number>> | null;
+  advancedStatsMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+  teamId?: number | null;
+  teamStatsMulti?: Record<string, Record<string, number>> | null;
+  teamAdvancedMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
 }
 
 // Module-level normalizer so both single and batch fetchers can reuse the logic.
@@ -109,6 +116,14 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
     : null;
   const projectedMinutes = json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
 
+  // Multi-season / training-scoped fields (may be present on richer backend responses)
+  const seasonsConsidered = Array.isArray(json.seasonsConsidered) ? json.seasonsConsidered.map(String) : null;
+  const seasonStatsMulti = json.seasonStatsMulti || null;
+  const advancedStatsMulti = json.advancedStatsMulti || null;
+  const teamId = json.teamId != null ? Number(json.teamId) : null;
+  const teamStatsMulti = json.teamStatsMulti || null;
+  const teamAdvancedMulti = json.teamAdvancedMulti || null;
+
   if ((!recentGames || recentGames.length === 0) && seasonAvg == null && !noGamesThisSeason) return null;
 
   return {
@@ -129,6 +144,13 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
     contextualFactors,
     recentSource,
     seasonSource,
+    // include optional multi-season training fields when present
+    seasonsConsidered,
+    seasonStatsMulti,
+    advancedStatsMulti,
+    teamId,
+    teamStatsMulti,
+    teamAdvancedMulti,
   } as NBAPlayerContext;
 }
 

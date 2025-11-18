@@ -1,0 +1,25 @@
+{
+  "run_at": "20251118T035400Z",
+  "flat": {
+    "start_bankroll": 1000.0,
+    "final_bankroll": 1300.0,
+    "total_bets": 6,
+    "wins": 6,
+    "losses": 0,
+    "win_rate": 1.0,
+    "total_profit": 300.0,
+    "roi": 0.3,
+    "avg_stake": 50.0
+  },
+  "kelly": {
+    "start_bankroll": 1000.0,
+    "final_bankroll": 1771.561,
+    "total_bets": 6,
+    "wins": 6,
+    "losses": 0,
+    "win_rate": 1.0,
+    "total_profit": 771.561,
+    "roi": 0.7715609999999999,
+    "avg_stake": 128.5935
+  }
+}

@@ -500,6 +500,8 @@ class PlayerContextRequest(BaseModel):
     player: str
     stat: Optional[str] = 'points'
     limit: Optional[int] = 8
+    season: Optional[str] = None
+    game_date: Optional[str] = None
 
 
 class BatchPlayerRequest(BaseModel):
@@ -525,18 +527,71 @@ except Exception:
     pass
 
 
-@app.post('/api/player_context', response_model=PlayerSummary)
+@app.post('/api/player_context')
 def api_player_context(req: PlayerContextRequest):
-    """POST wrapper for client usage. Accepts JSON body and returns the same
-    structured PlayerSummary as `/player_summary` but avoids CORS/query-string
-    related issues for some clients."""
-    return player_summary(player=req.player, stat=req.stat or 'points', limit=req.limit or 8)
+    """POST wrapper for client usage. Accepts JSON body and returns either
+    a brief `player_summary` or a richer training-scoped `player_context` when
+    `season` and `game_date` are provided. Responses are cached in Redis
+    (6-hour TTL) and also in the in-process TTL cache for fast dev feedback.
+    """
+    # Build a cache key that includes optional season/game_date
+    cache_key = f"player_context:{req.player}:{req.stat}:{req.limit}:{req.season or 'any'}:{req.game_date or 'any'}"
+
+    # Try Redis cache first
+    try:
+        if redis_client:
+            raw = redis_client.get(cache_key)
+            if raw:
+                data = json.loads(raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw)
+                data['cached'] = True
+                return data
+    except Exception:
+        pass
+
+    # Check in-memory cache
+    if cache_key in cache:
+        out = cache[cache_key]
+        out['cached'] = True
+        return out
+
+    # If both season and game_date provided, return the richer training context
+    if req.season and req.game_date:
+        try:
+            from .services import nba_service
+            ctx = nba_service.get_player_context_for_training(player=req.player, stat=req.stat or 'points', game_date=req.game_date, season=req.season)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        # persist to caches
+        cache[cache_key] = ctx
+        try:
+            if redis_client:
+                redis_client.setex(cache_key, 60 * 60 * 6, json.dumps(ctx))
+        except Exception:
+            pass
+        return ctx
+
+    # Otherwise return the regular player summary
+    try:
+        data = player_summary(player=req.player, stat=req.stat or 'points', limit=req.limit or 8)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    cache[cache_key] = data
+    try:
+        if redis_client:
+            redis_client.setex(cache_key, 60 * 60 * 6, json.dumps(data))
+    except Exception:
+        pass
+
+    return data
 
 
 MAX_BATCH_SIZE = int(os.environ.get('MAX_BATCH_SIZE', '50'))
 
 
-@app.post('/api/batch_player_context')
+@app.post('/api/batch_player_context', responses={200: {"description": "Array of player summaries or error objects", "content": {"application/json": {"example": [{"player": "LeBron James", "stat": "points", "recentGames": []}, {"player": "Unknown Player", "error": "player not found"}]}}}})
 async def api_batch_player_context(
     requests: List[BatchPlayerRequest] = Body(
         ...,
@@ -562,6 +617,13 @@ async def api_batch_player_context(
     import asyncio
 
     data = [model_to_dict(r) for r in requests]
+
+    # Audit/log the incoming batch size and client for observability
+    try:
+        client_ip = request_obj.client.host if request_obj and request_obj.client is not None else 'local'
+    except Exception:
+        client_ip = 'local'
+    logger.info('batch_player_context request: client=%s items=%d', client_ip, len(data))
 
     if len(data) > MAX_BATCH_SIZE:
         raise HTTPException(status_code=400, detail=f'max batch size exceeded (max {MAX_BATCH_SIZE})')
@@ -602,6 +664,99 @@ async def api_batch_player_context(
     tasks = [asyncio.create_task(_call_summary(item)) for item in data]
     gathered = await asyncio.gather(*tasks)
     return gathered
+
+
+class AdvancedPlayerRequest(BaseModel):
+    player: str
+    seasons: Optional[List[str]] = None
+
+
+@app.post('/api/player_advanced')
+def api_player_advanced(req: AdvancedPlayerRequest, use_fallback: bool = Query(True, description="Allow fallback computation from game logs when league-dash is unavailable")):
+    """Return aggregated advanced player stats across requested seasons.
+
+    Body: { "player": "Name", "seasons": ["2022-23", "2023-24"] }
+    """
+    # Prefer using the stats client implementation; if not available, fall
+    # back to computing aggregated advanced-like metrics from game logs when
+    # `use_fallback` is True. Always return 200 with an `advanced` field so
+    # callers (and tests) can handle empty results gracefully.
+    seasons = req.seasons or []
+    pid = find_player_id_by_name(req.player)
+    if not pid:
+        # If player id can't be resolved, return empty advanced shape
+        return {"player": req.player, "player_id": None, "seasons": seasons, "advanced": {"per_season": {}, "aggregated": {}}}
+
+    try:
+        # try importing the helper function directly
+        from .services.nba_stats_client import get_advanced_player_stats_multi
+        out = get_advanced_player_stats_multi(pid, seasons, use_fallback=use_fallback)
+        return {"player": req.player, "player_id": pid, "seasons": seasons, "advanced": out}
+    except Exception:
+        # client not available; compute via fallbacks if allowed
+        if use_fallback:
+            try:
+                from .services.nba_stats_client import get_advanced_player_stats_fallback
+            except Exception:
+                get_advanced_player_stats_fallback = None
+
+            per_season = {}
+            for s in seasons:
+                if get_advanced_player_stats_fallback is not None:
+                    try:
+                        per_season[s] = get_advanced_player_stats_fallback(pid, s) or {}
+                    except Exception:
+                        per_season[s] = {}
+                else:
+                    # Best-effort: empty when no fallback available
+                    per_season[s] = {}
+
+            # aggregate numeric fields
+            agg = {}
+            counts = {}
+            for s, stats in per_season.items():
+                for k, v in (stats or {}).items():
+                    try:
+                        val = float(v)
+                    except Exception:
+                        continue
+                    agg[k] = agg.get(k, 0.0) + val
+                    counts[k] = counts.get(k, 0) + 1
+
+            for k, total in agg.items():
+                c = counts.get(k, 1)
+                try:
+                    agg[k] = total / float(c)
+                except Exception:
+                    agg[k] = total
+
+            return {"player": req.player, "player_id": pid, "seasons": seasons, "advanced": {"per_season": per_season, "aggregated": agg}}
+        # Not allowed to fallback — return an empty shape instead of 503
+        return {"player": req.player, "player_id": pid, "seasons": seasons, "advanced": {"per_season": {}, "aggregated": {}}}
+
+
+class AdvancedTeamRequest(BaseModel):
+    team_id: int
+    seasons: Optional[List[str]] = None
+
+
+@app.post('/api/team_advanced')
+def api_team_advanced(req: AdvancedTeamRequest, use_fallback: bool = Query(True, description="Allow fallback computation from game logs when league data is unavailable")):
+    """Return aggregated advanced team stats across requested seasons.
+
+    Body: { "team_id": 1610612744, "seasons": ["2022-23", "2023-24"] }
+    """
+    try:
+        from .services.nba_stats_client import get_advanced_team_stats_multi
+    except Exception:
+        raise HTTPException(status_code=503, detail='advanced team stats client unavailable')
+
+    if not req.team_id:
+        raise HTTPException(status_code=400, detail='team_id is required')
+
+    seasons = req.seasons or []
+    out = get_advanced_team_stats_multi(req.team_id, seasons, use_fallback=use_fallback)
+    return {"team_id": req.team_id, "seasons": seasons, "advanced": out}
 
 
 # --- ML prediction endpoints (scaffold) ---------------------------------

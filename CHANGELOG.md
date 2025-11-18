@@ -30,3 +30,18 @@ Notes:
 - Implemented `/api/player_context` in the backend. The endpoint returns recent games, a derived `seasonAvg`, and enhanced numeric context when available (`rollingAverages`, `contextualFactors`, `opponentInfo`).
 - Endpoint uses Redis caching (key: `player_context:{player_name}:{limit}`) when configured.
 - Added unit tests for the endpoint and feature extraction helpers.
+
+2025-11-17 — feat: Multi-season support, advanced metrics, and training pipeline integration
+
+- Added season-aware retrieval to the low-level NBA client (`backend/services/nba_stats_client.py`): optional `season` parameter for recent games and team stats, and cache keys include the season.
+- Implemented `get_advanced_player_stats` (league dashboard per-game metrics) with Redis + in-process TTLCache fallback.
+- Extended the higher-level service (`backend/services/nba_service.py`) to accept `season` and added `get_player_context_for_training(player, stat, game_date, season)` to build season-scoped contexts for ML.
+- Added `backend/services/training_data_service.py` to construct labeled training samples and datasets using the service-layer contexts and existing feature engineering utilities.
+- Wired `backend/scripts/train_and_persist_real_model.py` to prefer real, season-scoped training data with a synthetic fallback when samples are unavailable.
+- Added unit tests for the new training data pipeline and train script wiring: `backend/tests/test_training_data_service.py`, `backend/tests/test_train_script.py`.
+- Fixed pytest collection collisions by removing duplicate top-level test modules (`tests/test_feature_engineering.py`, `tests/test_ml_prediction_service.py`) and cleaning compiled bytecode; full backend test suite and full repo pytest now pass (73 tests).
+
+Notes:
+
+- All changes include defensive handling when optional dependencies (e.g., `nba_api`) are missing; the system falls back to safe defaults for tests and CI.
+- Caching remains Redis-first with a `cachetools.TTLCache` in-process fallback when Redis is not configured.

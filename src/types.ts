@@ -50,6 +50,13 @@ export interface ParsedProjection {
       daysRest?: number | null;
       isBackToBack?: boolean | null;
     } | null;
+    // Optional multi-season / training-scoped fields
+    seasonsConsidered?: string[] | null;
+    seasonStatsMulti?: Record<string, Record<string, number>> | null;
+    advancedStatsMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+    teamId?: number | null;
+    teamStatsMulti?: Record<string, Record<string, number>> | null;
+    teamAdvancedMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
   } | null;
 }
 
