@@ -1,0 +1,14 @@
+{
+  "players": [
+    {
+      "player": "LeBron James",
+      "status": "ok"
+    },
+    {
+      "player": "Stephen Curry",
+      "status": "ok"
+    }
+  ],
+  "success": 2,
+  "failed": 0
+}

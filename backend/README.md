@@ -171,6 +171,13 @@ Response shape (JSON):
 
 - `player`, `stat`, `league`, `recent`, `recentGames` (array), `seasonAvg`, `fetchedAt`
 
+Advanced player stats endpoint
+
+- `POST /api/player_advanced` accepts a JSON body with `player`, optional `season`, and optional `use_fallback` boolean (default `true`).
+- Behavior: the endpoint prefers the advanced stats client if available. If the advanced client is unavailable or data for a player-season is incomplete and `use_fallback` is `true`, the server computes a best-effort fallback from recent game logs and multi-season aggregates. The endpoint always returns HTTP `200` with a consistent `advanced` shape (empty fields rather than `503/404`) to simplify downstream consumers.
+- Partial failures: when the player cannot be resolved the endpoint returns an empty `advanced` object instead of an error, enabling batch callers to receive partial results without failing the entire request.
+- Use case: pass `use_fallback=false` if you prefer explicit failures when the advanced client is unavailable.
+
 Optional Redis caching
 
 - Set `REDIS_URL` environment variable (e.g., `redis://localhost:6379/0`) and the server will use Redis as a persistent cache in addition to an in-memory TTL cache.

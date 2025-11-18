@@ -152,14 +152,25 @@ def save_raw_games(raw: List[Dict], when: date | None = None) -> str:
     if not raw:
         return ""
     when = when or date.today()
+    # Use a stable filename per-day but append batches as JSONL so multiple
+    # flushes do not overwrite earlier batches. This preserves all fetched
+    # records for auditing while remaining easy to parse line-by-line.
     fname = os.path.join(AUDIT_DIR, f"games_raw_{when.isoformat()}.json")
     try:
-        with open(fname, "w", encoding="utf-8") as fh:
-            json.dump(raw, fh)
-        logger.info("Wrote raw games to %s", fname)
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+        # Append each record as a single JSON object per line (JSONL)
+        with open(fname, "a", encoding="utf-8") as fh:
+            for rec in raw:
+                try:
+                    fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
+                except Exception:
+                    # Skip individual records that fail to serialize
+                    logger.debug("Failed to serialize audit record: %s", rec, exc_info=True)
+        logger.info("Appended %d raw games to %s", len(raw), fname)
         return fname
     except Exception:
-        logger.exception("Failed to write raw games to %s", fname)
+        logger.exception("Failed to append raw games to %s", fname)
         return ""
 
 
@@ -558,6 +569,8 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
         return 0
 
     inserted = 0
+    skipped = 0
+    skipped_samples = []
     try:
         for rec in normalized_games:
             pname = rec.get("player_name") or rec.get("player") or rec.get("name")
@@ -565,7 +578,27 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
             value = rec.get("value")
             gdate = rec.get("game_date")
 
-            if not pname or stat_type is None or value is None or not gdate:
+            # Allow records that lack a player name when `player_nba_id` is present.
+            nba_pid_present = rec.get("player_nba_id") is not None or rec.get("Player_ID") is not None or rec.get("player_id") is not None
+            if stat_type is None or value is None or not gdate:
+                # log reason for skipping first several records to aid debugging
+                logger.debug(
+                    "Skipping record due to missing critical field(s): stat_type=%s value=%s gdate=%s keys=%s",
+                    stat_type,
+                    value,
+                    gdate,
+                    list(rec.keys()),
+                )
+                skipped += 1
+                if len(skipped_samples) < 10:
+                    skipped_samples.append({
+                        "reason": "missing_critical_fields",
+                        "player_name": pname,
+                        "player_nba_id": rec.get("player_nba_id") or rec.get("Player_ID"),
+                        "stat_type": stat_type,
+                        "value": value,
+                        "game_date": gdate,
+                    })
                 continue
 
             # parse game_date if string
@@ -586,11 +619,36 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
                     continue
 
             # find or create player
-            player = session.query(Player).filter_by(name=pname).first()
+            player = None
+            nba_pid = rec.get("player_nba_id")
+            try:
+                if nba_pid is not None:
+                    # prefer lookup by nba_player_id when available
+                    player = session.query(Player).filter_by(nba_player_id=nba_pid).first()
+            except Exception:
+                player = None
+
+            if player is None and pname:
+                # fallback to name lookup
+                try:
+                    player = session.query(Player).filter_by(name=pname).first()
+                except Exception:
+                    player = None
+
             if player is None:
-                player = Player(name=pname, nba_player_id=rec.get("player_nba_id"))
+                # create a new player record; prefer name when present
+                player = Player(name=pname or f"player_{nba_pid}", nba_player_id=nba_pid)
                 session.add(player)
                 session.flush()
+            else:
+                # backfill nba_player_id if missing on existing player
+                try:
+                    if getattr(player, 'nba_player_id', None) is None and nba_pid is not None:
+                        player.nba_player_id = nba_pid
+                        session.add(player)
+                        session.flush()
+                except Exception:
+                    pass
 
             # find or create game (match on date only)
             game = session.query(Game).filter_by(game_date=gd).first()
@@ -608,6 +666,16 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
                 inserted += 1
             except Exception:
                 logger.exception("Failed to add PlayerStat for %s", pname)
+                skipped += 1
+                if len(skipped_samples) < 10:
+                    skipped_samples.append({
+                        "reason": "insert_error",
+                        "player_name": pname,
+                        "player_nba_id": rec.get("player_nba_id") or rec.get("Player_ID"),
+                        "stat_type": stat_type,
+                        "value": value,
+                        "game_date": str(gd),
+                    })
 
         session.commit()
     except Exception:
@@ -627,6 +695,9 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
             pass
 
     logger.info("Inserted %d player_stat rows", inserted)
+    if skipped:
+        logger.info("Skipped %d player_stat records during ingestion", skipped)
+        logger.debug("Sample skipped records: %s", skipped_samples)
     return inserted
 
 
@@ -855,9 +926,10 @@ def _process_and_ingest(raw: List[Dict], when: date | None = None, dry_run: bool
     bad_idxs = {i for i, _ in validation.get("missing", [])}
     filtered = [r for idx, r in enumerate(normalized) if idx not in bad_idxs]
 
-    audit_path = ""
-    if not dry_run:
-        audit_path = save_raw_games(raw, when=when)
+    # Always persist raw batches to audit storage so dry-runs also produce
+    # a complete audit history. Persistence for alerts and DB writes is still
+    # controlled by `dry_run` below.
+    audit_path = save_raw_games(raw, when=when)
 
     try:
         if not dry_run and (validation.get("missing") or validation.get("type_errors")):

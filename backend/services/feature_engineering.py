@@ -140,6 +140,48 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
         if v is None:
             features[k] = 0.0
 
+    # Multi-season aggregated features (if provided by backend context)
+    multi_adv = player_context.get("advancedStatsMulti") or {}
+    multi_season_stats = player_context.get("seasonStatsMulti") or {}
+    try:
+        adv_agg = multi_adv.get("aggregated", {}) if isinstance(multi_adv, dict) else {}
+    except Exception:
+        adv_agg = {}
+
+    # seasonStatsMulti is mapping season->stats; compute simple mean across seasons
+    season_agg = {}
+    try:
+        counts = {}
+        sums = {}
+        for s, st in (multi_season_stats or {}).items():
+            if not isinstance(st, dict):
+                continue
+            for k, v in st.items():
+                try:
+                    fv = float(v)
+                except Exception:
+                    continue
+                sums[k] = sums.get(k, 0.0) + fv
+                counts[k] = counts.get(k, 0) + 1
+        for k, total in sums.items():
+            season_agg[k] = total / float(counts.get(k, 1))
+    except Exception:
+        season_agg = {}
+
+    features.update({
+        "multi_PER": float(adv_agg.get("PER") or 0.0),
+        "multi_TS_PCT": float(adv_agg.get("TS_PCT") or 0.0),
+        "multi_USG_PCT": float(adv_agg.get("USG_PCT") or 0.0),
+        "multi_season_PTS_avg": float(season_agg.get("PTS") or 0.0),
+        "multi_season_count": int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
+    })
+    # Additional advanced/team aggregated metrics
+    features.update({
+        "multi_PIE": float(adv_agg.get("PIE") or 0.0),
+        "multi_off_rating": float(adv_agg.get("OFF_RATING") or 0.0),
+        "multi_def_rating": float(adv_agg.get("DEF_RATING") or 0.0),
+    })
+
     return features
 """Feature engineering helpers for player predictions.
 
@@ -257,6 +299,48 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         features["recent_std"] = float(np.std(vals))
 
     features.update(rolling)
+
+    # Multi-season aggregated features (if present on the player_data)
+    multi_adv = player_data.get('advancedStatsMulti') or {}
+    multi_season_stats = player_data.get('seasonStatsMulti') or {}
+    try:
+        adv_agg = multi_adv.get('aggregated', {}) if isinstance(multi_adv, dict) else {}
+    except Exception:
+        adv_agg = {}
+
+    # Aggregate seasonStatsMulti simple mean across seasons
+    season_agg = {}
+    try:
+        sums = {}
+        counts = {}
+        for s, st in (multi_season_stats or {}).items():
+            if not isinstance(st, dict):
+                continue
+            for k, v in st.items():
+                try:
+                    fv = float(v)
+                except Exception:
+                    continue
+                sums[k] = sums.get(k, 0.0) + fv
+                counts[k] = counts.get(k, 0) + 1
+        for k, total in sums.items():
+            season_agg[k] = total / float(counts.get(k, 1))
+    except Exception:
+        season_agg = {}
+
+    features.update({
+        'multi_PER': float(adv_agg.get('PER') or 0.0),
+        'multi_TS_PCT': float(adv_agg.get('TS_PCT') or 0.0),
+        'multi_USG_PCT': float(adv_agg.get('USG_PCT') or 0.0),
+        'multi_season_PTS_avg': float(season_agg.get('PTS') or 0.0),
+        'multi_season_count': int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
+    })
+    # Additional advanced/team aggregated metrics (DataFrame path)
+    features.update({
+        'multi_PIE': float(adv_agg.get('PIE') or 0.0),
+        'multi_off_rating': float(adv_agg.get('OFF_RATING') or 0.0),
+        'multi_def_rating': float(adv_agg.get('DEF_RATING') or 0.0),
+    })
 
     # opponent features (optional)
     if opponent_data:

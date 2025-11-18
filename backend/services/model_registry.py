@@ -37,6 +37,9 @@ class ModelRegistry:
     def __init__(self, model_dir: str = "./backend/models_store"):
         self.model_dir = os.path.abspath(model_dir)
         os.makedirs(self.model_dir, exist_ok=True)
+        # In-memory cache of loaded models to enable fast predictions
+        # and to make startup preloading meaningful.
+        self._loaded_models = {}
 
     def _model_path(self, player_name: str) -> str:
         safe = player_name.replace(" ", "_")
@@ -55,6 +58,12 @@ class ModelRegistry:
         path = self._model_path(player_name)
         joblib.dump(model, path)
         logger.info("Saved model for %s to %s", player_name, path)
+
+        # Cache the model in-memory so services can use it without reloading
+        try:
+            self._loaded_models[player_name] = model
+        except Exception:
+            logger.exception("Failed to cache model in-memory for %s", player_name)
 
         # Invalidate any prediction/player-context caches related to this player.
         try:
@@ -141,10 +150,39 @@ class ModelRegistry:
         if not os.path.exists(path):
             return None
         try:
-            return joblib.load(path)
+            model = joblib.load(path)
+            # cache for future quick access
+            try:
+                self._loaded_models[player_name] = model
+            except Exception:
+                logger.exception("Failed to cache loaded model for %s", player_name)
+            return model
         except Exception:
             logger.exception("Failed to load model for %s", player_name)
             return None
+
+    def get_cached_model(self, player_name: str):
+        return self._loaded_models.get(player_name)
+
+    def list_models(self):
+        """Return list of model filenames (basename) found in the model_dir."""
+        try:
+            return [f for f in sorted(os.listdir(self.model_dir)) if f.endswith('.pkl') and not f.endswith('_calibrator.pkl')]
+        except Exception:
+            return []
+
+    def load_all_models(self):
+        """Load all model files from disk into the in-memory cache."""
+        names = []
+        for fname in self.list_models():
+            try:
+                player = fname[:-4].replace('_', ' ')
+                m = self.load_model(player)
+                if m is not None:
+                    names.append(player)
+            except Exception:
+                logger.exception('Failed to preload model file %s', fname)
+        return names
 
     def save_calibrator(self, player_name: str, calibrator) -> None:
         path = self._calibrator_path(player_name)

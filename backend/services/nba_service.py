@@ -162,7 +162,7 @@ def build_external_context_for_projections(items: List[Dict[str, Any]], stat: st
     return results
 
 
-__all__ = ['get_player_summary', 'build_external_context_for_projections']
+__all__ = ['get_player_summary', 'build_external_context_for_projections', 'get_player_context_for_training']
 
 
 def get_player_context_for_training(
@@ -207,6 +207,62 @@ def get_player_context_for_training(
     # 3. Advanced Stats (for the season)
     advanced_stats = nba_stats_client.get_advanced_player_stats(pid, season)
 
+    # --- Multi-season context enhancements ---
+    # Build a seasons list including the requested season and up to two prior seasons
+    seasons_list: List[str] = []
+    if season:
+        seasons_list.append(season)
+        try:
+            start = int(season.split('-')[0])
+            prev1 = f"{start-1}-{(start)%100:02d}"
+            prev2 = f"{start-2}-{(start-1)%100:02d}"
+            seasons_list.append(prev1)
+            seasons_list.append(prev2)
+        except Exception:
+            # If parsing fails, fall back to single-season list
+            pass
+
+    # Trim duplicates and keep order
+    seasons_list = [s for i, s in enumerate(seasons_list) if s and s not in seasons_list[:i]]
+
+    # Multi-season player-level stats
+    try:
+        season_stats_multi = nba_stats_client.get_player_season_stats_multi(pid, seasons_list) if seasons_list else {}
+    except Exception:
+        season_stats_multi = {}
+
+    try:
+        advanced_stats_multi = nba_stats_client.get_advanced_player_stats_multi(pid, seasons_list) if seasons_list else {}
+    except Exception:
+        advanced_stats_multi = {}
+
+    # Attempt to infer team id from recent games (if present) and fetch team-level multi-season stats
+    team_id = None
+    try:
+        if recent_games_season:
+            # many nba_api rows include 'TEAM_ID'
+            first = recent_games_season[0]
+            team_id = first.get('TEAM_ID') or first.get('team_id') or first.get('TEAM_ID_HOME')
+            if team_id:
+                try:
+                    team_id = int(team_id)
+                except Exception:
+                    team_id = None
+    except Exception:
+        team_id = None
+
+    team_stats_multi = {}
+    team_advanced_multi = {}
+    if team_id and seasons_list:
+        try:
+            team_stats_multi = nba_stats_client.get_team_stats_multi(team_id, seasons_list) or {}
+        except Exception:
+            team_stats_multi = {}
+        try:
+            team_advanced_multi = nba_stats_client.get_advanced_team_stats_multi(team_id, seasons_list) or {}
+        except Exception:
+            team_advanced_multi = {}
+
     out: Dict[str, Any] = {
         'player': player,
         'playerId': pid,
@@ -216,6 +272,12 @@ def get_player_context_for_training(
         'recentGamesRaw': recent_games_season,
         'seasonStats': season_stats,
         'advancedStats': advanced_stats,
+        'seasonStatsMulti': season_stats_multi,
+        'advancedStatsMulti': advanced_stats_multi,
+        'seasonsConsidered': seasons_list,
+        'teamId': team_id,
+        'teamStatsMulti': team_stats_multi,
+        'teamAdvancedMulti': team_advanced_multi,
         'fetchedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
     }
 

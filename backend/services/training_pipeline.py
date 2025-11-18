@@ -17,10 +17,10 @@ from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 from sklearn.linear_model import ElasticNet
 
 try:
-    from xgboost import XGBRegressor  # type: ignore
-    _HAS_XGB = True
+    from backend.services.xgboost_wrapper import XGBoostWrapper
+    _HAS_XGB = getattr(XGBoostWrapper, 'available', False)
 except Exception:
-    XGBRegressor = None  # type: ignore
+    XGBoostWrapper = None
     _HAS_XGB = False
 
 import joblib
@@ -33,9 +33,23 @@ def _build_ensemble() -> VotingRegressor:
     rf = RandomForestRegressor(n_estimators=100, random_state=42)
     estimators.append(("rf", rf))
 
-    if _HAS_XGB and XGBRegressor is not None:
-        xgb = XGBRegressor(n_estimators=100, random_state=42)
-        estimators.append(("xgb", xgb))
+    if _HAS_XGB and XGBoostWrapper is not None:
+        # Prefer constructing the real XGBRegressor (if xgboost module is available
+        # via the wrapper) so VotingRegressor recognizes it as a regressor.
+        try:
+            xgb_mod = getattr(XGBoostWrapper, '__module__', None)
+        except Exception:
+            xgb_mod = None
+        # fallback: try to access the xgboost module imported by the wrapper
+        try:
+            from backend.services import xgboost_wrapper as _xwb
+            if getattr(_xwb, 'xgb', None) is not None:
+                xgb_cls = _xwb.xgb.XGBRegressor
+                xgb = xgb_cls(n_estimators=100, random_state=42)
+                estimators.append(("xgb", xgb))
+        except Exception:
+            # if anything goes wrong, skip XGBoost estimator
+            pass
 
     elastic = ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42)
     estimators.append(("elastic", elastic))
@@ -62,6 +76,34 @@ def train_player_model(df: pd.DataFrame, target_col: str = "target") -> VotingRe
     y = df[target_col]
 
     # Replace non-numeric values and infs
+    X = X.select_dtypes(include=[np.number]).fillna(0)
+
+    # Ensure multi-season feature columns exist so downstream models
+    # reliably receive these engineered fields when present in context.
+    MULTI_FEATURES = [
+        'multi_PER',
+        'multi_TS_PCT',
+        'multi_USG_PCT',
+        'multi_season_PTS_avg',
+        'multi_season_count',
+        'multi_PIE',
+        'multi_off_rating',
+        'multi_def_rating',
+    ]
+
+    for col in MULTI_FEATURES:
+        if col not in df.columns:
+            df[col] = 0.0
+
+    X = df.drop(columns=[target_col])
+
+    # Replace non-numeric values and infs; ensure multi features are numeric
+    for col in MULTI_FEATURES:
+        try:
+            X[col] = X[col].astype(float)
+        except Exception:
+            X[col] = pd.to_numeric(X[col], errors='coerce').fillna(0.0)
+
     X = X.select_dtypes(include=[np.number]).fillna(0)
 
     model = _build_ensemble()

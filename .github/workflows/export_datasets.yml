@@ -1,0 +1,46 @@
+name: Export Datasets (Parquet optional)
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install deps (including optional parquet engine)
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt || true; fi
+          # Install optional parquet engine
+          pip install pyarrow || pip install fastparquet || true
+
+      - name: Run CI dataset export script
+        run: |
+          mkdir -p artifacts
+          python backend/scripts/ci_export_dataset.py --output-dir artifacts || true
+
+      - name: Upload artifacts (optional S3)
+        if: ${{ secrets.S3_BUCKET != '' && secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: jakejarvis/s3-sync-action@v0.5.1
+        with:
+          args: --acl private --follow-symlinks
+        env:
+          AWS_S3_BUCKET: ${{ secrets.S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION || 'us-east-1' }}
+          SOURCE_DIR: "artifacts"
+
+      - name: Upload exported dataset artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: exported-dataset
+          path: artifacts
