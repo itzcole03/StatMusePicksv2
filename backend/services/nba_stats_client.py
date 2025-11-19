@@ -52,8 +52,8 @@ _tokens = float(MAX_REQUESTS_PER_MINUTE)
 _last_refill = time.time()
 _rl_lock = threading.Lock()
 
-# Timeout for nba_api HTTP requests (seconds)
-NBA_API_TIMEOUT = int(os.environ.get("NBA_API_TIMEOUT", "120"))
+# Timeout for nba_api HTTP requests (seconds). Increase default to reduce transient read timeouts.
+NBA_API_TIMEOUT = int(os.environ.get("NBA_API_TIMEOUT", "180"))
 
 
 def _acquire_token(timeout: float = 5.0) -> bool:
@@ -75,7 +75,7 @@ def _acquire_token(timeout: float = 5.0) -> bool:
     return False
 
 
-def _with_retries(fn, *args, retries: int = 6, backoff: float = 0.5, max_backoff: float = 120.0, **kwargs):
+def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff: float = 120.0, **kwargs):
     """Invoke `fn` with retries, exponential backoff and jitter.
 
     - `retries`: number of attempts before giving up
@@ -84,6 +84,9 @@ def _with_retries(fn, *args, retries: int = 6, backoff: float = 0.5, max_backoff
     """
     import random
     import requests
+    import socket
+    import ssl
+    import urllib3
     from http.client import RemoteDisconnected as _RemoteDisconnected
 
     last_exc = None
@@ -95,13 +98,33 @@ def _with_retries(fn, *args, retries: int = 6, backoff: float = 0.5, max_backoff
             time.sleep(min(sleep_t, max_backoff))
             continue
         try:
+            # NOTE: Do NOT set global HTTP_PROXY/HTTPS_PROXY environment vars here.
+            # Setting those breaks `nba_api`'s HTTPS calls when the configured
+            # proxy cannot handle CONNECT tunnels (causes "Tunnel connection
+            # failed: 400 Bad Request"). Prefer explicit REST proxying via the
+            # local FastAPI service (callable by higher-level helpers) or let
+            # `nba_api` make direct connections. If a proxy is desired for
+            # specific HTTP requests, callers should use `requests` with the
+            # `proxies=` parameter rather than mutating global env vars.
             return fn(*args, **kwargs)
+        except Exception as e:
+            last_exc = e
         except Exception as e:
             last_exc = e
             # If it's a connection-level error, increase backoff and jitter
             is_conn_err = False
             try:
                 if isinstance(e, requests.exceptions.ConnectionError):
+                    is_conn_err = True
+                if isinstance(e, requests.exceptions.ReadTimeout):
+                    is_conn_err = True
+                if isinstance(e, requests.exceptions.ConnectTimeout):
+                    is_conn_err = True
+                if isinstance(e, urllib3.exceptions.ProtocolError):
+                    is_conn_err = True
+                if isinstance(e, ssl.SSLError):
+                    is_conn_err = True
+                if isinstance(e, socket.timeout):
                     is_conn_err = True
             except Exception:
                 pass
@@ -118,6 +141,9 @@ def _with_retries(fn, *args, retries: int = 6, backoff: float = 0.5, max_backoff
             sleep_t = sleep_t * (0.4 + random.random() * 0.8)
             time.sleep(sleep_t)
             continue
+        finally:
+            # no global proxy envs are modified in this function
+            pass
     # final attempt without acquiring token
     try:
         # final attempt: small pause before final try
@@ -253,10 +279,30 @@ def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = N
 
     try:
         def _fetch(pid, lim, seas):
-            if seas:
-                gl = playergamelog.PlayerGameLog(player_id=pid, season=seas, timeout=NBA_API_TIMEOUT)
-            else:
-                gl = playergamelog.PlayerGameLog(player_id=pid, timeout=NBA_API_TIMEOUT)
+            # nba_api has differing constructor signatures across versions; try several invocation patterns
+            last_err = None
+            try:
+                if seas:
+                    gl = playergamelog.PlayerGameLog(player_id=pid, season=seas, timeout=NBA_API_TIMEOUT)
+                else:
+                    gl = playergamelog.PlayerGameLog(player_id=pid, timeout=NBA_API_TIMEOUT)
+            except TypeError as e:
+                last_err = e
+                try:
+                    if seas:
+                        gl = playergamelog.PlayerGameLog(player_id=pid, season=seas)
+                    else:
+                        gl = playergamelog.PlayerGameLog(player_id=pid)
+                except TypeError as e2:
+                    last_err = e2
+                    try:
+                        # positional fallback
+                        if seas:
+                            gl = playergamelog.PlayerGameLog(pid, seas)
+                        else:
+                            gl = playergamelog.PlayerGameLog(pid)
+                    except Exception:
+                        raise last_err
             df = gl.get_data_frames()[0]
             return df.head(lim).to_dict(orient="records")
 
@@ -507,6 +553,36 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     if not player_id or not season:
         return {}
 
+    # When running in offline/dev mode prefer computing simple season stats
+    # from available game logs instead of calling external `playercareerstats`.
+    try:
+        if os.environ.get('NBA_FORCE_FALLBACK', '') == '1':
+            try:
+                games = fetch_recent_games(player_id, limit=500, season=season)
+                if not games:
+                    return {}
+                sum_pts = 0.0
+                cnt = 0
+                for g in games:
+                    v = None
+                    for k in ('PTS', 'points'):
+                        if k in g and g.get(k) is not None:
+                            try:
+                                v = float(g.get(k))
+                            except Exception:
+                                v = None
+                            break
+                    if v is not None:
+                        sum_pts += v
+                        cnt += 1
+                if cnt == 0:
+                    return {}
+                return {'PTS': sum_pts / cnt}
+            except Exception:
+                return {}
+    except Exception:
+        pass
+
     cache_key = f"player_season:{player_id}:{season}"
     try:
         rc = _redis_client()
@@ -527,8 +603,26 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     if playercareerstats is not None:
         try:
             def _pcs(pid):
-                pcs = playercareerstats.PlayerCareerStats(player_id=pid, timeout=NBA_API_TIMEOUT)
-                return pcs.get_data_frames()[0]
+                    # PlayerCareerStats may accept different arg patterns across nba_api versions
+                    last_err = None
+                    try:
+                        pcs = playercareerstats.PlayerCareerStats(player_id=pid, timeout=NBA_API_TIMEOUT)
+                        return pcs.get_data_frames()[0]
+                    except TypeError as e:
+                        last_err = e
+                    try:
+                        pcs = playercareerstats.PlayerCareerStats(player_id=pid)
+                        return pcs.get_data_frames()[0]
+                    except TypeError:
+                        pass
+                    try:
+                        pcs = playercareerstats.PlayerCareerStats(pid)
+                        return pcs.get_data_frames()[0]
+                    except Exception:
+                        # re-raise the most helpful error to trigger retry/backoff
+                        if last_err:
+                            raise last_err
+                        raise
 
             df = _with_retries(_pcs, player_id)
             # Expect df to be a DataFrame-like object
@@ -1021,6 +1115,18 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
     """
     if not player_id or not season:
         return {}
+
+    # Allow forcing fallback-only behavior to avoid external LeagueDash calls
+    # when running in offline/dev environments or when the upstream API is
+    # unstable. Set env `NBA_FORCE_FALLBACK=1` to enable.
+    try:
+        if os.environ.get('NBA_FORCE_FALLBACK', '') == '1':
+            try:
+                return get_advanced_player_stats_fallback(player_id, season) or {}
+            except Exception:
+                return {}
+    except Exception:
+        pass
 
 
     

@@ -1,0 +1,318 @@
+{
+  "manifest": "backend\\data\\datasets\\points_dataset_dedup_v20251119T050352Z_22399cb7\\dataset_manifest.json",
+  "per_player": {
+    "players_checked": 24,
+    "issues": [],
+    "per_player": {
+      "Byron Scott": {
+        "train_count": 140,
+        "val_count": 30,
+        "test_count": 30,
+        "train_max": "2024-11-18 00:00:00",
+        "val_min": "2024-11-20 00:00:00",
+        "val_max": "2025-02-03 00:00:00",
+        "test_min": "2025-02-05 00:00:00",
+        "overlap": false,
+        "train_min": "2022-10-18 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Chris King": {
+        "train_count": 27,
+        "val_count": 6,
+        "test_count": 6,
+        "train_max": "2025-03-07 00:00:00",
+        "val_min": "2025-03-15 00:00:00",
+        "val_max": "2025-03-27 00:00:00",
+        "test_min": "2025-03-29 00:00:00",
+        "overlap": false,
+        "train_min": "2024-02-23 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Clifford Rozier": {
+        "train_count": 99,
+        "val_count": 21,
+        "test_count": 22,
+        "train_max": "2024-12-23 00:00:00",
+        "val_min": "2024-12-27 00:00:00",
+        "val_max": "2025-02-06 00:00:00",
+        "test_min": "2025-02-08 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Clyde Drexler": {
+        "train_count": 80,
+        "val_count": 17,
+        "test_count": 18,
+        "train_max": "2024-12-26 00:00:00",
+        "val_min": "2024-12-28 00:00:00",
+        "val_max": "2025-02-24 00:00:00",
+        "test_min": "2025-02-26 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-11 00:00:00"
+      },
+      "Dan Schayes": {
+        "train_count": 98,
+        "val_count": 21,
+        "test_count": 21,
+        "train_max": "2024-12-27 00:00:00",
+        "val_min": "2024-12-29 00:00:00",
+        "val_max": "2025-02-22 00:00:00",
+        "test_min": "2025-02-25 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Dennis Rodman": {
+        "train_count": 47,
+        "val_count": 10,
+        "test_count": 10,
+        "train_max": "2025-03-08 00:00:00",
+        "val_min": "2025-03-10 00:00:00",
+        "val_max": "2025-03-26 00:00:00",
+        "test_min": "2025-03-27 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-24 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Dickey Simpkins": {
+        "train_count": 41,
+        "val_count": 9,
+        "test_count": 9,
+        "train_max": "2025-01-27 00:00:00",
+        "val_min": "2025-01-29 00:00:00",
+        "val_max": "2025-02-12 00:00:00",
+        "test_min": "2025-02-21 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-24 00:00:00",
+        "test_max": "2025-03-10 00:00:00"
+      },
+      "Doug West": {
+        "train_count": 103,
+        "val_count": 22,
+        "test_count": 22,
+        "train_max": "2025-01-06 00:00:00",
+        "val_min": "2025-01-09 00:00:00",
+        "val_max": "2025-02-25 00:00:00",
+        "test_min": "2025-02-27 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Eric Piatkowski": {
+        "train_count": 41,
+        "val_count": 9,
+        "test_count": 8,
+        "train_max": "2025-03-03 00:00:00",
+        "val_min": "2025-03-04 00:00:00",
+        "val_max": "2025-03-29 00:00:00",
+        "test_min": "2025-03-30 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-23 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Eric Riley": {
+        "train_count": 97,
+        "val_count": 21,
+        "test_count": 21,
+        "train_max": "2025-01-03 00:00:00",
+        "val_min": "2025-01-05 00:00:00",
+        "val_max": "2025-02-25 00:00:00",
+        "test_min": "2025-02-26 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Gary Payton": {
+        "train_count": 41,
+        "val_count": 9,
+        "test_count": 8,
+        "train_max": "2025-03-14 00:00:00",
+        "val_min": "2025-03-15 00:00:00",
+        "val_max": "2025-03-30 00:00:00",
+        "test_min": "2025-04-01 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-24 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Grant Long": {
+        "train_count": 129,
+        "val_count": 28,
+        "test_count": 27,
+        "train_max": "2024-11-04 00:00:00",
+        "val_min": "2024-11-06 00:00:00",
+        "val_max": "2025-01-27 00:00:00",
+        "test_min": "2025-01-29 00:00:00",
+        "overlap": false,
+        "train_min": "2022-10-19 00:00:00",
+        "test_max": "2025-03-30 00:00:00"
+      },
+      "Greg Anthony": {
+        "train_count": 25,
+        "val_count": 5,
+        "test_count": 6,
+        "train_max": "2024-12-14 00:00:00",
+        "val_min": "2024-12-19 00:00:00",
+        "val_max": "2024-12-28 00:00:00",
+        "test_min": "2024-12-29 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-24 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Jim McIlvaine": {
+        "train_count": 111,
+        "val_count": 24,
+        "test_count": 23,
+        "train_max": "2024-12-31 00:00:00",
+        "val_min": "2025-01-02 00:00:00",
+        "val_max": "2025-02-23 00:00:00",
+        "test_min": "2025-02-24 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Keith Jennings": {
+        "train_count": 83,
+        "val_count": 18,
+        "test_count": 18,
+        "train_max": "2024-10-30 00:00:00",
+        "val_min": "2024-11-02 00:00:00",
+        "val_max": "2024-12-20 00:00:00",
+        "test_min": "2024-12-21 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-03-12 00:00:00"
+      },
+      "Lorenzo Williams": {
+        "train_count": 92,
+        "val_count": 20,
+        "test_count": 19,
+        "train_max": "2024-12-26 00:00:00",
+        "val_min": "2024-12-27 00:00:00",
+        "val_max": "2025-02-09 00:00:00",
+        "test_min": "2025-02-12 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Luc Longley": {
+        "train_count": 93,
+        "val_count": 20,
+        "test_count": 20,
+        "train_max": "2025-01-12 00:00:00",
+        "val_min": "2025-01-14 00:00:00",
+        "val_max": "2025-03-06 00:00:00",
+        "test_min": "2025-03-08 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-25 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Mario Elie": {
+        "train_count": 50,
+        "val_count": 11,
+        "test_count": 11,
+        "train_max": "2025-02-11 00:00:00",
+        "val_min": "2025-02-12 00:00:00",
+        "val_max": "2025-03-17 00:00:00",
+        "test_min": "2025-03-19 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-23 00:00:00",
+        "test_max": "2025-04-11 00:00:00"
+      },
+      "Marty Conlon": {
+        "train_count": 36,
+        "val_count": 8,
+        "test_count": 7,
+        "train_max": "2025-02-23 00:00:00",
+        "val_min": "2025-02-26 00:00:00",
+        "val_max": "2025-03-26 00:00:00",
+        "test_min": "2025-03-28 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-23 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Micheal Williams": {
+        "train_count": 44,
+        "val_count": 9,
+        "test_count": 10,
+        "train_max": "2025-02-28 00:00:00",
+        "val_min": "2025-03-02 00:00:00",
+        "val_max": "2025-03-17 00:00:00",
+        "test_min": "2025-03-19 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-23 00:00:00",
+        "test_max": "2025-04-04 00:00:00"
+      },
+      "Monty Williams": {
+        "train_count": 36,
+        "val_count": 8,
+        "test_count": 7,
+        "train_max": "2025-02-05 00:00:00",
+        "val_min": "2025-02-07 00:00:00",
+        "val_max": "2025-03-19 00:00:00",
+        "test_min": "2025-03-21 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-24 00:00:00",
+        "test_max": "2025-04-08 00:00:00"
+      },
+      "Richard Dumas": {
+        "train_count": 89,
+        "val_count": 19,
+        "test_count": 19,
+        "train_max": "2024-11-19 00:00:00",
+        "val_min": "2024-11-21 00:00:00",
+        "val_max": "2025-01-03 00:00:00",
+        "test_min": "2025-01-05 00:00:00",
+        "overlap": false,
+        "train_min": "2023-10-24 00:00:00",
+        "test_max": "2025-04-11 00:00:00"
+      },
+      "Sedale Threatt": {
+        "train_count": 20,
+        "val_count": 4,
+        "test_count": 5,
+        "train_max": "2025-03-27 00:00:00",
+        "val_min": "2025-03-29 00:00:00",
+        "val_max": "2025-04-03 00:00:00",
+        "test_min": "2025-04-06 00:00:00",
+        "overlap": false,
+        "train_min": "2024-10-23 00:00:00",
+        "test_max": "2025-04-13 00:00:00"
+      },
+      "Wayman Tisdale": {
+        "train_count": 41,
+        "val_count": 9,
+        "test_count": 9,
+        "train_max": "2025-03-05 00:00:00",
+        "val_min": "2025-03-08 00:00:00",
+        "val_max": "2025-03-23 00:00:00",
+        "test_min": "2025-03-25 00:00:00",
+        "overlap": false,
+        "train_min": "2024-11-25 00:00:00",
+        "test_max": "2025-04-11 00:00:00"
+      }
+    }
+  },
+  "global": {
+    "duplicate_player_game_date_rows": 0,
+    "overlap_examples": [],
+    "ranges": {
+      "train": {
+        "min": "2022-10-18 00:00:00",
+        "max": "2025-03-27 00:00:00",
+        "rows": 1663
+      },
+      "val": {
+        "min": "2024-11-02 00:00:00",
+        "max": "2025-04-03 00:00:00",
+        "rows": 358
+      },
+      "test": {
+        "min": "2024-12-21 00:00:00",
+        "max": "2025-04-13 00:00:00",
+        "rows": 356
+      }
+    }
+  }
+}

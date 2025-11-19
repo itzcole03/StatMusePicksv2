@@ -1,0 +1,57 @@
+{
+  "name": "points_dataset_dedup",
+  "version": "20251119T050352Z",
+  "uid": "22399cb7",
+  "created_at": "2025-11-19T05:03:52.176338Z",
+  "seasons": "2024-25",
+  "rows_train": 1663,
+  "rows_val": 358,
+  "rows_test": 356,
+  "parts": {
+    "train": {
+      "name": "points_dataset_dedup_train",
+      "version": "20251119T050352Z",
+      "uid": "9f61e2ca",
+      "created_at": "2025-11-19T05:03:52.176672Z",
+      "rows": 1663,
+      "columns": [
+        "player",
+        "game_date",
+        "target"
+      ],
+      "files": {
+        "features": "backend\\data\\datasets\\points_dataset_dedup_v20251119T050352Z_22399cb7\\points_dataset_dedup_train_v20251119T050352Z_9f61e2ca\\features.parquet"
+      }
+    },
+    "val": {
+      "name": "points_dataset_dedup_val",
+      "version": "20251119T050352Z",
+      "uid": "7ac44259",
+      "created_at": "2025-11-19T05:03:52.181121Z",
+      "rows": 358,
+      "columns": [
+        "player",
+        "game_date",
+        "target"
+      ],
+      "files": {
+        "features": "backend\\data\\datasets\\points_dataset_dedup_v20251119T050352Z_22399cb7\\points_dataset_dedup_val_v20251119T050352Z_7ac44259\\features.parquet"
+      }
+    },
+    "test": {
+      "name": "points_dataset_dedup_test",
+      "version": "20251119T050352Z",
+      "uid": "80598f98",
+      "created_at": "2025-11-19T05:03:52.184278Z",
+      "rows": 356,
+      "columns": [
+        "player",
+        "game_date",
+        "target"
+      ],
+      "files": {
+        "features": "backend\\data\\datasets\\points_dataset_dedup_v20251119T050352Z_22399cb7\\points_dataset_dedup_test_v20251119T050352Z_80598f98\\features.parquet"
+      }
+    }
+  }
+}

@@ -10,6 +10,7 @@ import logging
 import joblib
 import os
 import datetime
+from datetime import timezone
 import json
 
 import numpy as np
@@ -114,9 +115,11 @@ class CalibrationService:
                 calib_path = None
 
             with engine.begin() as conn:
+                # use timezone-aware UTC timestamp for versions
+                timestamp = datetime.datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
                 ins = ModelMetadata.__table__.insert().values(
                     name=player_name,
-                    version=f'calib-{method}-{datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")}',
+                    version=f'calib-{method}-{timestamp}',
                     path=os.path.abspath(calib_path) if calib_path else None,
                     notes=notes,
                 )
