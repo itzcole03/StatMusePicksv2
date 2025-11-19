@@ -19,6 +19,81 @@ python -m venv .venv
 $env:PYTHONPATH = (Get-Location).Path
 ```
 
+Developer Quickstart (copyable)
+
+- Create & activate venv, install deps (PowerShell):
+
+```powershell
+python -m venv .venv
+& .\.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+if (Test-Path backend/requirements.txt) { pip install -r backend/requirements.txt }
+npm install
+```
+
+- Start backend (dev):
+
+```powershell
+& .\.venv\Scripts\Activate.ps1
+$env:PYTHONPATH = (Get-Location).Path
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+
+- Start frontend (dev):
+
+```powershell
+npm run dev -- --host --port 3000
+```
+
+- Run tests (repo-wide or single file):
+
+```powershell
+& .\.venv\Scripts\Activate.ps1
+python -m pytest -q              # run all tests
+python -m pytest tests/test_orchestrator_calibrator.py -q   # run small orchestrator tests
+```
+
+CI expectations
+
+- What CI runs for PRs:
+	- Backend unit tests: `python -m pytest backend/tests`
+	- Deterministic smoke training job: `.github/workflows/ci_smoke_training.yml` runs
+		- `backend/tests/test_train_orchestrator_smoke.py`
+		- `tests/test_orchestrator_calibrator.py` (lightweight orchestrator+calibrator check)
+		- `python scripts/compute_calibration_metrics.py` (compute & validate calibration metrics)
+		- `backend/tests/test_calibration_service.py` (calibration unit tests)
+
+- How to reproduce CI locally:
+
+```powershell
+# run backend tests
+& .\.venv\Scripts\Activate.ps1
+python -m pytest -q backend/tests
+
+# run the CI smoke training job locally
+python -m pytest -q backend/tests/test_train_orchestrator_smoke.py
+pytest -q tests/test_orchestrator_calibrator.py
+python scripts/compute_calibration_metrics.py
+
+Phase 2 acceptance checks
+
+- To run the Phase 2 acceptance checks locally (these mirror the PR smoke validations):
+
+```pwsh
+# Generate fixtures and compute metrics (CI does this automatically on PRs)
+python -m pytest -q backend/tests/test_compute_calibration_fixture.py
+# Run the Phase 2 acceptance assertions (does a basic artifact + schema check)
+python -m pytest -q backend/tests/test_phase2_acceptance.py
+```
+
+If you want CI to enforce numeric thresholds (e.g., mean Brier < 0.20), set the
+`PHASE2_STRICT=1` and optional `PHASE2_BRIER_THRESHOLD` env vars in the CI job.
+```
+
+Notes:
+- CI smoke training job is intentionally lightweight and uses small deterministic fixtures where possible. If you change training or feature-engineering interfaces, update `backend/tests/test_train_orchestrator_smoke.py` and `tests/test_orchestrator_calibrator.py` to reflect the new API.
+- If the CI workflow times out on PRs, consider shrinking smoke dataset (`limit` flags) or increasing job timeouts in `.github/workflows/ci_smoke_training.yml`.
+
 Install dependencies
 
 ```powershell

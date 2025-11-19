@@ -611,6 +611,12 @@ Notes:
 
 **Status:** 🟡 In Progress
 
+**Recent run (added Nov 19, 2025):**
+
+- **Parallel orchestrator executed locally** using `backend/scripts/train_orchestrator.py` with multiprocessing (4 workers). Found and trained 21 player models (players with >=50 rows) and persisted artifacts to `backend/models_store/orchestrator_parallel/`.
+- **Training report:** `backend/models_store/orchestrator_report_parallel.csv` (per-player metrics and paths).
+- **Notes / caveats:** some models emitted scikit-learn warnings about feature-name mismatches during prediction; training script was hardened to align/pad features where needed. Recommend adding a CI smoke job to validate feature-schema compatibility before large runs.
+
 ---
 
 ## 2.2 Model Implementation
@@ -737,6 +743,20 @@ Notes:
 
 - `backend/services/calibration_service.py` implemented (isotonic & linear calibrators), persisted via `ModelRegistry.save_calibrator()`.
 - Unit tests added in `backend/tests/test_calibration_service.py` and calibration metrics tests in `backend/tests/test_calibration_metrics.py`.
+
+**Recent run (added Nov 19, 2025):**
+
+- Ran calibration-fitting across the newly-trained models; **21 calibrators fitted** (isotonic) and saved alongside models in `backend/models_store/orchestrator_parallel/` as `<Player>_calibrator.pkl`.
+- **Calibrator report (JSON):** `backend/models_store/calibrator_report_parallel.json` — contains per-player before/after metrics written after fitting.
+- **Computed calibration metrics (CSV):** `backend/models_store/calibration_metrics_parallel.csv` — per-player mse/rmse/mae/brier/ece before and after calibration (validation split).
+ - **CI & Tests (Nov 19, 2025):** Added lightweight pytest for orchestrator+calibrator (`tests/test_orchestrator_calibrator.py`) and a backend calibration unit test (`backend/tests/test_calibration_service_extra.py`). CI smoke workflow updated to run these tests and `scripts/compute_calibration_metrics.py` on PRs.
+ - **CalibrationService update (Nov 19, 2025):** Calibration metadata now uses timezone-aware UTC timestamps (`datetime.now(timezone.utc)`) for versioning to avoid deprecation warnings and ensure consistent timezones across environments.
+- **Observed results & caveats:** most players show reduced MSE/RMSE and improved MAE after isotonic fitting; ECE values vary and some players show mixed Brier direction (investigate per-player sample sizes and feature-drift). The calibrator script includes fallbacks for feature mismatches (reordering, zero-padding) which should be audited for production fidelity.
+
+**Recommended next steps:**
+
+- Add a CI smoke workflow that trains a tiny set of players, fits calibrators, and validates `calibrator_report`/`calibration_metrics` to prevent regressions on PRs.
+- Review per-player calibration samples (low-count players) and consider a minimum-validation-row threshold before fitting calibrators.
 
 ---
 
@@ -1786,6 +1806,15 @@ mlflow ui --port 5000
 _This document should be updated regularly as tasks are completed and new requirements emerge._
 
 ---
+
+## Recent automation updates (Nov 19, 2025)
+
+- Created PR `phase2/signoff-Nov17-2025 -> main` to exercise Phase 2 CI smoke checks (see PR #12).
+- Added explicit warning logs in `scripts/compute_calibration_metrics.py` when feature alignment pads, drops, or reorders columns to make schema drift visible in CI logs.
+- Added `backend/tests/test_compute_calibration_fixture.py` (fixture-based compute test) and `backend/tests/test_phase2_acceptance.py` (Phase 2 acceptance assertions). The acceptance test supports an optional strict mode via environment variables `PHASE2_STRICT=1` and `PHASE2_BRIER_THRESHOLD`.
+- Updated `README.md` with reproduction steps for Phase 2 acceptance checks.
+
+These additions are intended to make Phase 2 CI smoke runs deterministic and to surface schema/feature drift during PR validation. If you'd like these notes inserted elsewhere in the roadmap structure, tell me where and I will relocate them.
 
 ## Dataset Export & CI (added Nov 17, 2025)
 
