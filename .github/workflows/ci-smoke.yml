@@ -51,7 +51,7 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/postgres
         run: |
           pip install alembic
-          alembic -c backend/alembic.ini upgrade head
+          alembic -c backend/alembic.ini upgrade heads
 
       - name: Run backend tests
         env:
