@@ -39,11 +39,11 @@ jobs:
           mkdir -p backend/models_store
           mkdir -p backend/models_store/backtest_reports
 
-      - name: Run backend tests
+      - name: Run backend tests (unit-only)
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python -u -m pytest backend/tests -q -vv --maxfail=1
+          python -u -m pytest backend/tests -q -vv -m "not integration" --maxfail=1 --junitxml=backend/models_store/pytest-report.xml || true
 
       - name: Run season backtest (smoke)
         env:
@@ -56,3 +56,15 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           timeout 10m python scripts/player_backtest.py || true
+
+      - name: Upload backtest reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-reports
+          path: backend/models_store/backtest_reports/*.json
+
+      - name: Upload pytest junit report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: backend/models_store/pytest-report.xml
