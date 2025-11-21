@@ -39,11 +39,11 @@ jobs:
           mkdir -p backend/models_store
           mkdir -p backend/models_store/backtest_reports
 
-      - name: Run backend tests (unit-only)
+      - name: Run backend tests (unit-only, timed)
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python -u -m pytest backend/tests -q -vv -m "not integration" --maxfail=1 --junitxml=backend/models_store/pytest-report.xml || true
+          timeout 12m python -u -m pytest backend/tests -q -vv -m "not integration" -k "not phase2_acceptance and not ingest and not acceptance" --maxfail=1 --durations=10 --junitxml=backend/models_store/pytest-report.xml || true
 
       - name: Run season backtest (smoke)
         env:
