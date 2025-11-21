@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -23,9 +24,19 @@ jobs:
           pip install -r backend/requirements.txt || true
           pip install -r backend/requirements.dev.txt || true
 
+      - name: Debug Python environment
+        run: |
+          echo "PWD: $(pwd)"
+          echo "PYTHONPATH=$PYTHONPATH"
+          python -c "import sys, pkgutil, os; print('sys.path:', sys.path); print('cwd:', os.getcwd()); print('backend module available:', pkgutil.find_loader('backend'))"
+          echo 'Repository files:'
+          ls -la
+          echo 'pip list:'
+          pip list
+
       - name: Run backend tests
         run: |
-          pytest backend/tests -q
+          pytest backend/tests -q -vv
 
       - name: Run season backtest (smoke)
         env:
