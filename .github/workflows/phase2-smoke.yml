@@ -40,8 +40,10 @@ jobs:
           mkdir -p backend/models_store/backtest_reports
 
       - name: Run backend tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          pytest backend/tests -q -vv --maxfail=1
+          python -u -m pytest backend/tests -q -vv --maxfail=1
 
       - name: Run season backtest (smoke)
         env:
