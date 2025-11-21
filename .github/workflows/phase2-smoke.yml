@@ -34,18 +34,23 @@ jobs:
           echo 'pip list:'
           pip list
 
+      - name: Ensure models_store exists
+        run: |
+          mkdir -p backend/models_store
+          mkdir -p backend/models_store/backtest_reports
+
       - name: Run backend tests
         run: |
-          pytest backend/tests -q -vv
+          pytest backend/tests -q -vv --maxfail=1
 
       - name: Run season backtest (smoke)
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python scripts/run_backtest_real_season.py || true
+          timeout 10m python scripts/run_backtest_real_season.py || true
 
       - name: Run player backtest (smoke)
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
-          python scripts/player_backtest.py || true
+          timeout 10m python scripts/player_backtest.py || true
