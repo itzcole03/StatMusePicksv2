@@ -9,9 +9,9 @@
 
 - [x] Create `backend/services/training_pipeline.py` with `train_player_model`, `save_model`, and ensemble builder (implemented)
 - [x] Implement orchestrating script to iterate players and schedule training for players with >=50 games (implemented: `backend/scripts/train_orchestrator.py`)
-- [ ] Add hyperparameter tuning (Optuna) and trials (not implemented)
-- [ ] Add progress tracking and logging (basic logging present)
-- [ ] Create training report (CSV with metrics)
+ - [x] Add hyperparameter tuning (Optuna) and trials (implemented)
+ - [x] Add progress tracking and logging (basic logging present)
+ - [x] Create training report (CSV with metrics)
 
 ### Task 2.2.2: Implement XGBoost Model
 - [x] Create `backend/models/xgboost_model.py`
@@ -23,7 +23,7 @@
 - [x] `colsample_bytree`: 0.5-1.0
 - [x] Implement training function with early stopping
 - [x] Implement prediction function
-- [ ] Add SHAP value calculation (optional)
+ - [x] Add SHAP value calculation (optional)
 - [x] Test on sample data
 
 ### Task 2.2.3: Implement Elastic Net Model
@@ -41,8 +41,8 @@
 - [x] Implement `VotingRegressor`:
 - [x] Combine Random Forest, XGBoost, Elastic Net
 - [x] Weights: [0.4, 0.4, 0.2]
-- [ ] Implement stacking ensemble (optional):
-- [ ] Use meta-learner (Ridge regression)
+ - [x] Implement stacking ensemble (optional):
+ - [x] Use meta-learner (Ridge regression)
 - [x] Test ensemble vs individual models
 - [x] Compare performance metrics
 
