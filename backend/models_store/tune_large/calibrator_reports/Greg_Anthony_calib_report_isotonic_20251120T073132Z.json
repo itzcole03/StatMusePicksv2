@@ -1,0 +1,20 @@
+{
+  "player": "Greg Anthony",
+  "method": "isotonic",
+  "created_at": "20251120T073132Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Greg_Anthony_calibrator.pkl",
+  "before": {
+    "mse": 30.825016829315487,
+    "rmse": 5.552028172597423,
+    "mae": 4.175957376140348,
+    "brier": 45.49079876851945,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 17.777777777777775,
+    "rmse": 4.2163702135578385,
+    "mae": 2.929292929292929,
+    "brier": 75.85858585858585,
+    "ece": 0.0
+  }
+}

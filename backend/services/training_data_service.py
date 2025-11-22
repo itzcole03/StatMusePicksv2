@@ -34,7 +34,7 @@ def _extract_stat_from_game(g: dict, stat_field: str):
 def _parse_date(dstr: str) -> Optional[datetime.date]:
     if not dstr:
         return None
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ"):
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ", "%b %d, %Y", "%B %d, %Y"):
         try:
             return datetime.datetime.strptime(dstr, fmt).date()
         except Exception:
@@ -45,7 +45,7 @@ def _parse_date(dstr: str) -> Optional[datetime.date]:
         return None
 
 
-def generate_training_data(player_name: str, stat: str = 'points', min_games: int = 20, fetch_limit: int = 500, season: Optional[str] = None, seasons: Optional[List[str]] = None) -> pd.DataFrame:
+def generate_training_data(player_name: str, stat: str = 'points', min_games: int = 20, fetch_limit: int = 500, season: Optional[str] = None, seasons: Optional[List[str]] = None, pid: Optional[int] = None) -> pd.DataFrame:
     """Generate a simple sliding-window training DataFrame for a player.
 
     The function fetches up to `fetch_limit` historical games for the player,
@@ -54,9 +54,12 @@ def generate_training_data(player_name: str, stat: str = 'points', min_games: in
     row corresponds to a future game and the target is the stat value for
     that game.
     """
-    pid = nba_stats_client.find_player_id_by_name(player_name)
-    if not pid:
-        raise ValueError(f'could not resolve player id for {player_name}')
+    # Allow callers to pass `pid` directly to avoid name-based lookups that
+    # may trigger external network calls (useful in offline or test modes).
+    if pid is None:
+        pid = nba_stats_client.find_player_id_by_name(player_name)
+        if not pid:
+            raise ValueError(f'could not resolve player id for {player_name}')
 
     # Support multi-season fetch when `seasons` is provided. Otherwise fall
     # back to the single-season `season` parameter used previously.
@@ -342,6 +345,41 @@ def chronological_split_by_ratio(df: pd.DataFrame, date_col: str = 'game_date', 
     return train_df, val_df, test_df
 
 
+def per_player_time_split(df: pd.DataFrame, player_col: str = 'player', date_col: str = 'game_date', train_frac: float = 0.7, val_frac: float = 0.15, test_frac: float = 0.15) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Deterministic time-based split applied per-player.
+
+    For each player in `player_col` the rows are sorted by `date_col` (oldest->newest)
+    and split into train/val/test by the provided fractions. Results are concatenated
+    across players and returned as three DataFrames. This prevents leakage across
+    arbitrary shuffles while preserving global proportions approximately.
+    """
+    if player_col not in df.columns:
+        raise ValueError(f'player_col {player_col} not in DataFrame')
+
+    trains = []
+    vals = []
+    tests = []
+    grouped = df.groupby(player_col)
+    for pid, g in grouped:
+        g_sorted = g.sort_values(by=date_col).reset_index(drop=True)
+        n = len(g_sorted)
+        if n == 0:
+            continue
+        total = train_frac + val_frac + test_frac
+        train_f = train_frac / total
+        val_f = val_frac / total
+        train_end = int(round(n * train_f))
+        val_end = train_end + int(round(n * val_f))
+        trains.append(g_sorted.iloc[:train_end])
+        vals.append(g_sorted.iloc[train_end:val_end])
+        tests.append(g_sorted.iloc[val_end:])
+
+    train_df = pd.concat(trains, ignore_index=True) if trains else pd.DataFrame(columns=df.columns)
+    val_df = pd.concat(vals, ignore_index=True) if vals else pd.DataFrame(columns=df.columns)
+    test_df = pd.concat(tests, ignore_index=True) if tests else pd.DataFrame(columns=df.columns)
+    return train_df, val_df, test_df
+
+
 def export_dataset_with_version(df: pd.DataFrame, y: Optional[pd.Series] = None, output_dir: str = 'datasets', name: Optional[str] = None, version: Optional[str] = None, fmt_prefer: str = 'parquet') -> dict:
     """Export DataFrame (and optional labels) to disk with simple versioning.
 
@@ -413,3 +451,59 @@ def export_dataset_with_version(df: pd.DataFrame, y: Optional[pd.Series] = None,
         json.dump(manifest, f, indent=2, default=str)
 
     return manifest
+
+
+def read_manifest(manifest_path: str) -> Optional[dict]:
+    """Read a manifest.json file and return the parsed dict, or None if missing/invalid."""
+    try:
+        p = Path(manifest_path)
+        if not p.exists():
+            return None
+        with open(p, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def list_datasets(output_dir: str = 'datasets') -> list:
+    """List all dataset manifests under `output_dir`.
+
+    Returns a list of manifest dicts (only those that could be read).
+    """
+    outp = Path(output_dir)
+    if not outp.exists() or not outp.is_dir():
+        return []
+
+    manifests = []
+    for child in outp.iterdir():
+        if not child.is_dir():
+            continue
+        manifest_path = child / 'manifest.json'
+        m = read_manifest(str(manifest_path))
+        if m:
+            # record the on-disk path for convenience
+            m['_manifest_path'] = str(manifest_path)
+            manifests.append(m)
+
+    # sort by created_at if present, falling back to version string
+    def _key(mdict):
+        try:
+            return mdict.get('created_at') or mdict.get('version') or ''
+        except Exception:
+            return ''
+
+    manifests.sort(key=_key)
+    return manifests
+
+
+def latest_dataset(name: str, output_dir: str = 'datasets') -> Optional[dict]:
+    """Return the most recent manifest for datasets with the provided `name`.
+
+    If none found, returns None.
+    """
+    all_manifests = list_datasets(output_dir)
+    filtered = [m for m in all_manifests if m.get('name') == name]
+    if not filtered:
+        return None
+    # assume list_datasets sorted oldest->newest, so last is latest
+    return filtered[-1]

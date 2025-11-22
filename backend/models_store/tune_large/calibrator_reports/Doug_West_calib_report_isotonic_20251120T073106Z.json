@@ -1,0 +1,20 @@
+{
+  "player": "Doug West",
+  "method": "isotonic",
+  "created_at": "20251120T073106Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Doug_West_calibrator.pkl",
+  "before": {
+    "mse": 52.92065436627685,
+    "rmse": 7.274658367667643,
+    "mae": 5.411427911166263,
+    "brier": 65.37858276714768,
+    "ece": 0.024133581787820033
+  },
+  "after": {
+    "mse": 36.824019607843134,
+    "rmse": 6.068279789845153,
+    "mae": 4.598039215686275,
+    "brier": 65.76225490196079,
+    "ece": 0.0
+  }
+}

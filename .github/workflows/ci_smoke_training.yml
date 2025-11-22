@@ -1,0 +1,84 @@
+name: CI - Smoke Training
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'scripts/**'
+      - '.github/workflows/**'
+
+jobs:
+  smoke-training:
+    name: Smoke: training + calibrator
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+
+      - name: Run training orchestrator smoke test
+        run: |
+          pytest -q backend/tests/test_train_orchestrator_smoke.py
+
+      - name: Run new orchestrator+calibrator tests
+        run: |
+          # lightweight repo-root tests for orchestrator/calibrator behavior
+          pytest -q tests/test_orchestrator_calibrator.py
+
+      - name: Run calibration fitting smoke
+        run: |
+          # Prepare small fixture manifest, val parquet, and a simple model so compute step is exercised
+          python - <<'PY'
+import pandas as pd
+import numpy as np
+import joblib
+from pathlib import Path
+from sklearn.ensemble import RandomForestRegressor
+
+ROOT = Path('.')
+fx = ROOT / 'backend' / 'tests' / 'fixtures' / 'calib'
+fx.mkdir(parents=True, exist_ok=True)
+
+# create val dataframe
+dates = pd.date_range(start='2020-01-01', periods=6, freq='D')
+df = pd.DataFrame({
+    'player': ['Fixture Player']*6,
+    'game_date': dates,
+    'target': [1,2,1,2,1,2],
+    'lag_1': [0.5,1.0,2.0,1.0,2.0,1.0],
+    'lag_3_mean': [0.5,0.7,0.8,0.9,1.0,1.1],
+})
+val_path = fx / 'val_features.parquet'
+df.to_parquet(val_path)
+
+# manifest
+manifest = {'parts': {'val': {'files': {'features': str(val_path)}}}}
+import json
+(fx / 'manifest.json').write_text(json.dumps(manifest))
+
+# train a simple model and save
+models_dir = fx / 'models'
+models_dir.mkdir(parents=True, exist_ok=True)
+X = df[['lag_1','lag_3_mean']]
+y = df['target']
+model = RandomForestRegressor(n_estimators=10, random_state=0)
+model.fit(X, y)
+joblib.dump(model, str(models_dir / 'Fixture_Player.pkl'))
+print('Wrote fixtures to', fx)
+PY
+
+          # run compute script against fixtures
+          python scripts/compute_calibration_metrics.py --manifest backend/tests/fixtures/calib/manifest.json --models-dir backend/tests/fixtures/calib/models --report-json backend/tests/fixtures/calib/calibrator_report.json --csv-out backend/tests/fixtures/calib/calibration_metrics.csv
+
+      - name: Run calibration unit tests
+        run: |
+          pytest -q backend/tests/test_calibration_service_extra.py

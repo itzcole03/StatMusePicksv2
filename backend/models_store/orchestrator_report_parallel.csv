@@ -1,0 +1,22 @@
+player,train_rows,val_rows,test_rows,val_mae,test_mae,model_path
+Jim McIlvaine,111,24,23,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Jim_McIlvaine.pkl
+Grant Long,129,28,27,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Grant_Long.pkl
+Doug West,103,22,22,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Doug_West.pkl
+Byron Scott,140,30,30,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Byron_Scott.pkl
+Clifford Rozier,99,21,22,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Clifford_Rozier.pkl
+Dan Schayes,98,21,21,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Dan_Schayes.pkl
+Eric Riley,97,21,21,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Eric_Riley.pkl
+Luc Longley,93,20,20,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Luc_Longley.pkl
+Lorenzo Williams,92,20,19,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Lorenzo_Williams.pkl
+Richard Dumas,89,19,19,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Richard_Dumas.pkl
+Keith Jennings,83,18,18,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Keith_Jennings.pkl
+Clyde Drexler,80,17,18,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Clyde_Drexler.pkl
+Mario Elie,50,11,11,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Mario_Elie.pkl
+Dennis Rodman,47,10,10,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Dennis_Rodman.pkl
+Micheal Williams,44,9,10,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Micheal_Williams.pkl
+Dickey Simpkins,41,9,9,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Dickey_Simpkins.pkl
+Eric Piatkowski,41,9,8,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Eric_Piatkowski.pkl
+Wayman Tisdale,41,9,9,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Wayman_Tisdale.pkl
+Gary Payton,41,9,8,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Gary_Payton.pkl
+Monty Williams,36,8,7,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Monty_Williams.pkl
+Marty Conlon,36,8,7,,,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator_parallel\Marty_Conlon.pkl

@@ -1,0 +1,20 @@
+{
+  "player": "Eric Riley",
+  "method": "isotonic",
+  "created_at": "20251120T073109Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Eric_Riley_calibrator.pkl",
+  "before": {
+    "mse": 65.18737155118447,
+    "rmse": 8.07386967638099,
+    "mae": 6.3415298253937396,
+    "brier": 398.1128324934249,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 42.7415059687787,
+    "rmse": 6.537698828240614,
+    "mae": 5.178145087235996,
+    "brier": 366.10697887970616,
+    "ece": 0.0
+  }
+}

@@ -77,21 +77,41 @@ def run_migrations_online() -> None:
 
             inspector = inspect(connection)
             if inspector.has_table("alembic_version"):
-                cols = inspector.get_columns("alembic_version")
-                for col in cols:
-                    if col.get("name") == "version_num":
-                        col_type = col.get("type")
-                        length = getattr(col_type, "length", None)
-                        if length is None or (isinstance(length, int) and length < 64):
-                            try:
+                # Try several ALTER forms to handle PostgreSQL and other adapters.
+                # If ALTER fails (e.g., SQLite), attempt a safe SQLite-compatible
+                # workaround below.
+                try:
+                    connection.execute(
+                        text("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64);")
+                    )
+                except Exception:
+                    try:
+                        # Some Postgres setups require USING cast syntax.
+                        connection.execute(
+                            text("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64) USING version_num::VARCHAR;")
+                        )
+                    except Exception:
+                        # As a last resort for SQLite, try the safe copy/rename pattern.
+                        try:
+                            dialect_name = connection.dialect.name
+                            if dialect_name == "sqlite":
+                                # SQLite: recreate table with wider column.
+                                # This is best-effort and only runs when alembic_version exists.
                                 connection.execute(
-                                    text("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64);")
+                                    text(
+                                        "CREATE TABLE IF NOT EXISTS alembic_version_new (version_num VARCHAR(64) PRIMARY KEY);")
                                 )
-                            except Exception:
-                                # best-effort: if the ALTER fails (e.g., SQLite or insufficient privileges)
-                                # continue; migrations may still run in environments that don't need this.
-                                pass
-                        break
+                                connection.execute(
+                                    text(
+                                        "INSERT OR REPLACE INTO alembic_version_new (version_num) SELECT version_num FROM alembic_version;"
+                                    )
+                                )
+                                connection.execute(text("DROP TABLE alembic_version;"))
+                                connection.execute(text("ALTER TABLE alembic_version_new RENAME TO alembic_version;"))
+                        except Exception:
+                            # ignore any failure here — migrations will still proceed and
+                            # the underlying error will surface if this was insufficient.
+                            pass
         except Exception:
             # Keep migrations resilient to any unexpected inspection errors.
             pass

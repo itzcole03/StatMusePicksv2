@@ -1,0 +1,15 @@
+{
+  "generated_at": "20251121T035713Z",
+  "n_records": 358,
+  "summary": {
+    "start_bankroll": 1000.0,
+    "final_bankroll": 855.0,
+    "total_bets": 127,
+    "wins": 49,
+    "losses": 78,
+    "win_rate": 0.3858267716535433,
+    "total_profit": -145.0,
+    "roi": -0.145,
+    "avg_stake": 5.0
+  }
+}

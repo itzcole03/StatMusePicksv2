@@ -1,0 +1,20 @@
+{
+  "player": "Mario Elie",
+  "method": "isotonic",
+  "created_at": "20251120T073133Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Mario_Elie_calibrator.pkl",
+  "before": {
+    "mse": 97.89146902491476,
+    "rmse": 9.894011776065094,
+    "mae": 8.756001369431287,
+    "brier": 275.60547209876637,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 61.04761904761904,
+    "rmse": 7.813297578335222,
+    "mae": 6.346320346320346,
+    "brier": 186.95238095238093,
+    "ece": 0.0
+  }
+}

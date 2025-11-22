@@ -1,0 +1,1 @@
+{"parts": {"train": {"files": {"features": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\tmp_debug\\data\\train.parquet"}}, "val": {"files": {"features": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\tmp_debug\\data\\val.parquet"}}, "test": {"files": {"features": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\tmp_debug\\data\\test.parquet"}}}}

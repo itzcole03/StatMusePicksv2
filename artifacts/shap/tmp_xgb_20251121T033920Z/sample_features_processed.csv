@@ -1,0 +1,3 @@
+start_bankroll,final_bankroll,total_bets,wins,losses,win_rate,total_profit,roi,avg_stake,mode_flat,mode_kelly
+1000.0,1300.0,6,6,0,1.0,300.0,0.3,50.0,True,False
+1000.0,1771.561,6,6,0,1.0,771.561,0.7715609999999999,128.5935,False,True

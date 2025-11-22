@@ -1,0 +1,20 @@
+{
+  "player": "Jim McIlvaine",
+  "method": "isotonic",
+  "created_at": "20251120T072746Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\test_tune\\Jim_McIlvaine_calibrator.pkl",
+  "before": {
+    "mse": 101.80488702774593,
+    "rmse": 10.089840783072146,
+    "mae": 7.731469521592208,
+    "brier": 726.2325539673899,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 66.34017857142858,
+    "rmse": 8.14494803982374,
+    "mae": 6.207738095238096,
+    "brier": 976.2348214285714,
+    "ece": 0.0
+  }
+}

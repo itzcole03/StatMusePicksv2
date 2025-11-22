@@ -1,0 +1,32 @@
+{
+  "Byron Scott": {
+    "brier_raw": 0.24555555555555547,
+    "brier_cal": 0.24555555555555547,
+    "saved": true,
+    "n_val": 30
+  },
+  "Chris King": {
+    "brier_raw": 0.22222222222222224,
+    "brier_cal": 0.22222222222222224,
+    "saved": true,
+    "n_val": 6
+  },
+  "Clifford Rozier": {
+    "brier_raw": 0.22222222222222218,
+    "brier_cal": 0.22222222222222218,
+    "saved": true,
+    "n_val": 21
+  },
+  "Clyde Drexler": {
+    "brier_raw": 0.24913494809688583,
+    "brier_cal": 0.24913494809688583,
+    "saved": true,
+    "n_val": 17
+  },
+  "Dan Schayes": {
+    "brier_raw": 0.24489795918367352,
+    "brier_cal": 0.24489795918367352,
+    "saved": true,
+    "n_val": 21
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "player": "Clyde Drexler",
+  "method": "isotonic",
+  "created_at": "20251120T073121Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Clyde_Drexler_calibrator.pkl",
+  "before": {
+    "mse": 26.922856803515028,
+    "rmse": 5.188724005332624,
+    "mae": 4.07112823555794,
+    "brier": 56.436417370024664,
+    "ece": 0.01825049344858452
+  },
+  "after": {
+    "mse": 17.44,
+    "rmse": 4.17612260356422,
+    "mae": 3.506666666666667,
+    "brier": 48.92,
+    "ece": 0.0
+  }
+}

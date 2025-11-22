@@ -68,7 +68,7 @@ jobs:
         run: |
           mkdir -p logs
           # Capture alembic output to a log file for debugging
-          alembic -c backend/alembic.ini upgrade head 2>&1 | tee logs/alembic.log
+          alembic -c backend/alembic.ini upgrade heads 2>&1 | tee logs/alembic.log
 
       - name: Run smoke tests
         env:
@@ -144,7 +144,7 @@ jobs:
         run: |
           mkdir -p logs
           # Capture alembic output to a log file for debugging
-          alembic -c backend/alembic.ini upgrade head 2>&1 | tee logs/alembic.log
+          alembic -c backend/alembic.ini upgrade heads 2>&1 | tee logs/alembic.log
 
       - name: Run smoke tests (Postgres)
         env:

@@ -1,0 +1,20 @@
+{
+  "player": "Gary Payton",
+  "method": "isotonic",
+  "created_at": "20251120T073137Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Gary_Payton_calibrator.pkl",
+  "before": {
+    "mse": 20.734279928839932,
+    "rmse": 4.553490960663031,
+    "mae": 3.782401734757272,
+    "brier": 4.261831298650947,
+    "ece": 0.06384630251387048
+  },
+  "after": {
+    "mse": 7.3015873015873005,
+    "rmse": 2.702144944592592,
+    "mae": 1.9365079365079367,
+    "brier": 19.571428571428573,
+    "ece": 0.0
+  }
+}

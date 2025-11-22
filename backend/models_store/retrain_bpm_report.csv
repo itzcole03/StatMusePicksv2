@@ -1,0 +1,3 @@
+experiment,rmse_cv,model_path
+baseline_no_BPM,1.4704739671680425,backend\models_store\retrain_baseline.pkl
+with_BPM,1.6898982702368694,backend\models_store\retrain_with_bpm.pkl

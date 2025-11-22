@@ -1,0 +1,20 @@
+{
+  "player": "Richard Dumas",
+  "method": "isotonic",
+  "created_at": "20251120T073119Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Richard_Dumas_calibrator.pkl",
+  "before": {
+    "mse": 102.9831405070167,
+    "rmse": 10.14806092349749,
+    "mae": 7.683034760500997,
+    "brier": 674.2495366204159,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 76.81661442006272,
+    "rmse": 8.764508795138648,
+    "mae": 6.867293625914315,
+    "brier": 541.5167189132708,
+    "ece": 0.0
+  }
+}

@@ -1,0 +1,30 @@
+name: Dataset QA
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'backend/**'
+      - 'src/**'
+      - '.github/workflows/**'
+
+jobs:
+  dataset-qa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt || true
+          pip install pandas pyarrow sqlalchemy || true
+      - name: Run dataset QA (DB optional)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || '' }}
+        run: |
+          python scripts/generate_datasets.py --seasons 2024-25 --min-games 50 --name ci_points_dataset --stat points --db-only || true
+          python scripts/qa_dataset_checks.py --manifest backend/data/datasets/ci_points_dataset_v*/*/dataset_manifest.json || true

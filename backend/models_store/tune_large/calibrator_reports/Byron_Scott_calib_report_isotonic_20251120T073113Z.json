@@ -1,0 +1,20 @@
+{
+  "player": "Byron Scott",
+  "method": "isotonic",
+  "created_at": "20251120T073113Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Byron_Scott_calibrator.pkl",
+  "before": {
+    "mse": 129.0822654772728,
+    "rmse": 11.361437650107174,
+    "mae": 8.777501167843328,
+    "brier": 673.133114663294,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 55.75632183908045,
+    "rmse": 7.467015591190395,
+    "mae": 5.75632183908046,
+    "brier": 436.1436781609196,
+    "ece": 0.0
+  }
+}

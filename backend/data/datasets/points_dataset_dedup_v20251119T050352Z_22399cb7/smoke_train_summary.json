@@ -1,0 +1,32 @@
+[
+  {
+    "player": "Byron Scott",
+    "val_mae": 21.833333333333332,
+    "test_mae": 27.766666666666666,
+    "model_path": "c:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\smoke\\Byron_Scott.pkl"
+  },
+  {
+    "player": "Chris King",
+    "val_mae": 1.6666666666666667,
+    "test_mae": 3.5,
+    "model_path": "c:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\smoke\\Chris_King.pkl"
+  },
+  {
+    "player": "Clifford Rozier",
+    "val_mae": 10.476190476190476,
+    "test_mae": 8.454545454545455,
+    "model_path": "c:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\smoke\\Clifford_Rozier.pkl"
+  },
+  {
+    "player": "Clyde Drexler",
+    "val_mae": 5.764705882352941,
+    "test_mae": 9.222222222222221,
+    "model_path": "c:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\smoke\\Clyde_Drexler.pkl"
+  },
+  {
+    "player": "Dan Schayes",
+    "val_mae": 5.714285714285714,
+    "test_mae": 6.666666666666667,
+    "model_path": "c:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\smoke\\Dan_Schayes.pkl"
+  }
+]

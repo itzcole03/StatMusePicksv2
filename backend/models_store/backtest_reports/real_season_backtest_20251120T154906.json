@@ -1,0 +1,15 @@
+{
+  "generated_at": "20251120T214906Z",
+  "summary": {
+    "start_bankroll": 1000.0,
+    "final_bankroll": 1000.0,
+    "total_bets": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0.0,
+    "total_profit": 0.0,
+    "roi": 0.0,
+    "avg_stake": 0.0
+  },
+  "n_records": 2
+}

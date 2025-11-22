@@ -1,0 +1,9 @@
+{
+  "baseline_rmse": 1.4704739671680425,
+  "with_bpm_rmse": 1.6898982702368694,
+  "report_csv": "backend\\models_store\\retrain_bpm_report.csv",
+  "models": [
+    "backend\\models_store\\retrain_baseline.pkl",
+    "backend\\models_store\\retrain_with_bpm.pkl"
+  ]
+}

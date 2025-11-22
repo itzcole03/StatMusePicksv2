@@ -1,0 +1,16 @@
+{
+  "name": "test_dataset",
+  "version": "20251120T081709Z",
+  "uid": "484c8640",
+  "created_at": "2025-11-20T08:17:09.154223Z",
+  "rows": 16,
+  "columns": [
+    "player",
+    "game_date",
+    "feature1"
+  ],
+  "files": {
+    "features": "backend\\models_store\\datasets_test\\test_dataset_v20251120T081709Z_484c8640\\features.parquet",
+    "labels": "backend\\models_store\\datasets_test\\test_dataset_v20251120T081709Z_484c8640\\labels.parquet"
+  }
+}

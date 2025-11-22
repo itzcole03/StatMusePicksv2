@@ -28,7 +28,7 @@ jobs:
         env:
           DATABASE_URL: sqlite+aiosqlite:///./dev_ci.db
         run: |
-          python -m alembic -c backend/alembic.ini upgrade head
+          python -m alembic -c backend/alembic.ini upgrade heads
 
       - name: Run tests
         env:

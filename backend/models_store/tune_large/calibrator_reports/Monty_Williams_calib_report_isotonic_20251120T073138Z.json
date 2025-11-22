@@ -1,0 +1,20 @@
+{
+  "player": "Monty Williams",
+  "method": "isotonic",
+  "created_at": "20251120T073138Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Monty_Williams_calibrator.pkl",
+  "before": {
+    "mse": 17.20932615009289,
+    "rmse": 4.148412485528999,
+    "mae": 3.5420787295662675,
+    "brier": 3.517629005352065,
+    "ece": 0.19000658726709158
+  },
+  "after": {
+    "mse": 10.649999999999999,
+    "rmse": 3.2634337744161437,
+    "mae": 2.8,
+    "brier": 8.575,
+    "ece": 0.0
+  }
+}

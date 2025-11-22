@@ -1,0 +1,20 @@
+{
+  "player": "Luc Longley",
+  "method": "isotonic",
+  "created_at": "20251120T073115Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Luc_Longley_calibrator.pkl",
+  "before": {
+    "mse": 13.043072176049852,
+    "rmse": 3.61151937223793,
+    "mae": 3.0322714462699403,
+    "brier": 75.48339322914384,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 5.921726190476191,
+    "rmse": 2.433459716222192,
+    "mae": 2.080952380952381,
+    "brier": 69.34494047619047,
+    "ece": 0.0
+  }
+}

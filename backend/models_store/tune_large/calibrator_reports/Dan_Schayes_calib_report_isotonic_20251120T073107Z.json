@@ -1,0 +1,20 @@
+{
+  "player": "Dan Schayes",
+  "method": "isotonic",
+  "created_at": "20251120T073107Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Dan_Schayes_calibrator.pkl",
+  "before": {
+    "mse": 55.00806340767251,
+    "rmse": 7.416742102006278,
+    "mae": 5.062865101832591,
+    "brier": 30.706045631460405,
+    "ece": 0.00978549155309986
+  },
+  "after": {
+    "mse": 40.12708333333333,
+    "rmse": 6.334594172741718,
+    "mae": 4.5,
+    "brier": 60.20625,
+    "ece": 0.0
+  }
+}
