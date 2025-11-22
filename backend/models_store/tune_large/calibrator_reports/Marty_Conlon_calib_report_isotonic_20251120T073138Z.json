@@ -1,0 +1,20 @@
+{
+  "player": "Marty Conlon",
+  "method": "isotonic",
+  "created_at": "20251120T073138Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Marty_Conlon_calibrator.pkl",
+  "before": {
+    "mse": 19.368512526880572,
+    "rmse": 4.400967226290213,
+    "mae": 3.886384744021158,
+    "brier": 20.64517285545688,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 7.75,
+    "rmse": 2.7838821814150108,
+    "mae": 2.25,
+    "brier": 3.75,
+    "ece": 0.0
+  }
+}

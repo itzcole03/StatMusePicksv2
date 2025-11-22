@@ -1,0 +1,20 @@
+{
+  "player": "Dennis Rodman",
+  "method": "isotonic",
+  "created_at": "20251120T073126Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Dennis_Rodman_calibrator.pkl",
+  "before": {
+    "mse": 73.94077210772289,
+    "rmse": 8.598882026619675,
+    "mae": 7.064102404541704,
+    "brier": 146.24307404186268,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 27.784999999999997,
+    "rmse": 5.27114788257738,
+    "mae": 4.396666666666667,
+    "brier": 333.815,
+    "ece": 0.0
+  }
+}

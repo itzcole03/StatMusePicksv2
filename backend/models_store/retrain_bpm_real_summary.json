@@ -1,0 +1,10 @@
+{
+  "baseline_rmse": 7.916022020843112,
+  "with_bpm_rmse": 7.912971713625751,
+  "report_csv": "backend\\models_store\\retrain_bpm_real_report.csv",
+  "models": [
+    "backend\\models_store\\retrain_real_baseline_real.pkl",
+    "backend\\models_store\\retrain_real_with_bpm_real.pkl"
+  ],
+  "manifest": "backend\\data\\datasets\\points_dataset_v20251121T235153Z_c71436ea\\dataset_manifest.json"
+}

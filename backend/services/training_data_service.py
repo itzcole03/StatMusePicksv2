@@ -34,7 +34,7 @@ def _extract_stat_from_game(g: dict, stat_field: str):
 def _parse_date(dstr: str) -> Optional[datetime.date]:
     if not dstr:
         return None
-    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ"):
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ", "%b %d, %Y", "%B %d, %Y"):
         try:
             return datetime.datetime.strptime(dstr, fmt).date()
         except Exception:
@@ -451,3 +451,59 @@ def export_dataset_with_version(df: pd.DataFrame, y: Optional[pd.Series] = None,
         json.dump(manifest, f, indent=2, default=str)
 
     return manifest
+
+
+def read_manifest(manifest_path: str) -> Optional[dict]:
+    """Read a manifest.json file and return the parsed dict, or None if missing/invalid."""
+    try:
+        p = Path(manifest_path)
+        if not p.exists():
+            return None
+        with open(p, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def list_datasets(output_dir: str = 'datasets') -> list:
+    """List all dataset manifests under `output_dir`.
+
+    Returns a list of manifest dicts (only those that could be read).
+    """
+    outp = Path(output_dir)
+    if not outp.exists() or not outp.is_dir():
+        return []
+
+    manifests = []
+    for child in outp.iterdir():
+        if not child.is_dir():
+            continue
+        manifest_path = child / 'manifest.json'
+        m = read_manifest(str(manifest_path))
+        if m:
+            # record the on-disk path for convenience
+            m['_manifest_path'] = str(manifest_path)
+            manifests.append(m)
+
+    # sort by created_at if present, falling back to version string
+    def _key(mdict):
+        try:
+            return mdict.get('created_at') or mdict.get('version') or ''
+        except Exception:
+            return ''
+
+    manifests.sort(key=_key)
+    return manifests
+
+
+def latest_dataset(name: str, output_dir: str = 'datasets') -> Optional[dict]:
+    """Return the most recent manifest for datasets with the provided `name`.
+
+    If none found, returns None.
+    """
+    all_manifests = list_datasets(output_dir)
+    filtered = [m for m in all_manifests if m.get('name') == name]
+    if not filtered:
+        return None
+    # assume list_datasets sorted oldest->newest, so last is latest
+    return filtered[-1]

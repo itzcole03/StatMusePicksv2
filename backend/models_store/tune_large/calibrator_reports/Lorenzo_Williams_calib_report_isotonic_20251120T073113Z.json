@@ -1,0 +1,20 @@
+{
+  "player": "Lorenzo Williams",
+  "method": "isotonic",
+  "created_at": "20251120T073113Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Lorenzo_Williams_calibrator.pkl",
+  "before": {
+    "mse": 70.634452573538,
+    "rmse": 8.404430532376242,
+    "mae": 6.778656329261284,
+    "brier": 155.62042006415177,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 43.40380341880343,
+    "rmse": 6.588156298905137,
+    "mae": 5.317264957264956,
+    "brier": 258.1961965811966,
+    "ece": 0.0
+  }
+}

@@ -82,6 +82,29 @@ def _train_worker(kwargs: dict) -> dict:
                     df[c] = 0.0
 
         train_for_model = train_df[feat_cols + ["target"]].reset_index(drop=True)
+        # optional hyperparameter tuning for RandomForest component
+        tune_info = None
+        if kwargs.get("tune", False):
+            try:
+                from backend.services.training_pipeline import tune_random_forest_hyperparams
+                # use train + val where available for tuning
+                tune_df = pd.concat([train_df, val_df], ignore_index=True) if val_df.shape[0] > 0 else train_df
+                tune_df = build_lag_features(tune_df) if tune_df.shape[0] > 0 else tune_df
+                # ensure required feature columns exist
+                for c in feat_cols:
+                    if c not in tune_df.columns:
+                        tune_df[c] = 0.0
+                tune_df_for = tune_df[feat_cols + ["target"]].reset_index(drop=True)
+                n_trials = int(kwargs.get("tune_trials", 20))
+                best = tune_random_forest_hyperparams(tune_df_for, target_col="target", n_trials=n_trials)
+                tune_info = {"best_params": best, "n_trials": n_trials}
+                # persist best params to disk next to models
+                params_path = Path(out_dir) / f"{player}_best_rf_params.json"
+                with open(params_path, "w", encoding="utf8") as pf:
+                    json.dump({"player": player, "best_params": best, "n_trials": n_trials}, pf)
+            except Exception:
+                tune_info = None
+
         model = train_player_model(train_for_model, target_col="target")
 
         registry = ModelRegistry(model_dir=str(out_dir))
@@ -136,6 +159,7 @@ def _train_worker(kwargs: dict) -> dict:
             "test_mae": None,
             "model_path": registry._model_path(player),
             "cal_info": cal_info,
+            "tune_info": tune_info,
         }
     except Exception as e:
         return {"player": player, "status": "failed", "error": str(e)}
@@ -165,7 +189,7 @@ def build_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def main(manifest: str, min_games: int, out_dir: str, report_csv: str, limit: int | None, workers: int = 1, fit_calibrators: bool = False):
+def main(manifest: str, min_games: int, out_dir: str, report_csv: str, limit: int | None, workers: int = 1, fit_calibrators: bool = False, tune: bool = False, tune_trials: int = 20):
     manifest_path = Path(manifest)
     m = load_manifest(manifest_path)
 
@@ -198,6 +222,8 @@ def main(manifest: str, min_games: int, out_dir: str, report_csv: str, limit: in
             "player": player,
             "out_dir": str(out_dir),
             "fit_calibrator": bool(fit_calibrators),
+            "tune": bool(tune),
+            "tune_trials": int(tune_trials),
         })
 
     report_rows = []
@@ -250,5 +276,17 @@ if __name__ == "__main__":
     p.add_argument("--limit", type=int, default=None, help="Limit number of players to train (for smoke)" )
     p.add_argument("--workers", type=int, default=1, help="Number of parallel worker processes to use")
     p.add_argument("--fit-calibrators", action="store_true", help="Fit calibrators from validation set when available")
+    p.add_argument("--tune", action="store_true", help="Run RF hyperparameter tuning per-player before training and persist best params")
+    p.add_argument("--tune-trials", type=int, default=20, help="Number of Optuna trials to run when --tune is set")
     args = p.parse_args()
-    main(args.manifest, args.min_games, args.out_dir, args.report_csv, args.limit, workers=args.workers, fit_calibrators=args.fit_calibrators)
+    main(
+        args.manifest,
+        args.min_games,
+        args.out_dir,
+        args.report_csv,
+        args.limit,
+        workers=args.workers,
+        fit_calibrators=args.fit_calibrators,
+        tune=args.tune,
+        tune_trials=args.tune_trials,
+    )

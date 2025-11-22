@@ -1,0 +1,20 @@
+{
+  "player": "Dickey Simpkins",
+  "method": "isotonic",
+  "created_at": "20251120T073132Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Dickey_Simpkins_calibrator.pkl",
+  "before": {
+    "mse": 81.49755567721934,
+    "rmse": 9.027599663100892,
+    "mae": 7.077217758851429,
+    "brier": 216.97908650013747,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 39.65277777777778,
+    "rmse": 6.29704516243752,
+    "mae": 4.777777777777778,
+    "brier": 130.79166666666666,
+    "ece": 0.0
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "player": "Sedale Threatt",
+  "method": "isotonic",
+  "created_at": "20251120T073127Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Sedale_Threatt_calibrator.pkl",
+  "before": {
+    "mse": 21.493022588298437,
+    "rmse": 4.636056793040659,
+    "mae": 3.1930583828171324,
+    "brier": 105.64051751185336,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 11.176923076923076,
+    "rmse": 3.343190553486755,
+    "mae": 2.323076923076923,
+    "brier": 172.1307692307692,
+    "ece": 0.0
+  }
+}

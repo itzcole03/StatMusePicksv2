@@ -1,0 +1,25 @@
+player,train_rows,val_rows,test_rows,val_mae,test_mae,model_path
+Doug West,158,34,33,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Doug_West.pkl
+Dan Schayes,185,40,39,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Dan_Schayes.pkl
+Jim McIlvaine,186,40,39,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Jim_McIlvaine.pkl
+Eric Riley,153,33,33,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Eric_Riley.pkl
+Byron Scott,140,30,30,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Byron_Scott.pkl
+Clifford Rozier,150,32,32,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Clifford_Rozier.pkl
+Lorenzo Williams,140,30,30,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Lorenzo_Williams.pkl
+Luc Longley,139,30,29,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Luc_Longley.pkl
+Richard Dumas,137,29,30,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Richard_Dumas.pkl
+Eric Piatkowski,122,26,26,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Eric_Piatkowski.pkl
+Grant Long,129,28,27,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Grant_Long.pkl
+Clyde Drexler,115,25,24,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Clyde_Drexler.pkl
+Keith Jennings,111,24,24,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Keith_Jennings.pkl
+Dennis Rodman,94,20,20,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Dennis_Rodman.pkl
+Chris King,79,17,17,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Chris_King.pkl
+Sedale Threatt,61,13,13,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Sedale_Threatt.pkl
+Micheal Williams,44,9,10,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Micheal_Williams.pkl
+Dickey Simpkins,41,9,9,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Dickey_Simpkins.pkl
+Greg Anthony,50,11,11,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Greg_Anthony.pkl
+Mario Elie,50,11,11,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Mario_Elie.pkl
+Gary Payton,41,9,8,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Gary_Payton.pkl
+Wayman Tisdale,41,9,9,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Wayman_Tisdale.pkl
+Monty Williams,36,8,7,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Monty_Williams.pkl
+Marty Conlon,36,8,7,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\tune_large\Marty_Conlon.pkl

@@ -175,6 +175,14 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
         "multi_season_PTS_avg": float(season_agg.get("PTS") or 0.0),
         "multi_season_count": int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
     })
+    # Include multi-season BPM when available (or 0.0)
+    try:
+        multi_bpm = adv_agg.get("BPM") or adv_agg.get("BPM_48") or adv_agg.get("BPM_approx") or 0.0
+    except Exception:
+        multi_bpm = 0.0
+    features.update({
+        "multi_BPM": float(multi_bpm),
+    })
     # Additional advanced/team aggregated metrics
     features.update({
         "multi_PIE": float(adv_agg.get("PIE") or 0.0),
@@ -335,12 +343,70 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         'multi_season_PTS_avg': float(season_agg.get('PTS') or 0.0),
         'multi_season_count': int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
     })
+    # include aggregated BPM when available
+    try:
+        features['multi_BPM'] = float(adv_agg.get('BPM') or adv_agg.get('BPM_48') or adv_agg.get('BPM_approx') or 0.0)
+    except Exception:
+        features['multi_BPM'] = 0.0
     # Additional advanced/team aggregated metrics (DataFrame path)
     features.update({
         'multi_PIE': float(adv_agg.get('PIE') or 0.0),
         'multi_off_rating': float(adv_agg.get('OFF_RATING') or 0.0),
         'multi_def_rating': float(adv_agg.get('DEF_RATING') or 0.0),
     })
+
+    # --- Phase 3 wiring: attempt to enrich features with advanced metrics and LLM-derived features
+    try:
+        # Advanced metrics (PER, TS%, USG%, ORtg/DRtg) fetched when available
+        from backend.services.advanced_metrics_service import create_default_service as _create_adv
+
+        adv_svc = _create_adv()
+        pid = player_data.get('player_id') or player_data.get('playerId') or player_data.get('playerName')
+        if pid:
+            try:
+                adv = adv_svc.fetch_advanced_metrics(str(pid))
+                if adv:
+                    # merge into features using safe keys
+                    features['adv_PER'] = float(adv.get('PER') or 0.0)
+                    features['adv_TS_pct'] = float(adv.get('TS_pct') or 0.0)
+                    features['adv_USG_pct'] = float(adv.get('USG_pct') or 0.0)
+                    features['adv_ORtg'] = float(adv.get('ORtg') or 0.0)
+                    features['adv_DRtg'] = float(adv.get('DRtg') or 0.0)
+                    # BPM (or approximate BPM) when available
+                    try:
+                        features['adv_BPM'] = float(adv.get('BPM') or adv.get('BPM_48') or adv.get('BPM_approx') or 0.0)
+                    except Exception:
+                        features['adv_BPM'] = 0.0
+            except Exception:
+                # non-fatal: continue if service call fails
+                pass
+    except Exception:
+        # service module may not be present in some lightweight dev environments
+        pass
+
+    try:
+        # LLM-derived qualitative features: injury sentiment, morale, motivation
+        from backend.services.llm_feature_service import create_default_service as _create_llm
+
+        llm_svc = _create_llm()
+        # text_fetcher: prefer prepopulated summary in player_data, fallback to empty
+        def _text_fetcher(name: str) -> str:
+            return player_data.get('news_summary') or player_data.get('news') or ""
+
+        pname = player_data.get('playerName') or player_data.get('player_name') or str(player_data.get('player_id') or '')
+        try:
+            llm_feats = llm_svc.fetch_news_and_extract(pname, 'news_v1', _text_fetcher)
+            if llm_feats:
+                # expected keys: injury_sentiment, morale_score, motivation
+                features.update({
+                    'injury_sentiment': float(llm_feats.get('injury_sentiment') or 0.0),
+                    'morale_score': float(llm_feats.get('morale_score') or 0.0),
+                    'motivation': float(llm_feats.get('motivation') or 0.0),
+                })
+        except Exception:
+            pass
+    except Exception:
+        pass
 
     # opponent features (optional)
     if opponent_data:

@@ -98,6 +98,27 @@ class CalibrationService:
         except Exception:
             logger.exception('Failed to persist calibrator for %s', player_name)
 
+        # Write a per-player calibration report (JSON) into the model store
+        try:
+            reports_dir = self.registry.model_dir
+            reports_dir = os.path.join(reports_dir, 'calibrator_reports')
+            os.makedirs(reports_dir, exist_ok=True)
+            ts = datetime.datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+            safe = player_name.replace(' ', '_')
+            report_path = os.path.join(reports_dir, f"{safe}_calib_report_{method}_{ts}.json")
+            report = {
+                'player': player_name,
+                'method': method,
+                'created_at': ts,
+                'calibrator_path': os.path.abspath(self.registry._calibrator_path(player_name)) if hasattr(self.registry, '_calibrator_path') else None,
+                'before': before,
+                'after': after,
+            }
+            with open(report_path, 'w', encoding='utf-8') as fh:
+                json.dump(report, fh, indent=2, default=str)
+        except Exception:
+            logger.exception('Failed to write calibrator report for %s', player_name)
+
         # Attempt to persist calibration metrics into model_metadata table
         try:
             from backend.models.model_metadata import ModelMetadata  # local import

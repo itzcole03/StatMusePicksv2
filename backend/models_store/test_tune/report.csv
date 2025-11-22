@@ -1,0 +1,3 @@
+player,train_rows,val_rows,test_rows,val_mae,test_mae,model_path
+Jim McIlvaine,186,40,39,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\test_tune\Jim_McIlvaine.pkl
+Dan Schayes,185,40,39,,,C:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\test_tune\Dan_Schayes.pkl

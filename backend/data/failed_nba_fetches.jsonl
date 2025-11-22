@@ -144,3 +144,6 @@
 {"kind": "player", "id": 1642358, "reason": "fetch_recent_games"}
 {"kind": "player", "id": 999, "reason": "fetch_recent_games"}
 {"kind": "player", "id": 777, "reason": "fetch_recent_games"}
+{"kind": "player", "id": 2544, "reason": "fetch_recent_games"}
+{"kind": "team", "id": 30, "reason": "fetch_team_games"}
+{"kind": "team", "id": 30, "reason": "fetch_team_games"}
