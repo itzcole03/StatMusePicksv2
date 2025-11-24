@@ -1,0 +1,12 @@
+{
+  "name": "retrain_tracking_20251124T083544Z",
+  "version": "v20251124T083544Z",
+  "notes": "tracking retrain",
+  "kept_contextual_features": [
+    "trk_avg_speed_mph",
+    "trk_distance_miles_per_game",
+    "trk_touches_per_game",
+    "trk_time_possession_sec_per_game",
+    "trk_exp_fg_pct"
+  ]
+}

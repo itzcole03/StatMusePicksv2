@@ -1,0 +1,11 @@
+player,train_rows,val_rows,test_rows,val_mae,test_mae,model_path
+Byron Scott,140,30,30,21.833333333333332,27.766666666666666,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Byron_Scott.pkl
+Grant Long,129,28,27,27.107142857142858,25.85185185185185,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Grant_Long.pkl
+Jim McIlvaine,111,24,23,31.541666666666668,27.304347826086957,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Jim_McIlvaine.pkl
+Doug West,103,22,22,10.272727272727273,10.0,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Doug_West.pkl
+Clifford Rozier,99,21,22,10.476190476190476,8.454545454545455,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Clifford_Rozier.pkl
+Dan Schayes,98,21,21,5.714285714285714,6.666666666666667,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Dan_Schayes.pkl
+Eric Riley,97,21,21,19.428571428571427,19.047619047619047,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Eric_Riley.pkl
+Luc Longley,93,20,20,9.85,9.45,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Luc_Longley.pkl
+Lorenzo Williams,92,20,19,16.65,14.736842105263158,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Lorenzo_Williams.pkl
+Richard Dumas,89,19,19,22.526315789473685,22.842105263157894,c:\Users\bcmad\Downloads\StatMusePicksv2\backend\models_store\orchestrator\Richard_Dumas.pkl

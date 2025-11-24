@@ -1,0 +1,20 @@
+{
+  "player": "Clifford Rozier",
+  "method": "isotonic",
+  "created_at": "20251120T073113Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Clifford_Rozier_calibrator.pkl",
+  "before": {
+    "mse": 21.897896829151605,
+    "rmse": 4.679518867271677,
+    "mae": 3.4511855211287115,
+    "brier": 102.04627615867274,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 14.973958333333334,
+    "rmse": 3.8696199210430646,
+    "mae": 2.8645833333333335,
+    "brier": 123.609375,
+    "ece": 0.0
+  }
+}

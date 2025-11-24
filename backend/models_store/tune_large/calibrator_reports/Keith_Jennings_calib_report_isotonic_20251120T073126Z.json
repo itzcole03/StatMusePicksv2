@@ -1,0 +1,20 @@
+{
+  "player": "Keith Jennings",
+  "method": "isotonic",
+  "created_at": "20251120T073126Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Keith_Jennings_calibrator.pkl",
+  "before": {
+    "mse": 23.379399359899654,
+    "rmse": 4.835224851017753,
+    "mae": 3.491973593274132,
+    "brier": 48.356247270549346,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 10.068840579710145,
+    "rmse": 3.1731436430943596,
+    "mae": 2.673913043478261,
+    "brier": 21.702898550724637,
+    "ece": 0.0
+  }
+}

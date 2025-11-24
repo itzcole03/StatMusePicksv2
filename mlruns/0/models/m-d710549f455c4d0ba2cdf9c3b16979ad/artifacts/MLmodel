@@ -1,0 +1,22 @@
+artifact_path: file:C:/Users/bcmad/Downloads/StatMusePicksv2/mlruns/0/models/m-d710549f455c4d0ba2cdf9c3b16979ad/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.5
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.6.0
+model_id: m-d710549f455c4d0ba2cdf9c3b16979ad
+model_size_bytes: 248423
+model_uuid: m-d710549f455c4d0ba2cdf9c3b16979ad
+prompts: null
+run_id: 015c6ea094ff4a718e6565f6fdd79a39
+utc_time_created: '2025-11-23 04:43:29.895665'

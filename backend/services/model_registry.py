@@ -134,16 +134,75 @@ class ModelRegistry:
             sync_url = _sync_db_url(raw_db)
             engine = create_engine(sync_url, future=True)
             with engine.begin() as conn:
-                ins = ModelMetadata.__table__.insert().values(
+                # If the model object carries `_kept_contextual_features`, attempt
+                # to persist it into the DB JSON column. For DBs that don't
+                # support native JSON, fall back to storing a JSON string.
+                kept = None
+                try:
+                    kept = getattr(model, '_kept_contextual_features', None)
+                    if kept is not None:
+                        # Normalize to a plain list
+                        kept_val = list(kept)
+                    else:
+                        kept_val = None
+                except Exception:
+                    kept_val = None
+
+                ins_kwargs = dict(
                     name=player_name,
                     version=version,
                     path=os.path.abspath(path),
                     notes=notes,
                 )
-                conn.execute(ins)
+                if kept_val is not None:
+                    ins_kwargs['kept_contextual_features'] = kept_val
+
+                try:
+                    ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
+                    conn.execute(ins)
+                except Exception:
+                    # Fallback: if DB doesn't accept native Python list for JSON,
+                    # serialize to JSON string and try again (best-effort).
+                    try:
+                        import json as _json
+                        if 'kept_contextual_features' in ins_kwargs and ins_kwargs['kept_contextual_features'] is not None:
+                            ins_kwargs['kept_contextual_features'] = _json.dumps(ins_kwargs['kept_contextual_features'])
+                        ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
+                        conn.execute(ins)
+                    except Exception:
+                        # Give up gracefully; DB persistence is best-effort here.
+                        logger.exception("Failed to insert ModelMetadata (with kept_contextual_features) for %s", player_name)
             logger.info("Inserted ModelMetadata row for %s", player_name)
         except Exception:
             logger.exception("Failed to persist ModelMetadata for %s", player_name)
+
+        # Save a compact JSON sidecar next to the model file containing
+        # additional metadata such as kept contextual features. This avoids
+        # requiring a DB migration and provides an easy way to inspect
+        # model-specific feature choices later.
+        try:
+            meta = {
+                'name': player_name,
+                'version': version,
+                'notes': notes,
+            }
+            # If model object carries a kept contextual features attribute,
+            # record it in the sidecar for later inspection.
+            kept = None
+            try:
+                kept = getattr(model, '_kept_contextual_features', None)
+            except Exception:
+                kept = None
+            if kept is not None:
+                meta['kept_contextual_features'] = list(kept)
+
+            import json
+            sidecar = os.path.splitext(path)[0] + "_metadata.json"
+            with open(sidecar, 'w', encoding='utf-8') as fh:
+                json.dump(meta, fh, indent=2)
+            logger.info("Wrote model sidecar metadata to %s", sidecar)
+        except Exception:
+            logger.exception("Failed to write model sidecar metadata for %s", player_name)
 
     def load_model(self, player_name: str):
         path = self._model_path(player_name)

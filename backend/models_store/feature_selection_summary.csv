@@ -1,0 +1,13 @@
+feature,corr_count,rfe_count,total_count
+adv_WS,544,542,1086
+last_10_avg,539,541,1080
+adv_PER,537,542,1079
+last_5_avg,538,516,1054
+last_3_avg,538,501,1039
+last_3_std,527,502,1029
+days_rest,513,152,665
+is_home,528,26,554
+multi_PER,0,2,2
+multi_TS_PCT,0,2,2
+multi_WS,0,2,2
+multi_season_PTS_avg,0,2,2

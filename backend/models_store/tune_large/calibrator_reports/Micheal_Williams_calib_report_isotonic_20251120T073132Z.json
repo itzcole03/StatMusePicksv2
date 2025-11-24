@@ -1,0 +1,20 @@
+{
+  "player": "Micheal Williams",
+  "method": "isotonic",
+  "created_at": "20251120T073132Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Micheal_Williams_calibrator.pkl",
+  "before": {
+    "mse": 44.00632976578881,
+    "rmse": 6.63372668760093,
+    "mae": 5.9607487686053755,
+    "brier": 66.47110296569372,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 14.0,
+    "rmse": 3.7416573867739413,
+    "mae": 2.888888888888889,
+    "brier": 18.11111111111111,
+    "ece": 0.0
+  }
+}

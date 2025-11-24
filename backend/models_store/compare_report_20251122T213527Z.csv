@@ -1,0 +1,4 @@
+player,status,n_rows,rmse_advanced,rmse_baseline,delta_rmse
+Stephen Curry,ok,13,21.551346038977737,21.551346038977737,0.0
+Nikola Jokic,ok,14,18.271812181922197,18.271812181922197,0.0
+Kevin Durant,ok,13,7.367890589853134,7.367890589853134,0.0

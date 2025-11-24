@@ -1,0 +1,2 @@
+player,train_rows,val_rows,test_rows,val_mae,test_mae,model_path
+Test Player,5,3,2,,,C:\Users\bcmad\Downloads\StatMusePicksv2\tmp_debug\models\Test_Player.pkl

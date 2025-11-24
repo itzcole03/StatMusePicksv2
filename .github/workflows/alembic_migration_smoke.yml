@@ -43,7 +43,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/statmuse_ci
         run: |
-          alembic -c backend/alembic.ini upgrade head
+          alembic -c backend/alembic.ini upgrade heads
 
       - name: Run DB smoke tests
         env:

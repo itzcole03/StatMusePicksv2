@@ -25,7 +25,7 @@ def test_migrations_train_and_endpoints(tmp_path):
         "-c",
         "backend/alembic.ini",
         "upgrade",
-        "head",
+        "heads",
     ], check=True, env=env, cwd=str(repo_root))
 
     # Run the synthetic training script to produce a model artifact

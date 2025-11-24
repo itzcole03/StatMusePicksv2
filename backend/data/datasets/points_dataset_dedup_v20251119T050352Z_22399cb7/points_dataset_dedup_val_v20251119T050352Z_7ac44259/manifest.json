@@ -1,0 +1,15 @@
+{
+  "name": "points_dataset_dedup_val",
+  "version": "20251119T050352Z",
+  "uid": "7ac44259",
+  "created_at": "2025-11-19T05:03:52.181121Z",
+  "rows": 358,
+  "columns": [
+    "player",
+    "game_date",
+    "target"
+  ],
+  "files": {
+    "features": "backend\\data\\datasets\\points_dataset_dedup_v20251119T050352Z_22399cb7\\points_dataset_dedup_val_v20251119T050352Z_7ac44259\\features.parquet"
+  }
+}

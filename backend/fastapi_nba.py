@@ -343,6 +343,55 @@ def health():
     return {'ok': True}
 
 
+@app.get('/api/nba_status')
+def api_nba_status():
+    """Return diagnostic info about nba_api wiring and local cached game logs.
+
+    Useful for verifying that the backend can fetch NBA data (or will
+    gracefully fall back to cached logs). This endpoint is safe to call in
+    CI and local dev; it never raises on missing optional deps.
+    """
+    info = {'nba_api_installed': False, 'can_fetch_players': False, 'sample_player': None, 'cached_logs_exist': False}
+    try:
+        # Try centralized client first
+        from .services import nba_stats_client as client
+        info['nba_api_installed'] = True
+        try:
+            allp = client.fetch_all_players()
+            info['can_fetch_players'] = bool(allp)
+            # sample lookup for LeBron James (best-effort)
+            try:
+                pid = client.find_player_id_by_name('LeBron James')
+                info['sample_player'] = {'name': 'LeBron James', 'player_id': pid}
+                if pid:
+                    recent = client.fetch_recent_games(pid, limit=3)
+                    info['sample_player']['recent_count'] = len(recent) if recent is not None else 0
+            except Exception:
+                pass
+        except Exception:
+            # client available but remote calls may fail (timeouts, rate limits)
+            info['can_fetch_players'] = False
+    except Exception:
+        # try direct import fallback
+        try:
+            import importlib
+            _ = importlib.import_module('nba_api')
+            info['nba_api_installed'] = True
+        except Exception:
+            info['nba_api_installed'] = False
+
+    # Check for deterministic cached logs in repo for CI/tests
+    try:
+        import os
+        repo_root = os.path.dirname(__file__)
+        cached_dir = os.path.join(repo_root, 'data', 'cached_game_logs')
+        info['cached_logs_exist'] = os.path.isdir(cached_dir) and len(os.listdir(cached_dir)) > 0
+    except Exception:
+        info['cached_logs_exist'] = False
+
+    return info
+
+
 @app.get('/player_summary', response_model=PlayerSummary)
 def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Optional[int] = Query(0)):
     cache_key = f"player_summary:{player}:{stat}:{limit}"
@@ -886,28 +935,42 @@ async def api_predict(req: PredictionRequest):
 
 @app.post('/api/batch_predict', response_model=BatchPredictResponse, responses={503: {"description": "ML service unavailable"}})
 async def api_batch_predict(requests: List[PredictionRequest]):
-    results: List[PredictionResponse] = []
-    for r in requests:
+    import asyncio
+
+    # concurrency and timeout controls
+    max_concurrency = int(os.environ.get('BATCH_PREDICT_MAX_CONCURRENCY', '8'))
+    per_item_timeout = float(os.environ.get('BATCH_PREDICT_ITEM_TIMEOUT', '10.0'))
+
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def _predict_item(r: PredictionRequest):
+        if ml_service is None:
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='ML service unavailable')
         try:
-            if ml_service is None:
-                results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='ML service unavailable'))
-            else:
-                res = await ml_service.predict(
-                    player_name=r.player,
-                    stat_type=r.stat,
-                    line=r.line,
-                    player_data=r.player_data or {},
-                    opponent_data=r.opponent_data or {}
+            async with semaphore:
+                # enforce per-item timeout
+                res = await asyncio.wait_for(
+                    ml_service.predict(
+                        player_name=r.player,
+                        stat_type=r.stat,
+                        line=r.line,
+                        player_data=r.player_data or {},
+                        opponent_data=r.opponent_data or {}
+                    ),
+                    timeout=per_item_timeout,
                 )
-                # coerce into PredictionResponse when possible
                 if isinstance(res, dict):
-                    results.append(PredictionResponse(**res))
+                    return PredictionResponse(**res)
                 else:
-                    # unknown shape, wrap minimally
-                    results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result format'))
+                    return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result format')
+        except asyncio.TimeoutError:
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='prediction timeout')
         except Exception as e:
-            results.append(PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=str(e)))
-    return BatchPredictResponse(predictions=results)
+            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=str(e))
+
+    tasks = [asyncio.create_task(_predict_item(r)) for r in requests]
+    gathered = await asyncio.gather(*tasks)
+    return BatchPredictResponse(predictions=gathered)
 
 
 # Model management API

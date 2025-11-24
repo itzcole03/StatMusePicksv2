@@ -1,0 +1,15 @@
+{
+  "name": "points_dataset_val",
+  "version": "20251119T043328Z",
+  "uid": "8c5abf5c",
+  "created_at": "2025-11-19T04:33:29.188771Z",
+  "rows": 525,
+  "columns": [
+    "player",
+    "game_date",
+    "target"
+  ],
+  "files": {
+    "features": "backend\\data\\datasets\\points_dataset_v20251119T043328Z_fcb745d9\\points_dataset_val_v20251119T043328Z_8c5abf5c\\features.parquet"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "player": "Eric Piatkowski",
+  "method": "isotonic",
+  "created_at": "20251120T073120Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Eric_Piatkowski_calibrator.pkl",
+  "before": {
+    "mse": 23.93377091786967,
+    "rmse": 4.892215338460652,
+    "mae": 3.8367556930768854,
+    "brier": 39.00173045536622,
+    "ece": 0.09894247658851495
+  },
+  "after": {
+    "mse": 8.941575091575091,
+    "rmse": 2.9902466606577947,
+    "mae": 1.8146520146520144,
+    "brier": 85.36611721611722,
+    "ece": 0.0
+  }
+}

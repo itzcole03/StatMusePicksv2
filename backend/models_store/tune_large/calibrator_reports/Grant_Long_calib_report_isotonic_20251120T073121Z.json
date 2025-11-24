@@ -1,0 +1,20 @@
+{
+  "player": "Grant Long",
+  "method": "isotonic",
+  "created_at": "20251120T073121Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Grant_Long_calibrator.pkl",
+  "before": {
+    "mse": 70.0278767809857,
+    "rmse": 8.36826605581979,
+    "mae": 6.019572780246354,
+    "brier": 805.5682182087124,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 33.47470238095238,
+    "rmse": 5.785732657231267,
+    "mae": 4.380952380952381,
+    "brier": 683.4181547619047,
+    "ece": 0.0
+  }
+}

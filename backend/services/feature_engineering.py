@@ -24,6 +24,8 @@ from __future__ import annotations
 
 from typing import Dict, Any, List, Optional
 import numpy as np
+import math
+from datetime import datetime
 
 
 def recent_stats_from_games(
@@ -39,6 +41,7 @@ def recent_stats_from_games(
     Returns:
         A dictionary with keys: ``mean``, ``median``, ``std``, ``sample_size``
         and ``trend_slope``. Numeric values are floats; when no samples
+                    'trade_sentiment': float(llm_feats.get('trade_sentiment') or llm_feats.get('trade_sent') or 0.0),
         exist the mean/median/std/trend_slope values are ``None`` and
         ``sample_size`` is 0.
 
@@ -101,6 +104,134 @@ def _ema(values: List[float], alpha: float) -> Optional[float]:
     for v in values[1:]:
         ema = alpha * v + (1 - alpha) * ema
     return float(ema)
+
+
+# --- Contextual feature helpers (Phase 3 additions) ----------------------
+TEAM_COORDS = {
+    # abbrev: (lat, lon, altitude_m)
+    "ATL": (33.755, -84.39, 313),
+    "BOS": (42.366, -71.062, 14),
+    "BKN": (40.682, -73.975, 10),
+    "CHA": (35.226, -80.84, 241),
+    "CHI": (41.88, -87.63, 181),
+    "CLE": (41.43, -81.69, 207),
+    "DAL": (32.79, -96.77, 140),
+    "DEN": (39.748, -104.996, 1609),
+    "DET": (42.7, -83.054, 181),
+    "GSW": (37.768, -122.387, 16),
+    "HOU": (29.75, -95.36, 13),
+    "IND": (39.76, -86.15, 218),
+    "LAC": (33.96, -118.14, 89),
+    "LAL": (34.043, -118.267, 89),
+    "MEM": (35.138, -90.05, 99),
+    "MIA": (25.78, -80.22, 2),
+    "MIL": (43.045, -87.917, 188),
+    "MIN": (44.98, -93.27, 264),
+    "NOP": (29.948, -90.08, 2),
+    "NYK": (40.75, -73.993, 10),
+    "OKC": (35.463, -97.516, 370),
+    "ORL": (28.539, -81.383, 26),
+    "PHI": (39.901, -75.171, 12),
+    "PHX": (33.445, -112.07, 331),
+    "POR": (45.52, -122.665, 15),
+    "SAC": (38.580, -121.499, 9),
+    "SAS": (29.427, -98.437, 198),
+    "TOR": (43.643, -79.379, 76),
+    "UTA": (40.768, -111.901, 1288),
+    "WAS": (38.898, -77.02, 6),
+}
+
+# Common rivalry pairs (unordered)
+RIVAL_PAIRS = set(
+    [
+        frozenset(("LAL", "LAC")),
+        frozenset(("LAL", "BOS")),
+        frozenset(("NYK", "BOS")),
+        frozenset(("GSW", "LAL")),
+        frozenset(("PHI", "NYK")),
+        frozenset(("BKN", "NYK")),
+    ]
+)
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Return distance in kilometers between two lat/lon points."""
+    R = 6371.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+
+def _get_team_coords(abbrev: Optional[str]):
+    if not abbrev:
+        return None
+    try:
+        key = str(abbrev).upper()
+        return TEAM_COORDS.get(key)
+    except Exception:
+        return None
+
+
+def _is_rival(team_abbrev: Optional[str], opp_abbrev: Optional[str]) -> bool:
+    if not team_abbrev or not opp_abbrev:
+        return False
+    try:
+        t = str(team_abbrev).upper()
+        o = str(opp_abbrev).upper()
+        return frozenset((t, o)) in RIVAL_PAIRS
+    except Exception:
+        return False
+
+
+def _add_contextual_features(features: Dict[str, Any], player_ctx: Dict[str, Any], opponent_ctx: Optional[Dict[str, Any]] = None):
+    """Enrich features dict with contextual features: playoff, rivalry, national TV, travel distance, altitude."""
+    ctx = player_ctx.get("contextualFactors") or {}
+    # Playoff flag
+    is_playoff = bool(ctx.get("isPlayoff") or ctx.get("gameType") == "Playoffs" or player_ctx.get("gameType") == "Playoffs")
+    features["is_playoff"] = 1 if is_playoff else 0
+
+    # National TV / big game indicator
+    national = bool(ctx.get("isNationalTV") or ctx.get("nationalTelecast") or ctx.get("isNational"))
+    features["is_national_tv"] = 1 if national else 0
+
+    # Rivalry
+    team_abbrev = ctx.get("teamAbbrev") or player_ctx.get("team") or player_ctx.get("teamAbbrev") or player_ctx.get("teamId")
+    opp_abbrev = None
+    if opponent_ctx:
+        opp_abbrev = opponent_ctx.get("abbrev") or opponent_ctx.get("team") or opponent_ctx.get("teamId")
+    else:
+        opp_abbrev = ctx.get("opponentAbbrev") or player_ctx.get("opponent")
+    features["is_rivalry"] = 1 if _is_rival(team_abbrev, opp_abbrev) else 0
+
+    # Travel distance (km) between team and opponent home arenas (approx)
+    coords_team = _get_team_coords(team_abbrev)
+    coords_opp = _get_team_coords(opp_abbrev)
+    travel_km = 0.0
+    opp_alt = 0.0
+    if coords_team and coords_opp:
+        try:
+            travel_km = float(_haversine_km(coords_team[0], coords_team[1], coords_opp[0], coords_opp[1]))
+            opp_alt = float(coords_opp[2] or 0.0)
+        except Exception:
+            travel_km = 0.0
+            opp_alt = float(coords_opp[2] if coords_opp else 0.0)
+
+    features["travel_distance_km"] = travel_km
+    features["opp_altitude_m"] = opp_alt
+    features["is_high_altitude_opp"] = 1 if opp_alt >= 1000 else 0
+
+    # Add contextual Phase 3 features (playoff, rivalry, national TV, travel, altitude)
+    try:
+        _add_contextual_features(features, player_context, None)
+    except Exception:
+        pass
+    return features
+
+# -------------------------------------------------------------------------
 
 
 def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -169,11 +300,21 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
         season_agg = {}
 
     features.update({
-        "multi_PER": float(adv_agg.get("PER") or 0.0),
+        # prefer canonical advanced fields, fall back to computed proxies when present
+        "multi_PER": float(adv_agg.get("PER") or adv_agg.get("PER_proxy") or 0.0),
+        "multi_WS": float(adv_agg.get("WS") or adv_agg.get("WS_proxy_per_game") or 0.0),
         "multi_TS_PCT": float(adv_agg.get("TS_PCT") or 0.0),
         "multi_USG_PCT": float(adv_agg.get("USG_PCT") or 0.0),
         "multi_season_PTS_avg": float(season_agg.get("PTS") or 0.0),
         "multi_season_count": int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
+    })
+    # Include multi-season BPM when available (or 0.0)
+    try:
+        multi_bpm = adv_agg.get("BPM") or adv_agg.get("BPM_48") or adv_agg.get("BPM_approx") or 0.0
+    except Exception:
+        multi_bpm = 0.0
+    features.update({
+        "multi_BPM": float(multi_bpm),
     })
     # Additional advanced/team aggregated metrics
     features.update({
@@ -182,7 +323,121 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
         "multi_def_rating": float(adv_agg.get("DEF_RATING") or 0.0),
     })
 
+    # Attempt league-level normalization (z-score) for advanced stats when
+    # a season can be inferred from the provided multi-season stats. This
+    # helps make proxies more comparable across players and seasons.
+    try:
+        from backend.services import nba_stats_client as _nba
+
+        season_to_use = None
+        if isinstance(multi_season_stats, dict) and len(multi_season_stats) > 0:
+            # pick most recent season key if available
+            try:
+                season_to_use = list(multi_season_stats.keys())[0]
+            except Exception:
+                season_to_use = None
+
+        if season_to_use:
+            league_map = _nba.fetch_league_player_advanced(season_to_use)
+            if league_map:
+                # compute league mean/std for PER and TS_PCT when available
+                per_vals = []
+                ts_vals = []
+                pts_vals = []
+                for pid, stats in league_map.items():
+                    try:
+                        if 'PER' in stats:
+                            per_vals.append(float(stats['PER']))
+                    except Exception:
+                        pass
+                    try:
+                        if 'TS_PCT' in stats:
+                            ts_vals.append(float(stats['TS_PCT']))
+                    except Exception:
+                        pass
+                    try:
+                        # some league mappings include per-game PTS under other keys; skip if absent
+                        if 'PTS' in stats:
+                            pts_vals.append(float(stats['PTS']))
+                    except Exception:
+                        pass
+
+                import math
+                def _z(v, vals):
+                    try:
+                        if v is None:
+                            return 0.0
+                        if not vals:
+                            return 0.0
+                        mean = float(sum(vals) / len(vals))
+                        var = float(sum((x - mean) ** 2 for x in vals) / len(vals))
+                        std = math.sqrt(var) if var > 0.0 else 0.0
+                        return float((v - mean) / std) if std > 0.0 else 0.0
+                    except Exception:
+                        return 0.0
+
+                # produce z-scored features for PER and TS_PCT
+                try:
+                    features['multi_PER_z'] = _z(features.get('multi_PER'), per_vals)
+                except Exception:
+                    features['multi_PER_z'] = 0.0
+                try:
+                    features['multi_TS_pct_z'] = _z(features.get('multi_TS_PCT'), ts_vals)
+                except Exception:
+                    features['multi_TS_pct_z'] = 0.0
+    except Exception:
+        # non-fatal; if normalization fails just continue with raw features
+        pass
+    # Player-context features (contract year, All-Star, recent awards, trade sentiment)
+    try:
+        # contract end year heuristics
+        contract = player_context.get('contract') or {}
+        end_year = contract.get('end_year') or contract.get('contractEndYear') or player_context.get('contractEndYear')
+        current_year = datetime.now().year
+        is_contract_year = 0
+        try:
+            if end_year is not None:
+                if int(end_year) in (current_year, current_year + 1):
+                    is_contract_year = 1
+        except Exception:
+            is_contract_year = 0
+        features['is_contract_year'] = is_contract_year
+
+        # All-Star indicator
+        is_all_star = 1 if (player_context.get('isAllStar') or player_context.get('allStar') or player_context.get('all_star')) else 0
+        features['is_all_star'] = is_all_star
+
+        # Recent awards count (list expected under 'awards')
+        awards = player_context.get('awards') or []
+        try:
+            features['recent_awards_count'] = int(len(awards))
+        except Exception:
+            features['recent_awards_count'] = 0
+
+        # Trade rumor / transfer sentiment from existing LLM extraction if available
+        # Reuse previously-extracted llm_feats when present in player_context
+        llm_feats = player_context.get('llm_features') or {}
+        trade_sent = 0.0
+        try:
+            trade_sent = float(llm_feats.get('trade_sentiment') or llm_feats.get('trade_sent') or 0.0)
+        except Exception:
+            trade_sent = 0.0
+        features['trade_sentiment'] = trade_sent
+    except Exception:
+        # non-fatal
+        features['is_contract_year'] = 0
+        features['is_all_star'] = 0
+        features['recent_awards_count'] = 0
+        features['trade_sentiment'] = 0.0
+
+    # Add contextual Phase 3 features (playoff, rivalry, national TV, travel, altitude)
+    try:
+        _add_contextual_features(features, player_context, None)
+    except Exception:
+        pass
+
     return features
+    
 """Feature engineering helpers for player predictions.
 
 This module provides lightweight functions used by the ML service and
@@ -329,18 +584,160 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         season_agg = {}
 
     features.update({
-        'multi_PER': float(adv_agg.get('PER') or 0.0),
+        'multi_PER': float(adv_agg.get('PER') or adv_agg.get('PER_proxy') or 0.0),
+        'multi_WS': float(adv_agg.get('WS') or adv_agg.get('WS_proxy_per_game') or 0.0),
         'multi_TS_PCT': float(adv_agg.get('TS_PCT') or 0.0),
         'multi_USG_PCT': float(adv_agg.get('USG_PCT') or 0.0),
         'multi_season_PTS_avg': float(season_agg.get('PTS') or 0.0),
         'multi_season_count': int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
     })
+    # include aggregated BPM when available
+    try:
+        features['multi_BPM'] = float(adv_agg.get('BPM') or adv_agg.get('BPM_48') or adv_agg.get('BPM_approx') or 0.0)
+    except Exception:
+        features['multi_BPM'] = 0.0
     # Additional advanced/team aggregated metrics (DataFrame path)
     features.update({
         'multi_PIE': float(adv_agg.get('PIE') or 0.0),
         'multi_off_rating': float(adv_agg.get('OFF_RATING') or 0.0),
         'multi_def_rating': float(adv_agg.get('DEF_RATING') or 0.0),
     })
+
+    # Attempt league-level normalization (z-score) similar to dict path
+    try:
+        from backend.services import nba_stats_client as _nba
+
+        season_to_use = None
+        if isinstance(multi_season_stats, dict) and len(multi_season_stats) > 0:
+            try:
+                season_to_use = list(multi_season_stats.keys())[0]
+            except Exception:
+                season_to_use = None
+
+        if season_to_use:
+            league_map = _nba.fetch_league_player_advanced(season_to_use)
+            if league_map:
+                per_vals = []
+                ts_vals = []
+                for pid, stats in league_map.items():
+                    try:
+                        if 'PER' in stats:
+                            per_vals.append(float(stats['PER']))
+                    except Exception:
+                        pass
+                    try:
+                        if 'TS_PCT' in stats:
+                            ts_vals.append(float(stats['TS_PCT']))
+                    except Exception:
+                        pass
+
+                import math
+                def _z(v, vals):
+                    try:
+                        if v is None:
+                            return 0.0
+                        if not vals:
+                            return 0.0
+                        mean = float(sum(vals) / len(vals))
+                        var = float(sum((x - mean) ** 2 for x in vals) / len(vals))
+                        std = math.sqrt(var) if var > 0.0 else 0.0
+                        return float((v - mean) / std) if std > 0.0 else 0.0
+                    except Exception:
+                        return 0.0
+
+                features['multi_PER_z'] = _z(features.get('multi_PER'), per_vals)
+                features['multi_TS_pct_z'] = _z(features.get('multi_TS_PCT'), ts_vals)
+    except Exception:
+        pass
+
+    # --- Player-context features (DataFrame path)
+    try:
+        contract = player_data.get('contract') or {}
+        end_year = contract.get('end_year') or contract.get('contractEndYear') or player_data.get('contractEndYear')
+        current_year = datetime.now().year
+        is_contract_year = 0
+        try:
+            if end_year is not None:
+                if int(end_year) in (current_year, current_year + 1):
+                    is_contract_year = 1
+        except Exception:
+            is_contract_year = 0
+        features['is_contract_year'] = is_contract_year
+
+        is_all_star = 1 if (player_data.get('isAllStar') or player_data.get('allStar') or player_data.get('all_star')) else 0
+        features['is_all_star'] = is_all_star
+
+        awards = player_data.get('awards') or []
+        try:
+            features['recent_awards_count'] = int(len(awards))
+        except Exception:
+            features['recent_awards_count'] = 0
+
+        # trade sentiment from llm fetch result above
+        try:
+            features['trade_sentiment'] = float(features.get('trade_sentiment') or 0.0)
+        except Exception:
+            features['trade_sentiment'] = 0.0
+    except Exception:
+        features['is_contract_year'] = 0
+        features['is_all_star'] = 0
+        features['recent_awards_count'] = 0
+        features['trade_sentiment'] = 0.0
+
+    # --- Phase 3 wiring: attempt to enrich features with advanced metrics and LLM-derived features
+    try:
+        # Advanced metrics (PER, TS%, USG%, ORtg/DRtg) fetched when available
+        from backend.services.advanced_metrics_service import create_default_service as _create_adv
+
+        adv_svc = _create_adv()
+        pid = player_data.get('player_id') or player_data.get('playerId') or player_data.get('playerName')
+        if pid:
+            try:
+                adv = adv_svc.fetch_advanced_metrics(str(pid))
+                if adv:
+                    # merge into features using safe keys
+                    features['adv_PER'] = float(adv.get('PER') or 0.0)
+                    features['adv_WS'] = float(adv.get('WS') or 0.0)
+                    features['adv_TS_pct'] = float(adv.get('TS_pct') or 0.0)
+                    features['adv_USG_pct'] = float(adv.get('USG_pct') or 0.0)
+                    features['adv_ORtg'] = float(adv.get('ORtg') or 0.0)
+                    features['adv_DRtg'] = float(adv.get('DRtg') or 0.0)
+                    # BPM (or approximate BPM) when available
+                    try:
+                        features['adv_BPM'] = float(adv.get('BPM') or adv.get('BPM_48') or adv.get('BPM_approx') or 0.0)
+                    except Exception:
+                        features['adv_BPM'] = 0.0
+            except Exception:
+                # non-fatal: continue if service call fails
+                pass
+    except Exception:
+        # service module may not be present in some lightweight dev environments
+        pass
+
+    try:
+        # LLM-derived qualitative features: injury sentiment, morale, motivation
+        from backend.services.llm_feature_service import create_default_service as _create_llm
+
+        llm_svc = _create_llm()
+        # text_fetcher: prefer prepopulated summary in player_data, fallback to empty
+        def _text_fetcher(name: str) -> str:
+            return player_data.get('news_summary') or player_data.get('news') or ""
+
+        pname = player_data.get('playerName') or player_data.get('player_name') or str(player_data.get('player_id') or '')
+        try:
+            llm_feats = llm_svc.fetch_news_and_extract(pname, 'news_v1', _text_fetcher)
+            if llm_feats:
+                # expected keys: injury_sentiment, morale_score, motivation
+                features.update({
+                    'injury_sentiment': float(llm_feats.get('injury_sentiment') or 0.0),
+                    'morale_score': float(llm_feats.get('morale_score') or 0.0),
+                    'motivation': float(llm_feats.get('motivation') or 0.0),
+                    'trade_sentiment': float(llm_feats.get('trade_sentiment') or llm_feats.get('trade_sent') or 0.0),
+                })
+        except Exception:
+            pass
+    except Exception:
+        pass
 
     # opponent features (optional)
     if opponent_data:
@@ -355,6 +752,40 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
     # when available (`opponentDefRating`, `opponentTeamId`, `opponentAbbrev`).
     adv = _calculate_opponent_adjusted(recent, opponent_data)
     features.update(adv)
+
+    # Add contextual Phase 3 features (playoff, rivalry, national TV, travel, altitude)
+    try:
+        _add_contextual_features(features, player_data, opponent_data)
+    except Exception:
+        pass
+
+    # Phase 3: attempt to enrich features with player-tracking derived metrics.
+    # This import is defensive so environments without tracking data won't fail.
+    try:
+        from backend.services.player_tracking_service import features_for_player as _trk_features_for_player
+
+        pname = (
+            player_data.get('playerName')
+            or player_data.get('player_name')
+            or player_data.get('playerId')
+            or player_data.get('player_id')
+            or None
+        )
+        if pname:
+            try:
+                tr_feats = _trk_features_for_player(str(pname), seasons=None)
+                if isinstance(tr_feats, dict):
+                    for k, v in tr_feats.items():
+                        try:
+                            features[f"trk_{k}"] = float(v) if v is not None else 0.0
+                        except Exception:
+                            features[f"trk_{k}"] = 0.0
+            except Exception:
+                # non-fatal: tracking may not be available or may error on read
+                pass
+    except Exception:
+        # non-fatal if module not present
+        pass
 
     df = pd.DataFrame([features])
     # Fill missing values and ensure correct dtypes; call infer_objects to avoid
@@ -458,3 +889,80 @@ class FeatureEngineering:
     def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -> pd.DataFrame:
         """Compatibility shim: returns the same DataFrame as the module-level function."""
         return engineer_features(player_data, opponent_data)
+
+
+# --- Contextual feature importance & pruning helpers (Phase 3 finalization)
+CONTEXTUAL_FEATURE_KEYS = [
+    "is_playoff",
+    "is_national_tv",
+    "is_rivalry",
+    "travel_distance_km",
+    "opp_altitude_m",
+    "is_high_altitude_opp",
+    "is_contract_year",
+    "is_all_star",
+    "recent_awards_count",
+    "trade_sentiment",
+    # LLM-derived qualitative features
+    "injury_sentiment",
+    "morale_score",
+    "motivation",
+]
+
+
+def analyze_contextual_feature_importance(df: pd.DataFrame, target_col: str = "target", n_estimators: int = 50) -> "pd.Series[float]":
+    """Compute importance scores for known contextual features against the target.
+
+    Uses a small RandomForestRegressor on the contextual columns present in `df`.
+    Returns a pandas Series indexed by feature name sorted desc by importance.
+    If there are not enough rows or no contextual features present, returns an empty Series.
+    """
+    try:
+        from sklearn.ensemble import RandomForestRegressor
+    except Exception:
+        # scikit-learn not available
+        return pd.Series(dtype=float)
+
+    if target_col not in df.columns:
+        return pd.Series(dtype=float)
+
+    ctx_cols = [c for c in CONTEXTUAL_FEATURE_KEYS if c in df.columns]
+    if not ctx_cols:
+        return pd.Series(dtype=float)
+
+    # require a minimal number of rows to compute importances
+    if df.shape[0] < 10:
+        return pd.Series(dtype=float)
+
+    X = df[ctx_cols].select_dtypes(include=[np.number]).fillna(0)
+    if X.shape[1] == 0:
+        return pd.Series(dtype=float)
+    y = pd.to_numeric(df[target_col], errors="coerce").fillna(0)
+
+    try:
+        model = RandomForestRegressor(n_estimators=int(n_estimators), random_state=42)
+        model.fit(X, y)
+        imps = pd.Series(model.feature_importances_, index=X.columns)
+        imps = imps.sort_values(ascending=False)
+        return imps
+    except Exception:
+        return pd.Series(dtype=float)
+
+
+def prune_contextual_features(df: pd.DataFrame, target_col: str = "target", threshold: float = 0.01) -> (pd.DataFrame, list):
+    """Remove contextual features whose importance is below `threshold`.
+
+    Returns a tuple: (pruned_df, kept_feature_list). If analysis cannot be
+    performed (too few rows, sklearn missing), returns the original df and []
+    for kept features.
+    """
+    imps = analyze_contextual_feature_importance(df, target_col=target_col)
+    if imps.empty:
+        return df, []
+
+    keep = imps[imps >= float(threshold)].index.tolist()
+    # Drop contextual columns that are present but not in `keep`
+    to_drop = [c for c in imps.index.tolist() if c not in keep and c in df.columns]
+    if to_drop:
+        df = df.drop(columns=to_drop)
+    return df, keep

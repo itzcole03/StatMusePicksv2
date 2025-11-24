@@ -1,0 +1,78 @@
+{
+  "name": "points_dataset_alias_subset",
+  "version": "20251121T235153Z",
+  "uid": "c71436ea_alias",
+  "created_at": "2025-11-21T23:51:53.092571Z",
+  "seasons": "2024-25",
+  "rows_train": 12172,
+  "rows_val": 2537,
+  "rows_test": 2807,
+  "parts": {
+    "train": {
+      "columns": [
+        "player",
+        "game_date",
+        "target",
+        "last_3_avg",
+        "last_5_avg",
+        "last_10_avg",
+        "last_3_std",
+        "days_rest",
+        "is_home",
+        "opp_def",
+        "multi_PER",
+        "multi_TS_PCT",
+        "multi_season_PTS_avg",
+        "player_id"
+      ],
+      "files": {
+        "features": "train_features.parquet"
+      },
+      "rows": 10294
+    },
+    "val": {
+      "columns": [
+        "player",
+        "game_date",
+        "target",
+        "last_3_avg",
+        "last_5_avg",
+        "last_10_avg",
+        "last_3_std",
+        "days_rest",
+        "is_home",
+        "opp_def",
+        "multi_PER",
+        "multi_TS_PCT",
+        "multi_season_PTS_avg",
+        "player_id"
+      ],
+      "files": {
+        "features": "val_features.parquet"
+      },
+      "rows": 2143
+    },
+    "test": {
+      "columns": [
+        "player",
+        "game_date",
+        "target",
+        "last_3_avg",
+        "last_5_avg",
+        "last_10_avg",
+        "last_3_std",
+        "days_rest",
+        "is_home",
+        "opp_def",
+        "multi_PER",
+        "multi_TS_PCT",
+        "multi_season_PTS_avg",
+        "player_id"
+      ],
+      "files": {
+        "features": "test_features.parquet"
+      },
+      "rows": 2382
+    }
+  }
+}

@@ -1,0 +1,3697 @@
+[
+  {
+    "player": "A.J. Lawson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\A.J._Lawson_advanced.pkl",
+    "mse": 0.3559846031247888,
+    "rmse": 0.5966444528567988,
+    "mae": 0.5038741570394768,
+    "r2": 0.5995173214846127,
+    "n": 3
+  },
+  {
+    "player": "AJ Green",
+    "status": "ok",
+    "model_path": "backend\\models_store\\AJ_Green_advanced.pkl",
+    "mse": 14.643764098841865,
+    "rmse": 3.8267171438246996,
+    "mae": 3.0833980104653262,
+    "r2": -1.1348539916307048,
+    "n": 8
+  },
+  {
+    "player": "Aaron Gordon",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Aaron_Gordon_advanced.pkl",
+    "mse": 109.68530340267623,
+    "rmse": 10.473075164567293,
+    "mae": 9.114603896081585,
+    "r2": -0.08214265727937087,
+    "n": 8
+  },
+  {
+    "player": "Aaron Holiday",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Aaron_Holiday_advanced.pkl",
+    "mse": 28.632308018346563,
+    "rmse": 5.350916558716513,
+    "mae": 4.120926700955941,
+    "r2": -0.11804009345587563,
+    "n": 8
+  },
+  {
+    "player": "Aaron Nesmith",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Aaron_Nesmith_advanced.pkl",
+    "mse": 16.1121736765832,
+    "rmse": 4.013997219304368,
+    "mae": 3.516740978357497,
+    "r2": 0.3378558763048001,
+    "n": 6
+  },
+  {
+    "player": "Aaron Wiggins",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Aaron_Wiggins_advanced.pkl",
+    "mse": 66.15055488497639,
+    "rmse": 8.133299139031859,
+    "mae": 6.649986269508695,
+    "r2": 0.42218704618008884,
+    "n": 8
+  },
+  {
+    "player": "Adem Bona",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ajay Mitchell",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Al Horford",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Al_Horford_advanced.pkl",
+    "mse": 76.27417015268176,
+    "rmse": 8.73350846754509,
+    "mae": 5.93913553158841,
+    "r2": -0.7140262955658823,
+    "n": 8
+  },
+  {
+    "player": "Alex Caruso",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Alex_Caruso_advanced.pkl",
+    "mse": 28.73247404826573,
+    "rmse": 5.360268094812584,
+    "mae": 3.7841229728078174,
+    "r2": -0.09002865387611547,
+    "n": 8
+  },
+  {
+    "player": "Alperen Sengun",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Alperen_Sengun_advanced.pkl",
+    "mse": 66.6709427843669,
+    "rmse": 8.165227662739532,
+    "mae": 7.594076722638945,
+    "r2": -0.3072733879287628,
+    "n": 8
+  },
+  {
+    "player": "Amen Thompson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Amen_Thompson_advanced.pkl",
+    "mse": 16.28493951710291,
+    "rmse": 4.035460260875197,
+    "mae": 3.272740151389444,
+    "r2": -0.628493951710291,
+    "n": 8
+  },
+  {
+    "player": "Amir Coffey",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Amir_Coffey_advanced.pkl",
+    "mse": 3.634010098054773,
+    "rmse": 1.9063079756573367,
+    "mae": 1.6781765981652021,
+    "r2": 0.765311154111498,
+    "n": 8
+  },
+  {
+    "player": "Andre Drummond",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Andre_Drummond_advanced.pkl",
+    "mse": 36.64098147479276,
+    "rmse": 6.053179451725577,
+    "mae": 3.9294005227688906,
+    "r2": 0.29836418452524505,
+    "n": 6
+  },
+  {
+    "player": "Andre Jackson Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Andre_Jackson_Jr._advanced.pkl",
+    "mse": 2.3254271760770617,
+    "rmse": 1.5249351383180407,
+    "mae": 1.1680918499571207,
+    "r2": 0.7727826881390352,
+    "n": 8
+  },
+  {
+    "player": "Andrew Nembhard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Andrew_Nembhard_advanced.pkl",
+    "mse": 25.139308872432437,
+    "rmse": 5.013911534164961,
+    "mae": 4.428542368421967,
+    "r2": 0.2762412200469294,
+    "n": 8
+  },
+  {
+    "player": "Andrew Wiggins",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Andrew_Wiggins_advanced.pkl",
+    "mse": 45.44224895200286,
+    "rmse": 6.74108662991382,
+    "mae": 5.924647853438746,
+    "r2": 0.6301279495194985,
+    "n": 8
+  },
+  {
+    "player": "Anfernee Simons",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Anfernee_Simons_advanced.pkl",
+    "mse": 71.55449156047683,
+    "rmse": 8.458988802479693,
+    "mae": 6.0290185359566095,
+    "r2": -0.2529377455186095,
+    "n": 8
+  },
+  {
+    "player": "Anthony Black",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Anthony_Black_advanced.pkl",
+    "mse": 20.232068027773536,
+    "rmse": 4.4980071173547,
+    "mae": 3.5915249156693454,
+    "r2": 0.46204721488263134,
+    "n": 8
+  },
+  {
+    "player": "Anthony Davis",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Anthony_Davis_advanced.pkl",
+    "mse": 57.530766227851245,
+    "rmse": 7.584903837745818,
+    "mae": 6.660631050809103,
+    "r2": -0.010419604440856212,
+    "n": 8
+  },
+  {
+    "player": "Anthony Edwards",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Anthony_Edwards_advanced.pkl",
+    "mse": 75.02103140134025,
+    "rmse": 8.66146820125435,
+    "mae": 7.544560867546181,
+    "r2": 0.3489700325849795,
+    "n": 8
+  },
+  {
+    "player": "Antonio Reeves",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ariel Hukporti",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ausar Thompson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ausar_Thompson_advanced.pkl",
+    "mse": 31.059023361367124,
+    "rmse": 5.573062296562557,
+    "mae": 5.194438060263964,
+    "r2": -0.534963316700769,
+    "n": 8
+  },
+  {
+    "player": "Austin Reaves",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Austin_Reaves_advanced.pkl",
+    "mse": 21.289557583010545,
+    "rmse": 4.614060856015072,
+    "mae": 3.461031230634579,
+    "r2": 0.6227763883408984,
+    "n": 8
+  },
+  {
+    "player": "Ayo Dosunmu",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ayo_Dosunmu_advanced.pkl",
+    "mse": 15.654437755252712,
+    "rmse": 3.956568937255196,
+    "mae": 3.314746158492618,
+    "r2": 0.5932834305369126,
+    "n": 7
+  },
+  {
+    "player": "Bam Adebayo",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bam_Adebayo_advanced.pkl",
+    "mse": 22.376553492589444,
+    "rmse": 4.730386188525144,
+    "mae": 3.807877648268217,
+    "r2": 0.3759915365900983,
+    "n": 8
+  },
+  {
+    "player": "Baylor Scheierman",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ben Sheppard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ben_Sheppard_advanced.pkl",
+    "mse": 7.3482494171949035,
+    "rmse": 2.710765467021244,
+    "mae": 2.4388916267545317,
+    "r2": 0.31644191467954386,
+    "n": 8
+  },
+  {
+    "player": "Bennedict Mathurin",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bennedict_Mathurin_advanced.pkl",
+    "mse": 26.90682015311815,
+    "rmse": 5.187178438526879,
+    "mae": 4.571843234359209,
+    "r2": 0.2407246517638617,
+    "n": 8
+  },
+  {
+    "player": "Bismack Biyombo",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bismack_Biyombo_advanced.pkl",
+    "mse": 2.644575704527746,
+    "rmse": 1.6262151470601134,
+    "mae": 1.3516461920051495,
+    "r2": 0.6082110067366302,
+    "n": 4
+  },
+  {
+    "player": "Blake Wesley",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Blake_Wesley_advanced.pkl",
+    "mse": 6.238662312508973,
+    "rmse": 2.49773143322275,
+    "mae": 1.9718033201241187,
+    "r2": 0.6672713433328548,
+    "n": 8
+  },
+  {
+    "player": "Bobby Portis",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bobby_Portis_advanced.pkl",
+    "mse": 42.58994846196963,
+    "rmse": 6.526097490994877,
+    "mae": 5.613657131589695,
+    "r2": -0.16587009756229687,
+    "n": 7
+  },
+  {
+    "player": "Bobi Klintman",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Bogdan Bogdanovi\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Bones Hyland",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bones_Hyland_advanced.pkl",
+    "mse": 3.014895696145988,
+    "rmse": 1.7363455002233823,
+    "mae": 1.6258317006767884,
+    "r2": -0.7866048569754003,
+    "n": 4
+  },
+  {
+    "player": "Bradley Beal",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bradley_Beal_advanced.pkl",
+    "mse": 53.33770980517761,
+    "rmse": 7.303267063799434,
+    "mae": 5.851475538071776,
+    "r2": 0.3044797417417753,
+    "n": 8
+  },
+  {
+    "player": "Branden Carlson",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Brandin Podziemski",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Brandin_Podziemski_advanced.pkl",
+    "mse": 49.89246583599241,
+    "rmse": 7.063459905456561,
+    "mae": 6.578686514692149,
+    "r2": 0.1395532704113408,
+    "n": 8
+  },
+  {
+    "player": "Brandon Clarke",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Brandon_Clarke_advanced.pkl",
+    "mse": 34.73917320686113,
+    "rmse": 5.893994673127991,
+    "mae": 5.2891930522883035,
+    "r2": -0.052702218389731215,
+    "n": 8
+  },
+  {
+    "player": "Brandon Ingram",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Brandon_Ingram_advanced.pkl",
+    "mse": 199.8995063342889,
+    "rmse": 14.138582189678317,
+    "mae": 10.02818669557794,
+    "r2": -0.3881910162103397,
+    "n": 2
+  },
+  {
+    "player": "Brandon Miller",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Brandon_Miller_advanced.pkl",
+    "mse": 31.6522996118774,
+    "rmse": 5.626037647570215,
+    "mae": 5.332949322841124,
+    "r2": -1.042083845927574,
+    "n": 4
+  },
+  {
+    "player": "Brice Sensabaugh",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Brice_Sensabaugh_advanced.pkl",
+    "mse": 63.30704539820958,
+    "rmse": 7.956572465465867,
+    "mae": 6.379512049790094,
+    "r2": -0.9516622858792934,
+    "n": 8
+  },
+  {
+    "player": "Bronny James",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Brook Lopez",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Brook_Lopez_advanced.pkl",
+    "mse": 28.581674962265986,
+    "rmse": 5.346183214431206,
+    "mae": 4.871537526122408,
+    "r2": 0.31923066706921355,
+    "n": 8
+  },
+  {
+    "player": "Bruce Brown",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bruce_Brown_advanced.pkl",
+    "mse": 37.47653100075267,
+    "rmse": 6.121807821285529,
+    "mae": 5.453427455702962,
+    "r2": 0.1530727457457023,
+    "n": 6
+  },
+  {
+    "player": "Bryce McGowens",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Bryce_McGowens_advanced.pkl",
+    "mse": 0.44358047842006887,
+    "rmse": 0.6660183769387065,
+    "mae": 0.6659906530340416,
+    "r2": 0.0,
+    "n": 2
+  },
+  {
+    "player": "Buddy Hield",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Buddy_Hield_advanced.pkl",
+    "mse": 63.074508540370466,
+    "rmse": 7.941946143129559,
+    "mae": 6.692153949245566,
+    "r2": -0.8021288154391562,
+    "n": 8
+  },
+  {
+    "player": "Cade Cunningham",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Cade_Cunningham_advanced.pkl",
+    "mse": 55.48674090498696,
+    "rmse": 7.448942267529461,
+    "mae": 6.948625005569218,
+    "r2": 0.18978977460206126,
+    "n": 8
+  },
+  {
+    "player": "Caleb Houstan",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Caleb_Houstan_advanced.pkl",
+    "mse": 68.55867943874074,
+    "rmse": 8.280016874302898,
+    "mae": 6.778748562896769,
+    "r2": -1.160391671137079,
+    "n": 8
+  },
+  {
+    "player": "Caleb Martin",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Caleb_Martin_advanced.pkl",
+    "mse": 5.374102621659982,
+    "rmse": 2.3182110822054107,
+    "mae": 1.9917502713901165,
+    "r2": 0.3954134550632521,
+    "n": 6
+  },
+  {
+    "player": "Cam Christie",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Cam Spencer",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Cam Thomas",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Cam_Thomas_advanced.pkl",
+    "mse": 11.98490492297916,
+    "rmse": 3.461922142824584,
+    "mae": 3.2434170482310676,
+    "r2": 0.44399925615045144,
+    "n": 3
+  },
+  {
+    "player": "Cameron Johnson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Cameron_Johnson_advanced.pkl",
+    "mse": 23.16822378000178,
+    "rmse": 4.813338111955338,
+    "mae": 3.3463883104557803,
+    "r2": 0.20109573172407647,
+    "n": 8
+  },
+  {
+    "player": "Caris LeVert",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Caris_LeVert_advanced.pkl",
+    "mse": 14.927598205523458,
+    "rmse": 3.8636250083986488,
+    "mae": 2.9315423169467163,
+    "r2": 0.7501657204096492,
+    "n": 8
+  },
+  {
+    "player": "Cason Wallace",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Cason_Wallace_advanced.pkl",
+    "mse": 13.02450857855116,
+    "rmse": 3.60894840342047,
+    "mae": 2.2262198573864085,
+    "r2": -0.08537571487926332,
+    "n": 8
+  },
+  {
+    "player": "Chet Holmgren",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Chet_Holmgren_advanced.pkl",
+    "mse": 20.97414981181797,
+    "rmse": 4.5797543396800195,
+    "mae": 3.5624417358920475,
+    "r2": 0.07805934893107824,
+    "n": 4
+  },
+  {
+    "player": "Chris Boucher",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Chris_Boucher_advanced.pkl",
+    "mse": 34.738833162206845,
+    "rmse": 5.893965826352138,
+    "mae": 5.203917303801061,
+    "r2": 0.290818078985251,
+    "n": 8
+  },
+  {
+    "player": "Chris Livingston",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Chris_Livingston_advanced.pkl",
+    "mse": 6.343820969928362,
+    "rmse": 2.518694298625453,
+    "mae": 1.780188335357373,
+    "r2": -0.01954265588134363,
+    "n": 3
+  },
+  {
+    "player": "Chris Paul",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Chris_Paul_advanced.pkl",
+    "mse": 64.136185326452,
+    "rmse": 8.008507059774125,
+    "mae": 7.108720122222079,
+    "r2": -1.7885297968022607,
+    "n": 8
+  },
+  {
+    "player": "Christian Braun",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Christian_Braun_advanced.pkl",
+    "mse": 30.685230941915115,
+    "rmse": 5.539425145438389,
+    "mae": 3.701153022171045,
+    "r2": 0.14129655431457477,
+    "n": 8
+  },
+  {
+    "player": "Christian Koloko",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Clint Capela",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Clint_Capela_advanced.pkl",
+    "mse": 5.453552017712595,
+    "rmse": 2.335284140680229,
+    "mae": 1.8915262385550973,
+    "r2": 0.43976351663947655,
+    "n": 8
+  },
+  {
+    "player": "Coby White",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Coby_White_advanced.pkl",
+    "mse": 62.44116521664772,
+    "rmse": 7.901972235881857,
+    "mae": 6.9118644844521295,
+    "r2": 0.5054165131354635,
+    "n": 8
+  },
+  {
+    "player": "Cody Williams",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Cole Anthony",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Cole_Anthony_advanced.pkl",
+    "mse": 9.771821725003917,
+    "rmse": 3.1259913187665633,
+    "mae": 2.507894980259211,
+    "r2": 0.6380806768517068,
+    "n": 8
+  },
+  {
+    "player": "Colin Castleton",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Colin_Castleton_advanced.pkl",
+    "mse": 116.77272930543954,
+    "rmse": 10.80614312812113,
+    "mae": 9.177728035202312,
+    "r2": -2.5505221748275533,
+    "n": 3
+  },
+  {
+    "player": "Collin Gillespie",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Collin_Gillespie_advanced.pkl",
+    "mse": 41.555379721546295,
+    "rmse": 6.446346230349895,
+    "mae": 5.384448792773787,
+    "r2": -0.17255586121744626,
+    "n": 5
+  },
+  {
+    "player": "Collin Sexton",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Collin_Sexton_advanced.pkl",
+    "mse": 12.725181927616951,
+    "rmse": 3.5672372962303687,
+    "mae": 2.9755681813822075,
+    "r2": 0.5876396742443115,
+    "n": 8
+  },
+  {
+    "player": "Craig Porter Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Craig_Porter_Jr._advanced.pkl",
+    "mse": 12.47298122963506,
+    "rmse": 3.531710807758056,
+    "mae": 2.42655151818932,
+    "r2": 0.7424932907430182,
+    "n": 8
+  },
+  {
+    "player": "D'Angelo Russell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\D'Angelo_Russell_advanced.pkl",
+    "mse": 48.86061840424444,
+    "rmse": 6.990037081750313,
+    "mae": 6.042848526409237,
+    "r2": 0.14630642154746265,
+    "n": 8
+  },
+  {
+    "player": "Dalen Terry",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dalen_Terry_advanced.pkl",
+    "mse": 9.940941102212928,
+    "rmse": 3.152925800302463,
+    "mae": 2.726023120141868,
+    "r2": 0.05183274136866256,
+    "n": 8
+  },
+  {
+    "player": "Dalton Knecht",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Damian Lillard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Damian_Lillard_advanced.pkl",
+    "mse": 44.771664622056576,
+    "rmse": 6.6911631740719475,
+    "mae": 5.770060942345404,
+    "r2": -0.367726270077146,
+    "n": 8
+  },
+  {
+    "player": "Daniel Gafford",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Daniel_Gafford_advanced.pkl",
+    "mse": 15.41523562198689,
+    "rmse": 3.926224092176463,
+    "mae": 3.267957818558185,
+    "r2": 0.506465692942891,
+    "n": 8
+  },
+  {
+    "player": "Daniss Jenkins",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Dant\u00e9 Exum",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Dario \u0160ari\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Darius Garland",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Darius_Garland_advanced.pkl",
+    "mse": 50.91731669233704,
+    "rmse": 7.1356370908515965,
+    "mae": 6.049819726887724,
+    "r2": -0.28144249638598917,
+    "n": 8
+  },
+  {
+    "player": "Davion Mitchell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Davion_Mitchell_advanced.pkl",
+    "mse": 24.409481023758516,
+    "rmse": 4.940595209461965,
+    "mae": 4.326863030056924,
+    "r2": -0.019717222924637845,
+    "n": 8
+  },
+  {
+    "player": "Day'Ron Sharpe",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Day'Ron_Sharpe_advanced.pkl",
+    "mse": 6.5037575611071,
+    "rmse": 2.550246568688428,
+    "mae": 1.7816067479447348,
+    "r2": -0.18587032453234875,
+    "n": 8
+  },
+  {
+    "player": "De'Aaron Fox",
+    "status": "ok",
+    "model_path": "backend\\models_store\\De'Aaron_Fox_advanced.pkl",
+    "mse": 29.610479414289152,
+    "rmse": 5.441551195595714,
+    "mae": 4.28008678524067,
+    "r2": 0.3589070762806138,
+    "n": 8
+  },
+  {
+    "player": "De'Andre Hunter",
+    "status": "ok",
+    "model_path": "backend\\models_store\\De'Andre_Hunter_advanced.pkl",
+    "mse": 33.54526520320596,
+    "rmse": 5.7918274493639705,
+    "mae": 4.651674912838548,
+    "r2": -0.9732508943062328,
+    "n": 8
+  },
+  {
+    "player": "DeAndre Jordan",
+    "status": "ok",
+    "model_path": "backend\\models_store\\DeAndre_Jordan_advanced.pkl",
+    "mse": 9.950542942305155,
+    "rmse": 3.154448120084582,
+    "mae": 2.748339695861728,
+    "r2": 0.37748313948433043,
+    "n": 8
+  },
+  {
+    "player": "DeMar DeRozan",
+    "status": "ok",
+    "model_path": "backend\\models_store\\DeMar_DeRozan_advanced.pkl",
+    "mse": 23.90142239854762,
+    "rmse": 4.888908098803619,
+    "mae": 3.627396095553154,
+    "r2": 0.674187213310533,
+    "n": 8
+  },
+  {
+    "player": "Dean Wade",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dean_Wade_advanced.pkl",
+    "mse": 9.67707455218051,
+    "rmse": 3.110799664424006,
+    "mae": 2.7346800496506187,
+    "r2": 0.0010761752587860052,
+    "n": 8
+  },
+  {
+    "player": "Deandre Ayton",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Deandre_Ayton_advanced.pkl",
+    "mse": 46.71522567967782,
+    "rmse": 6.834853742376484,
+    "mae": 6.1615263498403765,
+    "r2": 0.18716862036326642,
+    "n": 6
+  },
+  {
+    "player": "Dejounte Murray",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dejounte_Murray_advanced.pkl",
+    "mse": 46.29643859011986,
+    "rmse": 6.804148630807521,
+    "mae": 5.245442839701939,
+    "r2": 0.3823847573356475,
+    "n": 5
+  },
+  {
+    "player": "Deni Avdija",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Deni_Avdija_advanced.pkl",
+    "mse": 14.861429031953863,
+    "rmse": 3.855052403269489,
+    "mae": 3.39636903200107,
+    "r2": 0.7343208217751265,
+    "n": 8
+  },
+  {
+    "player": "Dennis Schr\u00f6der",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Dereck Lively II",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dereck_Lively_II_advanced.pkl",
+    "mse": 15.214012867432745,
+    "rmse": 3.9005144362548827,
+    "mae": 3.4922553399167433,
+    "r2": 0.09917029074411388,
+    "n": 6
+  },
+  {
+    "player": "Derrick Jones Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Derrick_Jones_Jr._advanced.pkl",
+    "mse": 13.094612038636756,
+    "rmse": 3.6186478190944134,
+    "mae": 3.2632046705868993,
+    "r2": 0.3796778901015897,
+    "n": 8
+  },
+  {
+    "player": "Derrick White",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Derrick_White_advanced.pkl",
+    "mse": 7.3374827336176836,
+    "rmse": 2.708778827002619,
+    "mae": 2.2333839314444894,
+    "r2": -0.22610677533037005,
+    "n": 8
+  },
+  {
+    "player": "Desmond Bane",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Desmond_Bane_advanced.pkl",
+    "mse": 63.03407274318818,
+    "rmse": 7.939400024132062,
+    "mae": 4.975624813791613,
+    "r2": -0.06051016182020086,
+    "n": 8
+  },
+  {
+    "player": "Devin Booker",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Devin_Booker_advanced.pkl",
+    "mse": 72.31401024300322,
+    "rmse": 8.503764474807802,
+    "mae": 6.202250305863748,
+    "r2": 0.3334154320103404,
+    "n": 8
+  },
+  {
+    "player": "Devin Carter",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Devin Vassell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Devin_Vassell_advanced.pkl",
+    "mse": 24.738182950159917,
+    "rmse": 4.973749385540039,
+    "mae": 4.642855334086937,
+    "r2": 0.2710664324078109,
+    "n": 8
+  },
+  {
+    "player": "Dillon Brooks",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dillon_Brooks_advanced.pkl",
+    "mse": 21.87110676308139,
+    "rmse": 4.676655510413546,
+    "mae": 4.020926214006109,
+    "r2": 0.4196721256893827,
+    "n": 8
+  },
+  {
+    "player": "Domantas Sabonis",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Domantas_Sabonis_advanced.pkl",
+    "mse": 12.563923608041712,
+    "rmse": 3.5445625411384283,
+    "mae": 2.378587825142317,
+    "r2": 0.29154968201350695,
+    "n": 8
+  },
+  {
+    "player": "Dominick Barlow",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dominick_Barlow_advanced.pkl",
+    "mse": 16.462867299975905,
+    "rmse": 4.0574459084473204,
+    "mae": 3.1690156105594482,
+    "r2": 0.48809492226443085,
+    "n": 5
+  },
+  {
+    "player": "Donovan Clingan",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Donovan Mitchell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Donovan_Mitchell_advanced.pkl",
+    "mse": 56.382610436478046,
+    "rmse": 7.508835491371352,
+    "mae": 4.900939061556716,
+    "r2": 0.21622783059630868,
+    "n": 8
+  },
+  {
+    "player": "Donte DiVincenzo",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Donte_DiVincenzo_advanced.pkl",
+    "mse": 22.10389367106867,
+    "rmse": 4.701477817779073,
+    "mae": 3.878233017621242,
+    "r2": 0.44718671553403877,
+    "n": 8
+  },
+  {
+    "player": "Dorian Finney-Smith",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dorian_Finney-Smith_advanced.pkl",
+    "mse": 24.687834438001342,
+    "rmse": 4.96868538327809,
+    "mae": 3.8630983563825003,
+    "r2": 0.3256417396363269,
+    "n": 8
+  },
+  {
+    "player": "Doug McDermott",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Doug_McDermott_advanced.pkl",
+    "mse": 8.604164087195416,
+    "rmse": 2.9332855447766106,
+    "mae": 2.517304336904767,
+    "r2": 0.2275563412991647,
+    "n": 6
+  },
+  {
+    "player": "Draymond Green",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Draymond_Green_advanced.pkl",
+    "mse": 15.363032837617016,
+    "rmse": 3.9195704914718674,
+    "mae": 2.9736084199760238,
+    "r2": 0.2096188893830474,
+    "n": 8
+  },
+  {
+    "player": "Drew Eubanks",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Drew_Eubanks_advanced.pkl",
+    "mse": 10.691685001050416,
+    "rmse": 3.2698142150664182,
+    "mae": 2.9707616628871256,
+    "r2": 0.28423866101754536,
+    "n": 8
+  },
+  {
+    "player": "Drew Peterson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Drew_Peterson_advanced.pkl",
+    "mse": 0.14263499930258977,
+    "rmse": 0.3776704903783055,
+    "mae": 0.3570453893493264,
+    "r2": 0.35814250313834606,
+    "n": 3
+  },
+  {
+    "player": "Dru Smith",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dru_Smith_advanced.pkl",
+    "mse": 20.833382594181483,
+    "rmse": 4.564360042128741,
+    "mae": 4.351355490154125,
+    "r2": 0.5069021871199648,
+    "n": 2
+  },
+  {
+    "player": "Duncan Robinson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Duncan_Robinson_advanced.pkl",
+    "mse": 33.44875049250549,
+    "rmse": 5.783489473709232,
+    "mae": 4.586092758680134,
+    "r2": 0.41685643379995874,
+    "n": 8
+  },
+  {
+    "player": "Duop Reath",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Duop_Reath_advanced.pkl",
+    "mse": 17.4183949593741,
+    "rmse": 4.17353506746668,
+    "mae": 2.8042786122956933,
+    "r2": 0.3543862685254683,
+    "n": 7
+  },
+  {
+    "player": "Dwight Powell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dwight_Powell_advanced.pkl",
+    "mse": 5.241730721579668,
+    "rmse": 2.289482631858051,
+    "mae": 2.1380878525323634,
+    "r2": 0.036003545456612884,
+    "n": 8
+  },
+  {
+    "player": "Dyson Daniels",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Dyson_Daniels_advanced.pkl",
+    "mse": 23.52684514585125,
+    "rmse": 4.850447932495642,
+    "mae": 3.8101514774299434,
+    "r2": 0.04881990566362604,
+    "n": 8
+  },
+  {
+    "player": "E.J. Liddell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\E.J._Liddell_advanced.pkl",
+    "mse": 24.333788248659612,
+    "rmse": 4.932928972594235,
+    "mae": 4.932928972594235,
+    "r2": NaN,
+    "n": 1
+  },
+  {
+    "player": "Elijah Harkless",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Enrique Freeman",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Eric Gordon",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Eric_Gordon_advanced.pkl",
+    "mse": 22.1343485219079,
+    "rmse": 4.704715562274504,
+    "mae": 4.204374305173033,
+    "r2": 0.31684109500284263,
+    "n": 5
+  },
+  {
+    "player": "Evan Mobley",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Evan_Mobley_advanced.pkl",
+    "mse": 40.93844544507212,
+    "rmse": 6.39831582879996,
+    "mae": 4.915395934507702,
+    "r2": -0.6635304815775338,
+    "n": 8
+  },
+  {
+    "player": "Franz Wagner",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Franz_Wagner_advanced.pkl",
+    "mse": 14.372484630862076,
+    "rmse": 3.791105990454774,
+    "mae": 3.119982087346544,
+    "r2": -1.6131790237931045,
+    "n": 8
+  },
+  {
+    "player": "Fred VanVleet",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Fred_VanVleet_advanced.pkl",
+    "mse": 18.696838839435927,
+    "rmse": 4.323984139591163,
+    "mae": 3.352157579308008,
+    "r2": 0.43742468936347,
+    "n": 8
+  },
+  {
+    "player": "GG Jackson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\GG_Jackson_advanced.pkl",
+    "mse": 3.2165117056590153,
+    "rmse": 1.7934636058919666,
+    "mae": 1.714888617985264,
+    "r2": 0.43445948032368964,
+    "n": 4
+  },
+  {
+    "player": "Gabe Vincent",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Gabe_Vincent_advanced.pkl",
+    "mse": 30.23391738120741,
+    "rmse": 5.498537749366409,
+    "mae": 4.224779432364892,
+    "r2": 0.31188808236227805,
+    "n": 8
+  },
+  {
+    "player": "Garrett Temple",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Garrett_Temple_advanced.pkl",
+    "mse": 31.868338038781342,
+    "rmse": 5.645204871285128,
+    "mae": 4.710395761228328,
+    "r2": -0.11087888588344552,
+    "n": 4
+  },
+  {
+    "player": "Garrison Mathews",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Garrison_Mathews_advanced.pkl",
+    "mse": 6.086357788413929,
+    "rmse": 2.467054476174762,
+    "mae": 2.300495555650674,
+    "r2": 0.7137893170515522,
+    "n": 7
+  },
+  {
+    "player": "Gary Harris",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Gary_Harris_advanced.pkl",
+    "mse": 9.595220737292918,
+    "rmse": 3.0976153307492713,
+    "mae": 2.2835227532154136,
+    "r2": 0.557282659013792,
+    "n": 7
+  },
+  {
+    "player": "Gary Payton II",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Gary_Payton_II_advanced.pkl",
+    "mse": 13.29375259967621,
+    "rmse": 3.6460598732983267,
+    "mae": 3.287666986509607,
+    "r2": 0.6716325100813286,
+    "n": 8
+  },
+  {
+    "player": "Gary Trent Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Gary_Trent_Jr._advanced.pkl",
+    "mse": 43.71600247459365,
+    "rmse": 6.611807806840248,
+    "mae": 4.827837793724717,
+    "r2": 0.2831606050796839,
+    "n": 8
+  },
+  {
+    "player": "Georges Niang",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Georges_Niang_advanced.pkl",
+    "mse": 10.152763098719241,
+    "rmse": 3.186340078949396,
+    "mae": 2.7623731144937107,
+    "r2": 0.540793753838847,
+    "n": 8
+  },
+  {
+    "player": "Giannis Antetokounmpo",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Giannis_Antetokounmpo_advanced.pkl",
+    "mse": 43.57527983467245,
+    "rmse": 6.601157461738998,
+    "mae": 5.3073617576788665,
+    "r2": -1.324014924515864,
+    "n": 8
+  },
+  {
+    "player": "Goga Bitadze",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Goga_Bitadze_advanced.pkl",
+    "mse": 13.476586663335684,
+    "rmse": 3.671047079967197,
+    "mae": 2.9584278511058146,
+    "r2": 0.3731820156588054,
+    "n": 8
+  },
+  {
+    "player": "Gradey Dick",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Gradey_Dick_advanced.pkl",
+    "mse": 47.83425441073258,
+    "rmse": 6.916231228836453,
+    "mae": 5.425442048726553,
+    "r2": -1.0409281881912569,
+    "n": 8
+  },
+  {
+    "player": "Grant Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Grant_Williams_advanced.pkl",
+    "mse": 19.01190540050247,
+    "rmse": 4.360264372776319,
+    "mae": 3.828268904836529,
+    "r2": -0.7823661312971066,
+    "n": 3
+  },
+  {
+    "player": "Grayson Allen",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Grayson_Allen_advanced.pkl",
+    "mse": 21.450225177536453,
+    "rmse": 4.631438780501849,
+    "mae": 3.7420461800327285,
+    "r2": 0.4279939952656946,
+    "n": 8
+  },
+  {
+    "player": "Guerschon Yabusele",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Gui Santos",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Gui_Santos_advanced.pkl",
+    "mse": 3.9009907776009642,
+    "rmse": 1.975092599753481,
+    "mae": 1.8138593092275497,
+    "r2": 0.36147465532874246,
+    "n": 8
+  },
+  {
+    "player": "Harrison Barnes",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Harrison_Barnes_advanced.pkl",
+    "mse": 76.16725401947733,
+    "rmse": 8.727385291109664,
+    "mae": 8.328490621902208,
+    "r2": -0.6926056448772739,
+    "n": 8
+  },
+  {
+    "player": "Haywood Highsmith",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Haywood_Highsmith_advanced.pkl",
+    "mse": 15.206344165726561,
+    "rmse": 3.8995312751312254,
+    "mae": 3.11069186071738,
+    "r2": -0.19265444437071078,
+    "n": 8
+  },
+  {
+    "player": "Herbert Jones",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Herbert_Jones_advanced.pkl",
+    "mse": 13.941796946456499,
+    "rmse": 3.733871576052998,
+    "mae": 2.8402207771282497,
+    "r2": 0.434792015684196,
+    "n": 3
+  },
+  {
+    "player": "Hunter Tyson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Hunter_Tyson_advanced.pkl",
+    "mse": 38.87452682019732,
+    "rmse": 6.234944010991383,
+    "mae": 4.353081437811984,
+    "r2": -0.22984167893852114,
+    "n": 8
+  },
+  {
+    "player": "Immanuel Quickley",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Immanuel_Quickley_advanced.pkl",
+    "mse": 10.158602515392449,
+    "rmse": 3.187256267605799,
+    "mae": 2.7621469875336038,
+    "r2": 0.5059045469167097,
+    "n": 5
+  },
+  {
+    "player": "Isaac Jones",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Isaac Okoro",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Isaac_Okoro_advanced.pkl",
+    "mse": 18.28686631870488,
+    "rmse": 4.276314572000624,
+    "mae": 3.686042257311973,
+    "r2": -0.16107087737808778,
+    "n": 8
+  },
+  {
+    "player": "Isaiah Collier",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Isaiah Crawford",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Isaiah Hartenstein",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Isaiah_Hartenstein_advanced.pkl",
+    "mse": 11.710949247180496,
+    "rmse": 3.4221264218582714,
+    "mae": 2.906972521635092,
+    "r2": 0.5739052007847916,
+    "n": 8
+  },
+  {
+    "player": "Isaiah Joe",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Isaiah_Joe_advanced.pkl",
+    "mse": 81.15106198163002,
+    "rmse": 9.00838842311043,
+    "mae": 7.83953905506424,
+    "r2": 0.34390248018894376,
+    "n": 8
+  },
+  {
+    "player": "Isaiah Stewart",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Isaiah_Stewart_advanced.pkl",
+    "mse": 26.168075769624817,
+    "rmse": 5.115474149052541,
+    "mae": 4.007339519886193,
+    "r2": 0.13449258436383038,
+    "n": 8
+  },
+  {
+    "player": "Ivica Zubac",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ivica_Zubac_advanced.pkl",
+    "mse": 13.072175902458048,
+    "rmse": 3.615546418241377,
+    "mae": 2.8618426468951315,
+    "r2": -0.026526696634742386,
+    "n": 8
+  },
+  {
+    "player": "JD Davison",
+    "status": "ok",
+    "model_path": "backend\\models_store\\JD_Davison_advanced.pkl",
+    "mse": 15.646852507894593,
+    "rmse": 3.955610257330036,
+    "mae": 2.411714805063618,
+    "r2": -0.050908004261577045,
+    "n": 3
+  },
+  {
+    "player": "Ja Morant",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ja_Morant_advanced.pkl",
+    "mse": 17.405208548869737,
+    "rmse": 4.171955003217285,
+    "mae": 3.610438897169935,
+    "r2": 0.6775880326692726,
+    "n": 8
+  },
+  {
+    "player": "Ja'Kobe Walter",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jabari Smith Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jabari_Smith_Jr._advanced.pkl",
+    "mse": 8.749201896560006,
+    "rmse": 2.9579049843698506,
+    "mae": 2.3983588334658226,
+    "r2": 0.27089984195333283,
+    "n": 8
+  },
+  {
+    "player": "Jabari Walker",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jabari_Walker_advanced.pkl",
+    "mse": 51.019541645049884,
+    "rmse": 7.142796486324518,
+    "mae": 5.829228819996821,
+    "r2": -0.5005747542661731,
+    "n": 8
+  },
+  {
+    "player": "Jacob Toppin",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jacob_Toppin_advanced.pkl",
+    "mse": 13.917201195357066,
+    "rmse": 3.7305765231874104,
+    "mae": 3.2487467861179717,
+    "r2": 0.7832961751588,
+    "n": 3
+  },
+  {
+    "player": "Jaden Hardy",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaden_Hardy_advanced.pkl",
+    "mse": 40.712429823134144,
+    "rmse": 6.380629265451343,
+    "mae": 5.592443890107087,
+    "r2": -0.1892266128163329,
+    "n": 8
+  },
+  {
+    "player": "Jaden Ivey",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaden_Ivey_advanced.pkl",
+    "mse": 6.595711672524878,
+    "rmse": 2.5682117655140666,
+    "mae": 2.390316142765508,
+    "r2": -1.2282809704475937,
+    "n": 5
+  },
+  {
+    "player": "Jaden McDaniels",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaden_McDaniels_advanced.pkl",
+    "mse": 15.645989531227185,
+    "rmse": 3.9555011732051333,
+    "mae": 3.088427909231827,
+    "r2": 0.0026460856588248483,
+    "n": 8
+  },
+  {
+    "player": "Jae'Sean Tate",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jae'Sean_Tate_advanced.pkl",
+    "mse": 11.132605230579573,
+    "rmse": 3.3365558935194795,
+    "mae": 2.5742949417278727,
+    "r2": -0.20556131092570662,
+    "n": 8
+  },
+  {
+    "player": "Jaime Jaquez Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaime_Jaquez_Jr._advanced.pkl",
+    "mse": 46.967217478481864,
+    "rmse": 6.853263272228921,
+    "mae": 4.269114076348432,
+    "r2": 0.7302430298283371,
+    "n": 8
+  },
+  {
+    "player": "Jake LaRavia",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jake_LaRavia_advanced.pkl",
+    "mse": 11.967697304433953,
+    "rmse": 3.4594359806815262,
+    "mae": 3.1914636641332117,
+    "r2": 0.2144280743756174,
+    "n": 8
+  },
+  {
+    "player": "Jakob Poeltl",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jakob_Poeltl_advanced.pkl",
+    "mse": 13.63879875888064,
+    "rmse": 3.6930744318089013,
+    "mae": 3.106206689327692,
+    "r2": 0.5118103352525946,
+    "n": 8
+  },
+  {
+    "player": "Jalen Brunson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Brunson_advanced.pkl",
+    "mse": 32.042935236434005,
+    "rmse": 5.660647951995779,
+    "mae": 3.951468627087382,
+    "r2": 0.42199891343523777,
+    "n": 8
+  },
+  {
+    "player": "Jalen Duren",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Duren_advanced.pkl",
+    "mse": 25.320327194097217,
+    "rmse": 5.031930762053192,
+    "mae": 3.849727675539081,
+    "r2": 0.12499949221262319,
+    "n": 8
+  },
+  {
+    "player": "Jalen Green",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Green_advanced.pkl",
+    "mse": 84.79755264920067,
+    "rmse": 9.208558662961357,
+    "mae": 8.485069879119644,
+    "r2": 0.3931518092867222,
+    "n": 8
+  },
+  {
+    "player": "Jalen Johnson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Johnson_advanced.pkl",
+    "mse": 14.912981492447173,
+    "rmse": 3.8617329649326058,
+    "mae": 3.419007411614167,
+    "r2": 0.44366079406414693,
+    "n": 6
+  },
+  {
+    "player": "Jalen Pickett",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Pickett_advanced.pkl",
+    "mse": 60.60227643069851,
+    "rmse": 7.784746394758053,
+    "mae": 6.081203416414044,
+    "r2": -0.3012758742788024,
+    "n": 7
+  },
+  {
+    "player": "Jalen Smith",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Smith_advanced.pkl",
+    "mse": 23.009356016815545,
+    "rmse": 4.796806856317601,
+    "mae": 3.665221776071001,
+    "r2": 0.1229310392637315,
+    "n": 8
+  },
+  {
+    "player": "Jalen Suggs",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Suggs_advanced.pkl",
+    "mse": 42.19589219416602,
+    "rmse": 6.495836527666473,
+    "mae": 5.6664825976447135,
+    "r2": 0.47673744798901274,
+    "n": 5
+  },
+  {
+    "player": "Jalen Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Williams_advanced.pkl",
+    "mse": 18.893497999362488,
+    "rmse": 4.346665158413113,
+    "mae": 3.635422969654715,
+    "r2": 0.46778878875035246,
+    "n": 8
+  },
+  {
+    "player": "Jalen Wilson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jalen_Wilson_advanced.pkl",
+    "mse": 16.5815036675276,
+    "rmse": 4.072039251717449,
+    "mae": 3.3779093846000734,
+    "r2": 0.2144957552022455,
+    "n": 8
+  },
+  {
+    "player": "Jamal Cain",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jamal_Cain_advanced.pkl",
+    "mse": 143.6155240411443,
+    "rmse": 11.983969460956763,
+    "mae": 10.36111472434382,
+    "r2": -2.1973771586154576,
+    "n": 6
+  },
+  {
+    "player": "Jamal Murray",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jamal_Murray_advanced.pkl",
+    "mse": 39.19130726870753,
+    "rmse": 6.260296100721398,
+    "mae": 5.1033081046690185,
+    "r2": 0.47646761319196784,
+    "n": 8
+  },
+  {
+    "player": "Jamal Shead",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "James Harden",
+    "status": "ok",
+    "model_path": "backend\\models_store\\James_Harden_advanced.pkl",
+    "mse": 77.11131529203314,
+    "rmse": 8.781304874108013,
+    "mae": 6.239450454115967,
+    "r2": -0.1935004059710086,
+    "n": 8
+  },
+  {
+    "player": "Jamison Battle",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jarace Walker",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jarace_Walker_advanced.pkl",
+    "mse": 20.089302710609065,
+    "rmse": 4.482109181022821,
+    "mae": 3.5833136906552747,
+    "r2": 0.20240981794107926,
+    "n": 8
+  },
+  {
+    "player": "Jared McCain",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jaren Jackson Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaren_Jackson_Jr._advanced.pkl",
+    "mse": 22.995540822005616,
+    "rmse": 4.795366599333738,
+    "mae": 3.8339051977166925,
+    "r2": -0.10240794951937038,
+    "n": 8
+  },
+  {
+    "player": "Jarred Vanderbilt",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jarred_Vanderbilt_advanced.pkl",
+    "mse": 9.437083369371273,
+    "rmse": 3.0719836212732763,
+    "mae": 2.2452894066948863,
+    "r2": -0.26295539515749367,
+    "n": 6
+  },
+  {
+    "player": "Jarrett Allen",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jarrett_Allen_advanced.pkl",
+    "mse": 13.223710532916542,
+    "rmse": 3.636442015613138,
+    "mae": 3.0109616190567077,
+    "r2": 0.8123880571698828,
+    "n": 8
+  },
+  {
+    "player": "Javonte Green",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Javonte_Green_advanced.pkl",
+    "mse": 1.2018839207912007,
+    "rmse": 1.0963046660446176,
+    "mae": 0.9706865313848809,
+    "r2": 0.7886797501905581,
+    "n": 8
+  },
+  {
+    "player": "Jaxson Hayes",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaxson_Hayes_advanced.pkl",
+    "mse": 6.0784550916012945,
+    "rmse": 2.465452309739796,
+    "mae": 2.120526907104724,
+    "r2": -0.2838981051567091,
+    "n": 8
+  },
+  {
+    "player": "Jay Huff",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jay_Huff_advanced.pkl",
+    "mse": 43.78955537782038,
+    "rmse": 6.617367707617612,
+    "mae": 5.97329915715762,
+    "r2": 0.29085740278833394,
+    "n": 8
+  },
+  {
+    "player": "Jaylen Brown",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaylen_Brown_advanced.pkl",
+    "mse": 77.46412072335853,
+    "rmse": 8.801370388942766,
+    "mae": 7.009594974085399,
+    "r2": -0.08745420625026235,
+    "n": 8
+  },
+  {
+    "player": "Jaylen Clark",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaylen_Clark_advanced.pkl",
+    "mse": 1.6892344682657174,
+    "rmse": 1.2997055313669006,
+    "mae": 0.9962569474791252,
+    "r2": 0.7517859556834048,
+    "n": 6
+  },
+  {
+    "player": "Jaylen Wells",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jaylin Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jaylin_Williams_advanced.pkl",
+    "mse": 22.429356724525963,
+    "rmse": 4.735964181085618,
+    "mae": 4.290538347447674,
+    "r2": 0.3215811854927333,
+    "n": 7
+  },
+  {
+    "player": "Jaylon Tyson",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jayson Tatum",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jayson_Tatum_advanced.pkl",
+    "mse": 41.48884605765454,
+    "rmse": 6.441183591363822,
+    "mae": 4.623540228951557,
+    "r2": -0.30673530890250533,
+    "n": 8
+  },
+  {
+    "player": "Jeff Green",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jeff_Green_advanced.pkl",
+    "mse": 15.582579504750194,
+    "rmse": 3.94747761295111,
+    "mae": 2.5752522135982705,
+    "r2": 0.6073680754708612,
+    "n": 4
+  },
+  {
+    "player": "Jerami Grant",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jerami_Grant_advanced.pkl",
+    "mse": 49.51580716285752,
+    "rmse": 7.036746916214731,
+    "mae": 5.41868914476335,
+    "r2": 0.1408376235906451,
+    "n": 7
+  },
+  {
+    "player": "Jeremiah Robinson-Earl",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jeremiah_Robinson-Earl_advanced.pkl",
+    "mse": 45.56380104748864,
+    "rmse": 6.750096373200063,
+    "mae": 5.687681671931414,
+    "r2": -1.4484326339540496,
+    "n": 8
+  },
+  {
+    "player": "Jeremy Sochan",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jeremy_Sochan_advanced.pkl",
+    "mse": 26.8144370830595,
+    "rmse": 5.178265837426609,
+    "mae": 4.0401789268515484,
+    "r2": 0.43249868607281483,
+    "n": 8
+  },
+  {
+    "player": "Jericho Sims",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jericho_Sims_advanced.pkl",
+    "mse": 9.9744113352218,
+    "rmse": 3.1582291454582267,
+    "mae": 2.358979646563993,
+    "r2": 0.09323533316165455,
+    "n": 8
+  },
+  {
+    "player": "Jett Howard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jett_Howard_advanced.pkl",
+    "mse": 38.83893483335709,
+    "rmse": 6.232089122706533,
+    "mae": 4.02075491105827,
+    "r2": 0.1293548758897185,
+    "n": 8
+  },
+  {
+    "player": "Jevon Carter",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jevon_Carter_advanced.pkl",
+    "mse": 13.899493291873078,
+    "rmse": 3.728202420989649,
+    "mae": 3.3184541021437046,
+    "r2": 0.5563991502593699,
+    "n": 6
+  },
+  {
+    "player": "Jimmy Butler III",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jock Landale",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jock_Landale_advanced.pkl",
+    "mse": 6.333877448723446,
+    "rmse": 2.51671958086781,
+    "mae": 2.24209619543706,
+    "r2": -0.7675937066204968,
+    "n": 6
+  },
+  {
+    "player": "Joe Ingles",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Joe_Ingles_advanced.pkl",
+    "mse": 0.01577406593941366,
+    "rmse": 0.1255948483792773,
+    "mae": 0.12535863215779836,
+    "r2": 0.0,
+    "n": 2
+  },
+  {
+    "player": "Joel Embiid",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Joel_Embiid_advanced.pkl",
+    "mse": 1.225247590865647,
+    "rmse": 1.1069090255597553,
+    "mae": 1.0463256993178094,
+    "r2": -3.900990363462588,
+    "n": 2
+  },
+  {
+    "player": "John Collins",
+    "status": "ok",
+    "model_path": "backend\\models_store\\John_Collins_advanced.pkl",
+    "mse": 90.39766503423357,
+    "rmse": 9.507768667475748,
+    "mae": 8.189751616151918,
+    "r2": -2.797334820574572,
+    "n": 6
+  },
+  {
+    "player": "John Konchar",
+    "status": "ok",
+    "model_path": "backend\\models_store\\John_Konchar_advanced.pkl",
+    "mse": 4.753233667934343,
+    "rmse": 2.1801911998571004,
+    "mae": 1.9896046975877462,
+    "r2": 0.4027988468492749,
+    "n": 7
+  },
+  {
+    "player": "Johnny Furphy",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Johnny Juzang",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Johnny_Juzang_advanced.pkl",
+    "mse": 103.39786980996315,
+    "rmse": 10.168474310827714,
+    "mae": 9.456652354315546,
+    "r2": -6.659101467404678,
+    "n": 8
+  },
+  {
+    "player": "Jonas Valan\u010di\u016bnas",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jonathan Isaac",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jonathan_Isaac_advanced.pkl",
+    "mse": 16.309205221984964,
+    "rmse": 4.038465701474381,
+    "mae": 2.9664393371773334,
+    "r2": 0.17876543335402229,
+    "n": 8
+  },
+  {
+    "player": "Jonathan Kuminga",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jonathan_Kuminga_advanced.pkl",
+    "mse": 6.770817230974444,
+    "rmse": 2.6020794052016254,
+    "mae": 2.1223241182402113,
+    "r2": 0.6078368270475795,
+    "n": 7
+  },
+  {
+    "player": "Jonathan Mogbo",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jordan Clarkson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_Clarkson_advanced.pkl",
+    "mse": 20.61425332793317,
+    "rmse": 4.54029220732908,
+    "mae": 3.5434330574746986,
+    "r2": 0.23097086030508363,
+    "n": 6
+  },
+  {
+    "player": "Jordan Goodwin",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_Goodwin_advanced.pkl",
+    "mse": 23.121722894417257,
+    "rmse": 4.8085052661318,
+    "mae": 3.536537916259575,
+    "r2": -0.17443671844659092,
+    "n": 4
+  },
+  {
+    "player": "Jordan Hawkins",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_Hawkins_advanced.pkl",
+    "mse": 14.912279165382188,
+    "rmse": 3.86164202967885,
+    "mae": 3.1646622755657967,
+    "r2": 0.6644212846046202,
+    "n": 8
+  },
+  {
+    "player": "Jordan McLaughlin",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_McLaughlin_advanced.pkl",
+    "mse": 6.552566743248804,
+    "rmse": 2.55979818408577,
+    "mae": 2.104182238703071,
+    "r2": -0.2254800397679062,
+    "n": 7
+  },
+  {
+    "player": "Jordan Miller",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_Miller_advanced.pkl",
+    "mse": 0.603458562424106,
+    "rmse": 0.7768259537529021,
+    "mae": 0.6795998342598132,
+    "r2": 0.6805219375401792,
+    "n": 6
+  },
+  {
+    "player": "Jordan Poole",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_Poole_advanced.pkl",
+    "mse": 22.531020717797027,
+    "rmse": 4.7466852347503545,
+    "mae": 3.9453800706759936,
+    "r2": 0.4696633593457118,
+    "n": 8
+  },
+  {
+    "player": "Jordan Walsh",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jordan_Walsh_advanced.pkl",
+    "mse": 5.066522972789954,
+    "rmse": 2.250893816418259,
+    "mae": 2.002139109998801,
+    "r2": 0.5367750424877755,
+    "n": 8
+  },
+  {
+    "player": "Jose Alvarado",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jose_Alvarado_advanced.pkl",
+    "mse": 76.73641502047035,
+    "rmse": 8.759932363920989,
+    "mae": 7.485942959863654,
+    "r2": -1.7793608156820047,
+    "n": 8
+  },
+  {
+    "player": "Josh Giddey",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Josh_Giddey_advanced.pkl",
+    "mse": 37.32806702955498,
+    "rmse": 6.109669960771611,
+    "mae": 4.83667604484539,
+    "r2": 0.11090573506084156,
+    "n": 8
+  },
+  {
+    "player": "Josh Green",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Josh_Green_advanced.pkl",
+    "mse": 13.085713784983707,
+    "rmse": 3.617418110335562,
+    "mae": 3.249466619939309,
+    "r2": 0.3267799982001952,
+    "n": 8
+  },
+  {
+    "player": "Josh Hart",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Josh_Hart_advanced.pkl",
+    "mse": 24.844664105688487,
+    "rmse": 4.9844422060736635,
+    "mae": 4.27312106392949,
+    "r2": -0.6028815552057087,
+    "n": 8
+  },
+  {
+    "player": "Josh Minott",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Josh_Minott_advanced.pkl",
+    "mse": 9.26420353505347,
+    "rmse": 3.043715416239414,
+    "mae": 2.4717233087847204,
+    "r2": 0.21733452893513783,
+    "n": 7
+  },
+  {
+    "player": "Josh Okogie",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Josh_Okogie_advanced.pkl",
+    "mse": 4.288984519611987,
+    "rmse": 2.0709863639367563,
+    "mae": 1.5996810226917624,
+    "r2": 0.5979077012863762,
+    "n": 6
+  },
+  {
+    "player": "Jrue Holiday",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Jrue_Holiday_advanced.pkl",
+    "mse": 19.35016687070739,
+    "rmse": 4.398882457023305,
+    "mae": 3.466011607733067,
+    "r2": 0.5734031416723138,
+    "n": 8
+  },
+  {
+    "player": "Julian Champagnie",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Julian_Champagnie_advanced.pkl",
+    "mse": 27.191332225735533,
+    "rmse": 5.214530873025447,
+    "mae": 4.472355165628629,
+    "r2": 0.011224282700526111,
+    "n": 8
+  },
+  {
+    "player": "Julian Phillips",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Julian_Phillips_advanced.pkl",
+    "mse": 41.74807897569673,
+    "rmse": 6.46127533662641,
+    "mae": 4.505278822128313,
+    "r2": 0.09733883295790857,
+    "n": 8
+  },
+  {
+    "player": "Julian Strawther",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Julian_Strawther_advanced.pkl",
+    "mse": 7.83630137376649,
+    "rmse": 2.799339453115054,
+    "mae": 2.3152406927359133,
+    "r2": 0.42748483114034774,
+    "n": 8
+  },
+  {
+    "player": "Julius Randle",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Julius_Randle_advanced.pkl",
+    "mse": 32.165262226073985,
+    "rmse": 5.671442693536979,
+    "mae": 5.286218493364963,
+    "r2": 0.49133264579472824,
+    "n": 8
+  },
+  {
+    "player": "Justin Edwards",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Jusuf Nurki\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "KJ Simpson",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Karl-Anthony Towns",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Karl-Anthony_Towns_advanced.pkl",
+    "mse": 66.06839801483672,
+    "rmse": 8.128246921374664,
+    "mae": 6.307749799844592,
+    "r2": 0.05426583025060394,
+    "n": 8
+  },
+  {
+    "player": "Karlo Matkovi\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Kawhi Leonard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kawhi_Leonard_advanced.pkl",
+    "mse": 210.64912328128753,
+    "rmse": 14.513756346352501,
+    "mae": 14.00653669507274,
+    "r2": -9.958624910587215,
+    "n": 6
+  },
+  {
+    "player": "Keaton Wallace",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Keegan Murray",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Keegan_Murray_advanced.pkl",
+    "mse": 106.67786906895114,
+    "rmse": 10.328497909616438,
+    "mae": 9.375271294219456,
+    "r2": -1.071414933377692,
+    "n": 8
+  },
+  {
+    "player": "Kel'el Ware",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Keldon Johnson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Keldon_Johnson_advanced.pkl",
+    "mse": 38.97143148157657,
+    "rmse": 6.242710267309911,
+    "mae": 5.685130531135032,
+    "r2": 0.3524995807837745,
+    "n": 8
+  },
+  {
+    "player": "Kelly Olynyk",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kelly_Olynyk_advanced.pkl",
+    "mse": 28.134485428892994,
+    "rmse": 5.30419507832178,
+    "mae": 4.772059918499579,
+    "r2": -2.9843635433981412,
+    "n": 7
+  },
+  {
+    "player": "Kelly Oubre Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kelly_Oubre_Jr._advanced.pkl",
+    "mse": 34.69500683960764,
+    "rmse": 5.890246755409118,
+    "mae": 4.627723668994912,
+    "r2": 0.27624496814377797,
+    "n": 8
+  },
+  {
+    "player": "Kenrich Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kenrich_Williams_advanced.pkl",
+    "mse": 58.48978345161283,
+    "rmse": 7.647861364565445,
+    "mae": 5.554979102217731,
+    "r2": -0.7022947434757714,
+    "n": 8
+  },
+  {
+    "player": "Kentavious Caldwell-Pope",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kentavious_Caldwell-Pope_advanced.pkl",
+    "mse": 46.714021327004446,
+    "rmse": 6.834765638045276,
+    "mae": 5.320601373363343,
+    "r2": 0.1945858391895785,
+    "n": 8
+  },
+  {
+    "player": "Keon Ellis",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Keon_Ellis_advanced.pkl",
+    "mse": 24.567113882562502,
+    "rmse": 4.956522357718414,
+    "mae": 4.055104242441329,
+    "r2": 0.24372520996440594,
+    "n": 8
+  },
+  {
+    "player": "Keshad Johnson",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Kevin Durant",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kevin_Durant_advanced.pkl",
+    "mse": 36.934420363295644,
+    "rmse": 6.077369526636968,
+    "mae": 5.132412014398272,
+    "r2": 0.6387279683247866,
+    "n": 8
+  },
+  {
+    "player": "Kevin Huerter",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kevin_Huerter_advanced.pkl",
+    "mse": 20.986996362703163,
+    "rmse": 4.581156662099994,
+    "mae": 4.067933060335882,
+    "r2": 0.31048882586601523,
+    "n": 8
+  },
+  {
+    "player": "Kevin Love",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kevin_Love_advanced.pkl",
+    "mse": 2.0451874694648575,
+    "rmse": 1.4301005102666238,
+    "mae": 1.3860530215720421,
+    "r2": 0.8613432224091622,
+    "n": 4
+  },
+  {
+    "player": "Kevin Porter Jr.",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Kevon Looney",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kevon_Looney_advanced.pkl",
+    "mse": 2.689331283732454,
+    "rmse": 1.6399180722622866,
+    "mae": 1.5446316678405756,
+    "r2": 0.3672161685335402,
+    "n": 8
+  },
+  {
+    "player": "Keyonte George",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Keyonte_George_advanced.pkl",
+    "mse": 29.21620989235505,
+    "rmse": 5.4052021139227575,
+    "mae": 3.2041723530779533,
+    "r2": 0.36744335821694074,
+    "n": 8
+  },
+  {
+    "player": "Klay Thompson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Klay_Thompson_advanced.pkl",
+    "mse": 16.124104370238218,
+    "rmse": 4.0154830805568364,
+    "mae": 3.243331111167321,
+    "r2": 0.48786963786836435,
+    "n": 8
+  },
+  {
+    "player": "Kobe Brown",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kobe_Brown_advanced.pkl",
+    "mse": 2.757960602778553,
+    "rmse": 1.6607108727224476,
+    "mae": 1.3892687651353655,
+    "r2": 0.23033657596877588,
+    "n": 6
+  },
+  {
+    "player": "Kris Dunn",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kris_Dunn_advanced.pkl",
+    "mse": 8.224376066801272,
+    "rmse": 2.8678173001084417,
+    "mae": 2.2737156996431245,
+    "r2": 0.0012142916977583296,
+    "n": 8
+  },
+  {
+    "player": "Kris Murray",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kris_Murray_advanced.pkl",
+    "mse": 19.67159618188613,
+    "rmse": 4.435267317973758,
+    "mae": 3.2461855520308807,
+    "r2": 0.42327890259243595,
+    "n": 8
+  },
+  {
+    "player": "Kristaps Porzi\u0146\u0123is",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Kyle Anderson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kyle_Anderson_advanced.pkl",
+    "mse": 10.979409068177691,
+    "rmse": 3.313519136534101,
+    "mae": 2.9075577145142972,
+    "r2": 0.3541524077542535,
+    "n": 8
+  },
+  {
+    "player": "Kyle Filipowski",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Kyle Kuzma",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kyle_Kuzma_advanced.pkl",
+    "mse": 35.89830134818454,
+    "rmse": 5.991519118569559,
+    "mae": 5.348155949475215,
+    "r2": -0.9553117330074983,
+    "n": 8
+  },
+  {
+    "player": "Kyle Lowry",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kyle_Lowry_advanced.pkl",
+    "mse": 6.277373734578495,
+    "rmse": 2.505468765436619,
+    "mae": 2.258553491494574,
+    "r2": -0.7437149262718041,
+    "n": 5
+  },
+  {
+    "player": "Kyrie Irving",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Kyrie_Irving_advanced.pkl",
+    "mse": 88.41322595785957,
+    "rmse": 9.402830741742592,
+    "mae": 7.979993088219804,
+    "r2": 0.19395349554088148,
+    "n": 8
+  },
+  {
+    "player": "LaMelo Ball",
+    "status": "ok",
+    "model_path": "backend\\models_store\\LaMelo_Ball_advanced.pkl",
+    "mse": 11.822105870994761,
+    "rmse": 3.438328935834203,
+    "mae": 2.877201792090099,
+    "r2": 0.4545356048222756,
+    "n": 7
+  },
+  {
+    "player": "Landry Shamet",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Landry_Shamet_advanced.pkl",
+    "mse": 90.29578629390718,
+    "rmse": 9.502409499379995,
+    "mae": 6.743247165669837,
+    "r2": -0.3145883354890946,
+    "n": 8
+  },
+  {
+    "player": "Larry Nance Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Larry_Nance_Jr._advanced.pkl",
+    "mse": 5.6763469053181455,
+    "rmse": 2.382508532055687,
+    "mae": 2.088196402584792,
+    "r2": 0.7558560470830905,
+    "n": 4
+  },
+  {
+    "player": "Lauri Markkanen",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Lauri_Markkanen_advanced.pkl",
+    "mse": 21.49860089515683,
+    "rmse": 4.636658375938088,
+    "mae": 3.342440434306435,
+    "r2": 0.20555698049571303,
+    "n": 7
+  },
+  {
+    "player": "LeBron James",
+    "status": "ok",
+    "model_path": "backend\\models_store\\LeBron_James_advanced.pkl",
+    "mse": 19.724439444021204,
+    "rmse": 4.441220490363117,
+    "mae": 3.3454949643691396,
+    "r2": 0.48072228530754546,
+    "n": 8
+  },
+  {
+    "player": "Leonard Miller",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Leonard_Miller_advanced.pkl",
+    "mse": 1.608719608356858,
+    "rmse": 1.268353108703116,
+    "mae": 1.25163150556713,
+    "r2": -0.608719608356858,
+    "n": 2
+  },
+  {
+    "player": "Lindy Waters III",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Lindy_Waters_III_advanced.pkl",
+    "mse": 25.49340943010902,
+    "rmse": 5.049099863352776,
+    "mae": 2.896664702361461,
+    "r2": 0.12843044683387972,
+    "n": 8
+  },
+  {
+    "player": "Lonzo Ball",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Lonzo_Ball_advanced.pkl",
+    "mse": 27.261993531098028,
+    "rmse": 5.2213019000147876,
+    "mae": 4.266958752233808,
+    "r2": -0.12466970012780654,
+    "n": 5
+  },
+  {
+    "player": "Luguentz Dort",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Luguentz_Dort_advanced.pkl",
+    "mse": 33.17099191364514,
+    "rmse": 5.759426352827609,
+    "mae": 4.758463162103839,
+    "r2": -0.06626995603881913,
+    "n": 8
+  },
+  {
+    "player": "Luka Don\u010di\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Luka Garza",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Luka_Garza_advanced.pkl",
+    "mse": 1.0340831524799001,
+    "rmse": 1.0168987916601633,
+    "mae": 0.8981087539036858,
+    "r2": 0.596061268562539,
+    "n": 5
+  },
+  {
+    "player": "Luke Kennard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Luke_Kennard_advanced.pkl",
+    "mse": 11.108279739657199,
+    "rmse": 3.3329086005555566,
+    "mae": 3.0619014107201927,
+    "r2": 0.3267709248692606,
+    "n": 8
+  },
+  {
+    "player": "Luke Kornet",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Luke_Kornet_advanced.pkl",
+    "mse": 21.03747666025367,
+    "rmse": 4.586662911121077,
+    "mae": 3.957661872982069,
+    "r2": -0.3059151370089572,
+    "n": 8
+  },
+  {
+    "player": "Luke Travers",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Malik Monk",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Malik_Monk_advanced.pkl",
+    "mse": 79.57881683555794,
+    "rmse": 8.920695983809669,
+    "mae": 6.788821306700353,
+    "r2": 0.08001367820164229,
+    "n": 8
+  },
+  {
+    "player": "Marcus Sasser",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Marcus_Sasser_advanced.pkl",
+    "mse": 82.41157034682027,
+    "rmse": 9.078081864954747,
+    "mae": 6.600259725565325,
+    "r2": -0.28049053221570697,
+    "n": 8
+  },
+  {
+    "player": "Marcus Smart",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Marcus_Smart_advanced.pkl",
+    "mse": 9.902543019467638,
+    "rmse": 3.1468306308836573,
+    "mae": 2.920337706416414,
+    "r2": 0.649343377497605,
+    "n": 5
+  },
+  {
+    "player": "Mark Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Mark_Williams_advanced.pkl",
+    "mse": 19.57661057523904,
+    "rmse": 4.424546369430321,
+    "mae": 3.898642897306584,
+    "r2": 0.2688613428454931,
+    "n": 7
+  },
+  {
+    "player": "Mason Plumlee",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Mason_Plumlee_advanced.pkl",
+    "mse": 3.3607744226286607,
+    "rmse": 1.833241506902094,
+    "mae": 1.494280837666338,
+    "r2": 0.6721195685240331,
+    "n": 8
+  },
+  {
+    "player": "Matas Buzelis",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Matisse Thybulle",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Matisse_Thybulle_advanced.pkl",
+    "mse": 93.59961768491198,
+    "rmse": 9.67468953945872,
+    "mae": 9.640722064387443,
+    "r2": -22.399904421227994,
+    "n": 2
+  },
+  {
+    "player": "Max Christie",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Max_Christie_advanced.pkl",
+    "mse": 6.229743208279291,
+    "rmse": 2.495945353624412,
+    "mae": 1.6604749224397701,
+    "r2": 0.7229301144337217,
+    "n": 8
+  },
+  {
+    "player": "Max Strus",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Max_Strus_advanced.pkl",
+    "mse": 21.550813342656227,
+    "rmse": 4.642285357736664,
+    "mae": 3.5808799008785486,
+    "r2": 0.36615254874540515,
+    "n": 8
+  },
+  {
+    "player": "Maxi Kleber",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Maxi_Kleber_advanced.pkl",
+    "mse": 6.5396424139221505,
+    "rmse": 2.5572724559424933,
+    "mae": 2.1641473431656073,
+    "r2": 0.5381608464744245,
+    "n": 5
+  },
+  {
+    "player": "Michael Porter Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Michael_Porter_Jr._advanced.pkl",
+    "mse": 20.789995453471775,
+    "rmse": 4.55960474750518,
+    "mae": 3.110096304401624,
+    "r2": 0.1600001836981101,
+    "n": 8
+  },
+  {
+    "player": "Mikal Bridges",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Mikal_Bridges_advanced.pkl",
+    "mse": 27.448745943937368,
+    "rmse": 5.239155079202883,
+    "mae": 3.649167287710781,
+    "r2": 0.37260009271000305,
+    "n": 8
+  },
+  {
+    "player": "Mike Conley",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Mike_Conley_advanced.pkl",
+    "mse": 15.10581394944124,
+    "rmse": 3.886619861710332,
+    "mae": 2.7194518461925017,
+    "r2": 0.3463339467449362,
+    "n": 8
+  },
+  {
+    "player": "Miles Bridges",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Miles_Bridges_advanced.pkl",
+    "mse": 36.5059980527427,
+    "rmse": 6.042019368782485,
+    "mae": 4.634836024635238,
+    "r2": -0.06781712768534387,
+    "n": 8
+  },
+  {
+    "player": "Miles McBride",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Miles_McBride_advanced.pkl",
+    "mse": 11.981527035165877,
+    "rmse": 3.4614342453910454,
+    "mae": 3.1375369151760677,
+    "r2": -0.11456065443403518,
+    "n": 8
+  },
+  {
+    "player": "Mitchell Robinson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Mitchell_Robinson_advanced.pkl",
+    "mse": 4.360964363734921,
+    "rmse": 2.0882922122478265,
+    "mae": 1.7629252871783165,
+    "r2": 0.2991307272568876,
+    "n": 3
+  },
+  {
+    "player": "Mont\u00e9 Morris",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Moritz Wagner",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Moritz_Wagner_advanced.pkl",
+    "mse": 27.68852186141794,
+    "rmse": 5.261988394268648,
+    "mae": 4.149160083426969,
+    "r2": 0.7473675012644349,
+    "n": 5
+  },
+  {
+    "player": "Moses Moody",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Moses_Moody_advanced.pkl",
+    "mse": 45.919864715768554,
+    "rmse": 6.776419756462003,
+    "mae": 6.17336050777762,
+    "r2": -3.717289473208969,
+    "n": 8
+  },
+  {
+    "player": "Mouhamed Gueye",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Mouhamed_Gueye_advanced.pkl",
+    "mse": 9.628688600571353,
+    "rmse": 3.1030128263626873,
+    "mae": 2.6858685202707,
+    "r2": -0.6487480480430399,
+    "n": 5
+  },
+  {
+    "player": "Moussa Diabat\u00e9",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Myles Turner",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Myles_Turner_advanced.pkl",
+    "mse": 22.978336168347592,
+    "rmse": 4.793572380630921,
+    "mae": 3.830561555013247,
+    "r2": 0.27305313159948297,
+    "n": 8
+  },
+  {
+    "player": "Naji Marshall",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Naji_Marshall_advanced.pkl",
+    "mse": 73.3213422867994,
+    "rmse": 8.562788230874299,
+    "mae": 6.095448080844516,
+    "r2": -0.892163671917404,
+    "n": 8
+  },
+  {
+    "player": "Naz Reid",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Naz_Reid_advanced.pkl",
+    "mse": 9.124098704733642,
+    "rmse": 3.0206123062607095,
+    "mae": 2.4367158782448683,
+    "r2": 0.5117539154657582,
+    "n": 8
+  },
+  {
+    "player": "Neemias Queta",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Neemias_Queta_advanced.pkl",
+    "mse": 15.092460906867416,
+    "rmse": 3.8849016598708666,
+    "mae": 3.225810064520685,
+    "r2": -0.6568053139614316,
+    "n": 8
+  },
+  {
+    "player": "Nic Claxton",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Nic_Claxton_advanced.pkl",
+    "mse": 20.586710814657717,
+    "rmse": 4.537258072300684,
+    "mae": 3.761798947718199,
+    "r2": 0.4051695295087612,
+    "n": 8
+  },
+  {
+    "player": "Nick Richards",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Nick_Richards_advanced.pkl",
+    "mse": 9.88180874300457,
+    "rmse": 3.143534434836776,
+    "mae": 2.5236889297134666,
+    "r2": 0.14880786062948526,
+    "n": 8
+  },
+  {
+    "player": "Nick Smith Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Nick_Smith_Jr._advanced.pkl",
+    "mse": 30.568382056429392,
+    "rmse": 5.528868062852413,
+    "mae": 4.265515416782282,
+    "r2": 0.4600120199802702,
+    "n": 8
+  },
+  {
+    "player": "Nickeil Alexander-Walker",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Nickeil_Alexander-Walker_advanced.pkl",
+    "mse": 21.34065161168504,
+    "rmse": 4.619594312456997,
+    "mae": 3.601368105636181,
+    "r2": 0.4299659001887135,
+    "n": 8
+  },
+  {
+    "player": "Nicolas Batum",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Nicolas_Batum_advanced.pkl",
+    "mse": 13.544201534343888,
+    "rmse": 3.680244765548059,
+    "mae": 3.0604582001144323,
+    "r2": 0.46326384012507194,
+    "n": 8
+  },
+  {
+    "player": "Nikola Joki\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Nikola Jovi\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Nikola Vu\u010devi\u0107",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Noah Clowney",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Noah_Clowney_advanced.pkl",
+    "mse": 9.765573766440443,
+    "rmse": 3.124991802619719,
+    "mae": 2.4901156016523944,
+    "r2": 0.3988528711613295,
+    "n": 7
+  },
+  {
+    "player": "Norman Powell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Norman_Powell_advanced.pkl",
+    "mse": 34.39769352869379,
+    "rmse": 5.864954691103231,
+    "mae": 4.963459780528561,
+    "r2": 0.46240478978354027,
+    "n": 8
+  },
+  {
+    "player": "OG Anunoby",
+    "status": "ok",
+    "model_path": "backend\\models_store\\OG_Anunoby_advanced.pkl",
+    "mse": 91.57099797147605,
+    "rmse": 9.569273638655968,
+    "mae": 8.322979755350044,
+    "r2": -1.149080993830021,
+    "n": 8
+  },
+  {
+    "player": "Obi Toppin",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Obi_Toppin_advanced.pkl",
+    "mse": 26.45257048821775,
+    "rmse": 5.143206245934315,
+    "mae": 3.924399618611649,
+    "r2": 0.2600679583715315,
+    "n": 8
+  },
+  {
+    "player": "Ochai Agbaji",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ochai_Agbaji_advanced.pkl",
+    "mse": 79.16970864812566,
+    "rmse": 8.897736152984402,
+    "mae": 7.369531712085953,
+    "r2": -1.245949181507111,
+    "n": 8
+  },
+  {
+    "player": "Olivier-Maxence Prosper",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Olivier-Maxence_Prosper_advanced.pkl",
+    "mse": 10.414412929308423,
+    "rmse": 3.227136955461981,
+    "mae": 2.9689226336269425,
+    "r2": 0.34846292524365685,
+    "n": 8
+  },
+  {
+    "player": "Onyeka Okongwu",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Onyeka_Okongwu_advanced.pkl",
+    "mse": 56.20624530390037,
+    "rmse": 7.497082452787909,
+    "mae": 5.787362508947881,
+    "r2": 0.257390648338228,
+    "n": 8
+  },
+  {
+    "player": "Orlando Robinson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Orlando_Robinson_advanced.pkl",
+    "mse": 52.66525475179812,
+    "rmse": 7.257083074610495,
+    "mae": 6.511509006681101,
+    "r2": -3.2867067821231037,
+    "n": 7
+  },
+  {
+    "player": "Oscar Tshiebwe",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Oscar_Tshiebwe_advanced.pkl",
+    "mse": 6.704558423690904,
+    "rmse": 2.5893162077449916,
+    "mae": 1.8858706742547167,
+    "r2": 0.5809650985193184,
+    "n": 2
+  },
+  {
+    "player": "Oso Ighodaro",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ousmane Dieng",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ousmane_Dieng_advanced.pkl",
+    "mse": 15.42881371887647,
+    "rmse": 3.9279528661729723,
+    "mae": 3.405668843976109,
+    "r2": 0.5296889975617673,
+    "n": 6
+  },
+  {
+    "player": "P.J. Washington",
+    "status": "ok",
+    "model_path": "backend\\models_store\\P.J._Washington_advanced.pkl",
+    "mse": 7.483930112251012,
+    "rmse": 2.7356772675611816,
+    "mae": 2.19855173659324,
+    "r2": 0.7148979004856757,
+    "n": 8
+  },
+  {
+    "player": "Pac\u00f4me Dadiet",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Paolo Banchero",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Paolo_Banchero_advanced.pkl",
+    "mse": 19.380108728881787,
+    "rmse": 4.402284489771395,
+    "mae": 3.542409213679911,
+    "r2": 0.5460681989889066,
+    "n": 7
+  },
+  {
+    "player": "Pascal Siakam",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Pascal_Siakam_advanced.pkl",
+    "mse": 34.30255856037355,
+    "rmse": 5.856838614847907,
+    "mae": 4.992128529126401,
+    "r2": -0.43769728085390125,
+    "n": 8
+  },
+  {
+    "player": "Pat Connaughton",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Pat_Connaughton_advanced.pkl",
+    "mse": 76.99238240729308,
+    "rmse": 8.774530324028351,
+    "mae": 5.217001488379197,
+    "r2": 0.6054482894430533,
+    "n": 6
+  },
+  {
+    "player": "Pat Spencer",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Pat_Spencer_advanced.pkl",
+    "mse": 14.636197822549047,
+    "rmse": 3.8257284041799213,
+    "mae": 3.4427591532438084,
+    "r2": 0.08523763609068458,
+    "n": 5
+  },
+  {
+    "player": "Patrick Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Patrick_Williams_advanced.pkl",
+    "mse": 12.855246036281136,
+    "rmse": 3.5854213192149587,
+    "mae": 2.8185449630478723,
+    "r2": 0.6956212555227552,
+    "n": 8
+  },
+  {
+    "player": "Paul George",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Paul_George_advanced.pkl",
+    "mse": 20.350649496395974,
+    "rmse": 4.5111694156167506,
+    "mae": 3.639157360010611,
+    "r2": 0.28733134059313714,
+    "n": 6
+  },
+  {
+    "player": "Paul Reed",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Paul_Reed_advanced.pkl",
+    "mse": 15.361610587768732,
+    "rmse": 3.919389057974308,
+    "mae": 3.1711019830072265,
+    "r2": -0.4216400543950498,
+    "n": 6
+  },
+  {
+    "player": "Payton Pritchard",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Payton_Pritchard_advanced.pkl",
+    "mse": 44.64728964783667,
+    "rmse": 6.681862737877565,
+    "mae": 5.075087140215583,
+    "r2": 0.43484443483751045,
+    "n": 8
+  },
+  {
+    "player": "Pelle Larsson",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Pete Nance",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Pete_Nance_advanced.pkl",
+    "mse": 78.73736989776299,
+    "rmse": 8.87340802047122,
+    "mae": 6.52639484850055,
+    "r2": -0.08979058682024887,
+    "n": 2
+  },
+  {
+    "player": "Peyton Watson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Peyton_Watson_advanced.pkl",
+    "mse": 4.422595979364839,
+    "rmse": 2.1029969042689625,
+    "mae": 1.8909246897671848,
+    "r2": 0.36250868765912225,
+    "n": 8
+  },
+  {
+    "player": "Precious Achiuwa",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Precious_Achiuwa_advanced.pkl",
+    "mse": 27.968110675874602,
+    "rmse": 5.2884885057901565,
+    "mae": 4.709700057610859,
+    "r2": 0.4348092569447507,
+    "n": 8
+  },
+  {
+    "player": "Quentin Grimes",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Quentin_Grimes_advanced.pkl",
+    "mse": 23.756247775931094,
+    "rmse": 4.874038138538833,
+    "mae": 4.244039148926575,
+    "r2": 0.4847848669401593,
+    "n": 8
+  },
+  {
+    "player": "Quenton Jackson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Quenton_Jackson_advanced.pkl",
+    "mse": 33.37009620761978,
+    "rmse": 5.776685572854021,
+    "mae": 4.965640030449512,
+    "r2": 0.43440514902339356,
+    "n": 4
+  },
+  {
+    "player": "Quinten Post",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "RJ Barrett",
+    "status": "ok",
+    "model_path": "backend\\models_store\\RJ_Barrett_advanced.pkl",
+    "mse": 5.973482064924787,
+    "rmse": 2.4440707978544296,
+    "mae": 1.9759448619057656,
+    "r2": 0.81821072175217,
+    "n": 8
+  },
+  {
+    "player": "RayJ Dennis",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Rayan Rupert",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Rayan_Rupert_advanced.pkl",
+    "mse": 65.31423344026561,
+    "rmse": 8.081722182818808,
+    "mae": 6.349371437289982,
+    "r2": -0.5667582234546473,
+    "n": 8
+  },
+  {
+    "player": "Reed Sheppard",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Rob Dillingham",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Robert Williams III",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Robert_Williams_III_advanced.pkl",
+    "mse": 0.7765322835640669,
+    "rmse": 0.8812106919256409,
+    "mae": 0.7964904428184285,
+    "r2": 0.7088003936634749,
+    "n": 3
+  },
+  {
+    "player": "Ronald Holland II",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Royce O'Neale",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Royce_O'Neale_advanced.pkl",
+    "mse": 17.115077170661564,
+    "rmse": 4.137037245500887,
+    "mae": 3.3266159205824204,
+    "r2": 0.5054785828793047,
+    "n": 8
+  },
+  {
+    "player": "Rudy Gobert",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Rudy_Gobert_advanced.pkl",
+    "mse": 87.45293893243854,
+    "rmse": 9.351627608734136,
+    "mae": 7.333244323101075,
+    "r2": -0.4579286511268734,
+    "n": 8
+  },
+  {
+    "player": "Rui Hachimura",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Rui_Hachimura_advanced.pkl",
+    "mse": 16.77960519120228,
+    "rmse": 4.096291638934206,
+    "mae": 2.792646265168057,
+    "r2": 0.4380456660193899,
+    "n": 8
+  },
+  {
+    "player": "Russell Westbrook",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Russell_Westbrook_advanced.pkl",
+    "mse": 63.10848749732736,
+    "rmse": 7.944085063575752,
+    "mae": 6.585813285267612,
+    "r2": -0.14223506782492956,
+    "n": 8
+  },
+  {
+    "player": "Ryan Dunn",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ryan Rollins",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ryan_Rollins_advanced.pkl",
+    "mse": 18.133043748602322,
+    "rmse": 4.258291177057098,
+    "mae": 3.350436319632154,
+    "r2": 0.4042531827974596,
+    "n": 8
+  },
+  {
+    "player": "Sam Hauser",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Sam_Hauser_advanced.pkl",
+    "mse": 15.26256061145223,
+    "rmse": 3.906732728438462,
+    "mae": 3.479111447640877,
+    "r2": 0.47568229783524274,
+    "n": 8
+  },
+  {
+    "player": "Sam Merrill",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Sam_Merrill_advanced.pkl",
+    "mse": 27.36984205714544,
+    "rmse": 5.231619448807935,
+    "mae": 4.504794353131277,
+    "r2": -0.3957529017189707,
+    "n": 8
+  },
+  {
+    "player": "Sandro Mamukelashvili",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Sandro_Mamukelashvili_advanced.pkl",
+    "mse": 15.199300132267233,
+    "rmse": 3.8986279807474875,
+    "mae": 2.8739845764127683,
+    "r2": 0.5885130251839666,
+    "n": 8
+  },
+  {
+    "player": "Santi Aldama",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Santi_Aldama_advanced.pkl",
+    "mse": 44.04881265920659,
+    "rmse": 6.636927953444017,
+    "mae": 5.783650260512946,
+    "r2": -0.6710871429693075,
+    "n": 8
+  },
+  {
+    "player": "Scoot Henderson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Scoot_Henderson_advanced.pkl",
+    "mse": 93.77641060757523,
+    "rmse": 9.683822107389997,
+    "mae": 8.605775918931318,
+    "r2": -0.4482843337077256,
+    "n": 8
+  },
+  {
+    "player": "Scottie Barnes",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Scottie_Barnes_advanced.pkl",
+    "mse": 23.85528972680592,
+    "rmse": 4.884187724361741,
+    "mae": 4.0634395090647,
+    "r2": 0.7199672519230413,
+    "n": 8
+  },
+  {
+    "player": "Scotty Pippen Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Scotty_Pippen_Jr._advanced.pkl",
+    "mse": 17.241873591410595,
+    "rmse": 4.1523335115824445,
+    "mae": 3.529531700540444,
+    "r2": -0.13061466173184222,
+    "n": 8
+  },
+  {
+    "player": "Shaedon Sharpe",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Shaedon_Sharpe_advanced.pkl",
+    "mse": 119.91321386900434,
+    "rmse": 10.95048920683475,
+    "mae": 8.1282494532012,
+    "r2": -1.06357775950962,
+    "n": 8
+  },
+  {
+    "player": "Shai Gilgeous-Alexander",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Shai_Gilgeous-Alexander_advanced.pkl",
+    "mse": 47.587765511442925,
+    "rmse": 6.898388617020856,
+    "mae": 5.817942630018569,
+    "r2": -0.3311263080123894,
+    "n": 8
+  },
+  {
+    "player": "Sidy Cissoko",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Sidy_Cissoko_advanced.pkl",
+    "mse": 10.828506710325039,
+    "rmse": 3.290669644665815,
+    "mae": 2.5521505572940892,
+    "r2": -0.31698054585034274,
+    "n": 3
+  },
+  {
+    "player": "Simone Fontecchio",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Simone_Fontecchio_advanced.pkl",
+    "mse": 36.076911377586136,
+    "rmse": 6.0064058618766465,
+    "mae": 5.689025229549376,
+    "r2": -0.9241019401379271,
+    "n": 8
+  },
+  {
+    "player": "Spencer Jones",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Stephen Curry",
+    "status": "ok",
+    "model_path": "backend\\models_store\\stephen_curry.pkl",
+    "mse": 1034.8941641218653,
+    "rmse": 32.16977096781799,
+    "mae": 28.875331844359216,
+    "r2": -4.145927006743794,
+    "n": 8
+  },
+  {
+    "player": "Stephon Castle",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Steven Adams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Steven_Adams_advanced.pkl",
+    "mse": 30.72711855555339,
+    "rmse": 5.543204718892618,
+    "mae": 4.314551039997675,
+    "r2": -1.5374652742650539,
+    "n": 8
+  },
+  {
+    "player": "Svi Mykhailiuk",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Svi_Mykhailiuk_advanced.pkl",
+    "mse": 30.525601446369773,
+    "rmse": 5.524997868449342,
+    "mae": 3.7885664797951115,
+    "r2": 0.5151588080309757,
+    "n": 5
+  },
+  {
+    "player": "T.J. McConnell",
+    "status": "ok",
+    "model_path": "backend\\models_store\\T.J._McConnell_advanced.pkl",
+    "mse": 8.28633213909275,
+    "rmse": 2.8785989889341566,
+    "mae": 2.1707027471589218,
+    "r2": 0.22917840566579073,
+    "n": 8
+  },
+  {
+    "player": "Tari Eason",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tari_Eason_advanced.pkl",
+    "mse": 30.561209933748643,
+    "rmse": 5.528219418017762,
+    "mae": 4.493068066964518,
+    "r2": -0.4651066934531185,
+    "n": 8
+  },
+  {
+    "player": "Taurean Prince",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Taurean_Prince_advanced.pkl",
+    "mse": 10.501012474940662,
+    "rmse": 3.240526573713084,
+    "mae": 2.8957218620560496,
+    "r2": 0.2933072572069375,
+    "n": 8
+  },
+  {
+    "player": "Terance Mann",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Terance_Mann_advanced.pkl",
+    "mse": 14.534930457665862,
+    "rmse": 3.812470387775604,
+    "mae": 3.314803442447742,
+    "r2": 0.5653104909856939,
+    "n": 8
+  },
+  {
+    "player": "Terrence Shannon Jr.",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Terry Rozier",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Terry_Rozier_advanced.pkl",
+    "mse": 5.21995448152804,
+    "rmse": 2.284721970290486,
+    "mae": 2.062939290215664,
+    "r2": 0.776537065673716,
+    "n": 8
+  },
+  {
+    "player": "Thomas Bryant",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Thomas_Bryant_advanced.pkl",
+    "mse": 15.062499200171345,
+    "rmse": 3.881043571022019,
+    "mae": 3.2399178936700315,
+    "r2": 0.1139706352840385,
+    "n": 8
+  },
+  {
+    "player": "Tidjane Sala\u00fcn",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Tim Hardaway Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tim_Hardaway_Jr._advanced.pkl",
+    "mse": 42.62232369323293,
+    "rmse": 6.528577463217613,
+    "mae": 6.050578792557895,
+    "r2": 0.24037072782876434,
+    "n": 8
+  },
+  {
+    "player": "Tobias Harris",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tobias_Harris_advanced.pkl",
+    "mse": 7.3371906818953425,
+    "rmse": 2.7087249180925226,
+    "mae": 2.0072919718828786,
+    "r2": 0.5803572800345828,
+    "n": 8
+  },
+  {
+    "player": "Tony Bradley",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tony_Bradley_advanced.pkl",
+    "mse": 33.50077870050587,
+    "rmse": 5.787985720482202,
+    "mae": 5.492765162675571,
+    "r2": -7.375194675126467,
+    "n": 2
+  },
+  {
+    "player": "Tosan Evbuomwan",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tosan_Evbuomwan_advanced.pkl",
+    "mse": 17.678447687491186,
+    "rmse": 4.204574614332725,
+    "mae": 3.9143347283062955,
+    "r2": 0.5156589674659948,
+    "n": 4
+  },
+  {
+    "player": "Toumani Camara",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Toumani_Camara_advanced.pkl",
+    "mse": 11.018777153405345,
+    "rmse": 3.3194543457329466,
+    "mae": 2.7622423067078765,
+    "r2": 0.6660976620180199,
+    "n": 8
+  },
+  {
+    "player": "Trae Young",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Trae_Young_advanced.pkl",
+    "mse": 31.14930772138156,
+    "rmse": 5.5811564860144856,
+    "mae": 4.387896084758443,
+    "r2": 0.07016991876472956,
+    "n": 8
+  },
+  {
+    "player": "Trayce Jackson-Davis",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Trayce_Jackson-Davis_advanced.pkl",
+    "mse": 13.898561915904299,
+    "rmse": 3.7280775093745433,
+    "mae": 3.062582040224463,
+    "r2": 0.23843496351209326,
+    "n": 8
+  },
+  {
+    "player": "Tre Jones",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tre_Jones_advanced.pkl",
+    "mse": 51.99756203646166,
+    "rmse": 7.210933506589952,
+    "mae": 6.40998691493636,
+    "r2": -2.9563362419046912,
+    "n": 7
+  },
+  {
+    "player": "Tre Mann",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tre_Mann_advanced.pkl",
+    "mse": 17.6683694121502,
+    "rmse": 4.203375954176619,
+    "mae": 4.085828741743395,
+    "r2": 0.639421032405098,
+    "n": 2
+  },
+  {
+    "player": "Trendon Watford",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Trendon_Watford_advanced.pkl",
+    "mse": 30.148748813965657,
+    "rmse": 5.49078763147562,
+    "mae": 4.125346640072656,
+    "r2": -0.006327446787682156,
+    "n": 7
+  },
+  {
+    "player": "Trey Alexander",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Trey Jemison III",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Trey Murphy III",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Trey_Murphy_III_advanced.pkl",
+    "mse": 57.81939689789283,
+    "rmse": 7.603906686558747,
+    "mae": 6.586915712348255,
+    "r2": 0.09102397409355412,
+    "n": 8
+  },
+  {
+    "player": "Tristan da Silva",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Ty Jerome",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ty_Jerome_advanced.pkl",
+    "mse": 19.784204820675118,
+    "rmse": 4.447943886862234,
+    "mae": 3.4061958087933046,
+    "r2": 0.23121487035627952,
+    "n": 8
+  },
+  {
+    "player": "Tyler Herro",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tyler_Herro_advanced.pkl",
+    "mse": 43.4995934786305,
+    "rmse": 6.595422160758969,
+    "mae": 4.57853132750984,
+    "r2": -0.5072950636883335,
+    "n": 8
+  },
+  {
+    "player": "Tyler Kolek",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Tyrese Haliburton",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tyrese_Haliburton_advanced.pkl",
+    "mse": 49.76204535188859,
+    "rmse": 7.054221810510964,
+    "mae": 5.687162076849753,
+    "r2": -0.6904304153507801,
+    "n": 8
+  },
+  {
+    "player": "Tyrese Martin",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Tyrese Maxey",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tyrese_Maxey_advanced.pkl",
+    "mse": 80.69336658886175,
+    "rmse": 8.982948657810628,
+    "mae": 8.00095533787026,
+    "r2": 0.49957602115434574,
+    "n": 8
+  },
+  {
+    "player": "Tyson Etienne",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Tyus Jones",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Tyus_Jones_advanced.pkl",
+    "mse": 35.399089570821594,
+    "rmse": 5.949713402410371,
+    "mae": 4.525591776617995,
+    "r2": -0.3303239768247692,
+    "n": 8
+  },
+  {
+    "player": "Victor Wembanyama",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Victor_Wembanyama_advanced.pkl",
+    "mse": 52.12289447553885,
+    "rmse": 7.2196187209255624,
+    "mae": 6.0112273053168765,
+    "r2": -0.5238793730915294,
+    "n": 7
+  },
+  {
+    "player": "Vince Williams Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Vince_Williams_Jr._advanced.pkl",
+    "mse": 10.25720574245251,
+    "rmse": 3.2026872689122348,
+    "mae": 2.78433657882804,
+    "r2": 0.25061510557424593,
+    "n": 4
+  },
+  {
+    "player": "V\u00edt Krej\u010d\u00ed",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Walker Kessler",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Walker_Kessler_advanced.pkl",
+    "mse": 78.17532712470953,
+    "rmse": 8.841681238582938,
+    "mae": 8.243568914580724,
+    "r2": -5.381659357119145,
+    "n": 8
+  },
+  {
+    "player": "Wendell Carter Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Wendell_Carter_Jr._advanced.pkl",
+    "mse": 10.295981314023415,
+    "rmse": 3.2087351579747767,
+    "mae": 2.5524257579555085,
+    "r2": 0.1924720538020851,
+    "n": 8
+  },
+  {
+    "player": "Wendell Moore Jr.",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Wendell_Moore_Jr._advanced.pkl",
+    "mse": 10.586463631626495,
+    "rmse": 3.2536846238728323,
+    "mae": 2.883792765655469,
+    "r2": 0.05898101052208926,
+    "n": 6
+  },
+  {
+    "player": "Xavier Tillman",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Xavier_Tillman_advanced.pkl",
+    "mse": 2.345647884635838,
+    "rmse": 1.5315508103343611,
+    "mae": 1.270188797589524,
+    "r2": 0.30189051052504823,
+    "n": 5
+  },
+  {
+    "player": "Yves Missi",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Zaccharie Risacher",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Zach Collins",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Zach_Collins_advanced.pkl",
+    "mse": 18.284256607477886,
+    "rmse": 4.276009425559991,
+    "mae": 3.0690117619734663,
+    "r2": -0.31187491354101415,
+    "n": 8
+  },
+  {
+    "player": "Zach Edey",
+    "status": "missing_model",
+    "model_path": null
+  },
+  {
+    "player": "Zach LaVine",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Zach_LaVine_advanced.pkl",
+    "mse": 35.60767191846088,
+    "rmse": 5.967216429664746,
+    "mae": 4.658249012936019,
+    "r2": 0.5330141387742835,
+    "n": 8
+  },
+  {
+    "player": "Zeke Nnaji",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Zeke_Nnaji_advanced.pkl",
+    "mse": 16.09088307562328,
+    "rmse": 4.011344297816292,
+    "mae": 3.085491540832215,
+    "r2": -0.07272553837488549,
+    "n": 8
+  },
+  {
+    "player": "Ziaire Williams",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Ziaire_Williams_advanced.pkl",
+    "mse": 19.58295476037516,
+    "rmse": 4.425263241929813,
+    "mae": 3.5314087637525926,
+    "r2": -0.34043754509519797,
+    "n": 8
+  },
+  {
+    "player": "Zion Williamson",
+    "status": "ok",
+    "model_path": "backend\\models_store\\Zion_Williamson_advanced.pkl",
+    "mse": 13.756891594335755,
+    "rmse": 3.7090283895294944,
+    "mae": 3.48637235771323,
+    "r2": 0.2894167564909217,
+    "n": 5
+  }
+]

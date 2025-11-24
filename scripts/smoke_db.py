@@ -8,7 +8,7 @@ Run:
 import asyncio
 import os
 import sys
-from datetime import datetime
+import datetime
 
 from backend import db as backend_db
 from backend.models import Player, Projection, Game, PlayerStat, Prediction
@@ -29,8 +29,8 @@ async def main():
         session.add(player)
         await session.flush()  # populate player.id
 
-        # Insert a sample game
-        game = Game(game_date=datetime.utcnow(), home_team="TST", away_team="OPP")
+        # Insert a sample game (use timezone-aware UTC timestamp)
+        game = Game(game_date=datetime.datetime.now(datetime.timezone.utc), home_team="TST", away_team="OPP")
         session.add(game)
         await session.flush()
 

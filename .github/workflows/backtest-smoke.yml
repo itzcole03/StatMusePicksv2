@@ -1,0 +1,33 @@
+name: Backtest Smoke
+
+on:
+  push:
+    branches: [ 'phase2/signoff-Nov17-2025', 'main' ]
+  workflow_dispatch: {}
+
+jobs:
+  backtest-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install pytest
+
+      - name: Run backtest smoke script
+        run: |
+          python scripts/backtest_run.py -o backend/models_store/backtest_reports/smoke_report_ci.json
+
+      - name: Upload backtest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backtest-report
+          path: backend/models_store/backtest_reports/smoke_report_ci.json

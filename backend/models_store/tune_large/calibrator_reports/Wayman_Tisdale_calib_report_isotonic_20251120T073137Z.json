@@ -1,0 +1,20 @@
+{
+  "player": "Wayman Tisdale",
+  "method": "isotonic",
+  "created_at": "20251120T073137Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Wayman_Tisdale_calibrator.pkl",
+  "before": {
+    "mse": 17.43934737481693,
+    "rmse": 4.176044465138863,
+    "mae": 3.4186773880152783,
+    "brier": 44.00620671301431,
+    "ece": 0.0
+  },
+  "after": {
+    "mse": 6.761904761904763,
+    "rmse": 2.6003662745668663,
+    "mae": 1.904761904761905,
+    "brier": 50.79365079365079,
+    "ece": 0.0
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "player": "Chris King",
+  "method": "isotonic",
+  "created_at": "20251120T073127Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\tune_large\\Chris_King_calibrator.pkl",
+  "before": {
+    "mse": 2.979840261952062,
+    "rmse": 1.7262213826598436,
+    "mae": 1.2856478253828356,
+    "brier": 2.7883946878851273,
+    "ece": 0.25207094190500445
+  },
+  "after": {
+    "mse": 2.4101307189542482,
+    "rmse": 1.5524595707954034,
+    "mae": 0.9640522875816994,
+    "brier": 4.200980392156863,
+    "ece": 0.23529411764705885
+  }
+}

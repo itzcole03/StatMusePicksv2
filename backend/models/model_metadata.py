@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, DateTime, Text
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
 from backend.db import Base
 
 
@@ -11,6 +11,8 @@ class ModelMetadata(Base):
     version = Column(String(64), nullable=True)
     path = Column(String(512), nullable=True)
     notes = Column(Text, nullable=True)
+    # Keep a JSON list of contextual features retained for this model (nullable)
+    kept_contextual_features = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self) -> str:  # pragma: no cover - trivial

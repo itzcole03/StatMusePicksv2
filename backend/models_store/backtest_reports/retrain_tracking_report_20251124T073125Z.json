@@ -1,0 +1,32 @@
+{
+  "generated_at": "20251124T073125Z",
+  "dataset_manifest": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\data\\datasets\\points_dataset_v20251121T235153Z_c71436ea\\dataset_manifest.json",
+  "n_test_rows": 2807,
+  "rmse_baseline": 6.7615322426260445,
+  "rmse_tracking": 3.703823122222973,
+  "rmse_improvement_pct": 45.22213324853596,
+  "backtest_baseline": {
+    "start_bankroll": 1000.0,
+    "final_bankroll": 500.0,
+    "total_bets": 1252,
+    "wins": 576,
+    "losses": 676,
+    "win_rate": 0.46006389776357826,
+    "total_profit": -500.0,
+    "roi": -0.5,
+    "avg_stake": 5.0,
+    "sharpe": -2.834092817921057
+  },
+  "backtest_tracking": {
+    "start_bankroll": 1000.0,
+    "final_bankroll": 1315.0,
+    "total_bets": 1273,
+    "wins": 668,
+    "losses": 605,
+    "win_rate": 0.5247446975648076,
+    "total_profit": 315.0,
+    "roi": 0.315,
+    "avg_stake": 5.0,
+    "sharpe": 1.767210124095322
+  }
+}

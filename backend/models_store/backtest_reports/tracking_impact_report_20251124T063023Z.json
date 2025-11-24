@@ -1,0 +1,10 @@
+{
+  "player": "Synthetic Player",
+  "rows": 300,
+  "train_rows": 210,
+  "val_rows": 45,
+  "test_rows": 45,
+  "rmse_baseline": 3.46373005709071,
+  "rmse_tracking": 3.7879817312248,
+  "rmse_improvement_pct": -9.36134366101378
+}
