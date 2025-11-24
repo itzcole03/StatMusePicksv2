@@ -470,27 +470,15 @@ Scheduling guidance (example):
 
 - [x] Implement `/api/player_context` endpoint
 - [x] Accept parameters:
-<<<<<<< HEAD
-  - [x] `player_name` (string)
-  - [x] `stat_type` (string: points, rebounds, assists, etc.)
-  - [x] `game_date` (date)
-- [x] Return enhanced player context:
-  - [x] Recent games
-  - [x] Season average
-  - [x] Advanced metrics
-  - [x] Rolling averages
-  - [x] Opponent info
-=======
-- [x] `player_name` (string)
-- [x] `stat_type` (string: points, rebounds, assists, etc.)
-- [x] `game_date` (date)
-- [x] Return enhanced player context:
-- [x] Recent games
-- [x] Season average
-- [x] Advanced metrics
-- [x] Rolling averages
-- [x] Opponent info
->>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
+ - [x] `player_name` (string)
+ - [x] `stat_type` (string: points, rebounds, assists, etc.)
+ - [x] `game_date` (date)
+ - [x] Return enhanced player context:
+ - [x] Recent games
+ - [x] Season average
+ - [x] Advanced metrics
+ - [x] Rolling averages
+ - [x] Opponent info
 - [x] Add response caching (Redis, 6-hour TTL)
 - [x] Add API documentation (Swagger)
 
@@ -500,23 +488,10 @@ Scheduling guidance (example):
 - ✅ Returns 404 for unknown players
 - ✅ Response time < 500ms (with cache)
 - ✅ Swagger docs accessible at `/docs`
-
-<<<<<<< HEAD
 **Status:** ✅ Completed (dev)  
 **Assigned To:** Backend Team  
 **Completion Date:** Nov 17, 2025
-=======
-- **Status:** ✅ Completed (dev)  
-- **Assigned To:** Backend Team  
-- **Completion Date:** Nov 12, 2025
-
-**Progress update (Nov 12, 2025):**
-
-- Implemented `/api/player_context` in `backend/main.py` and wired it to `engineer_features` and `nba_service` for numeric context.
-- Added Redis caching (6-hour TTL) with in-process fallback; unit tests for cache + player_id path added under `backend/tests/` and passing locally.
-- Updated Pydantic response schema in `backend/schemas/player_context.py` to include `rollingAverages`, `contextualFactors`, and `opponentInfo`. Swagger docs reflect the new fields.
-
->>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
+ 
 
 ---
 
@@ -585,9 +560,10 @@ Scheduling guidance (example):
 
 **Acceptance Criteria:**
 
-- ✅ TypeScript compiles without errors
-- ✅ UI displays new features correctly
-- ✅ No console errors
+ - ✅ TypeScript compiles without errors
+ - ✅ UI displays new features correctly
+ - ✅ No console errors
+ - ✅ No console errors
 
 **Status:** ✅ Completed (dev)  
 **Assigned To:** Frontend Team  
@@ -598,16 +574,24 @@ Scheduling guidance (example):
 ## Phase 1 Completion Checklist
 
 **Before moving to Phase 2, verify:**
+ 
+- [x] ✅ Python backend running and accessible
+- [x] ✅ Database schema created and populated with test data
+- [x] ✅ Redis cache working (with in-process fallback for local/dev)
+- [x] ✅ NBA Stats API integration functional (live-only; mocks must be removed before checking this box — requires `nba_api` and `RUN_LIVE_NBA_TESTS=1`)
+- [x] ✅ Basic feature engineering pipeline working (rolling stats, opponent-adjusted features)
+- [x] ✅ API endpoints returning correct data (`/api/player_context`, `/api/predict`)
+- [x] ✅ Frontend successfully using new backend (nbaService + AnalysisSection updates)
+- [x] ✅ All Phase 1 unit tests passing (dev environment; live-network tests are gated)
+- [x] ✅ Documentation updated (roadmap & technical guide)
 
-- [x] Python backend running and accessible
-- [x] Database schema created and populated with test data
-- [x] Redis cache working
-- [x] NBA Stats API integration functional
-- [x] Basic feature engineering pipeline working
-- [x] API endpoints returning correct data
-- [x] Frontend successfully using new backend
-- [x] All Phase 1 unit tests passing
-- [x] Documentation updated
+**Mocking / Live NBA integration note:**
+
+- The production backend is now live-only: it will not fabricate `recentGames` or other NBA data. Mock fallbacks previously enabled by `ENABLE_DEV_MOCKS` have been removed from production code.
+- Deterministic behavior for tests and local development must be provided explicitly by the caller: tests should monkeypatch or stub `backend.services.nba_stats_client`, and developer helper scripts may provide an explicit `--mock` flag when available.
+- To validate live upstream behaviour, run the gated CI workflow `.github/workflows/live-nba-integration.yml` (or run `pytest backend/tests` locally with `RUN_LIVE_NBA_TESTS=1`). Ensure no mock flags or env vars are set in CI that would alter runtime behavior.
+- Do NOT mark the NBA Stats API integration as "live-only" complete until a gated live upstream CI run has validated the integration and any required API credentials/secrets are provisioned in CI.
+ 
 
 **Phase 1 Sign-Off:**
 
