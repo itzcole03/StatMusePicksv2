@@ -1028,3 +1028,14 @@ Create operational runbooks for:
 This technical implementation guide provides detailed, actionable specifications for transforming the StatMusePicksV2 AI service from a basic LLM-based system to a sophisticated, production-grade machine learning platform. The key to success is a systematic, phased approach that prioritizes data quality, feature engineering, and model calibration over raw model complexity.
 
 By following these recommendations, the service can achieve significantly higher prediction accuracy, better calibration, and ultimately, profitability in sports betting applications.
+
+## Appendix: Recent Integration Notes (Nov 12, 2025)
+
+- Task 1.5.1 (Frontend integration) completed: the frontend now consumes the enhanced backend `player_context` response which includes `rollingAverages`, `contextualFactors`, and `opponentInfo`.
+  - Key frontend files updated: `src/services/nbaService.ts`, `src/types.ts`, `src/components/AnalysisSection.tsx`.
+  - Frontend tests stabilized by centralizing mocks in `src/tests/testUtils/mockServices.ts` and importing them from `vitest.setup.ts`.
+
+- CI gating decision: live NBA/network integration tests are gated to avoid CI flakiness. A manual/scheduled workflow was added at `.github/workflows/live-nba-integration.yml`. Run live tests locally or in CI only when `RUN_LIVE_NBA_TESTS=1` is set or when triggering the manual workflow.
+
+- Model artifact note: a persisted toy model for dev/testing is stored at `backend/models_store/LeBron_James.pkl` (tracked via Git LFS). Use this artifact for local integration smoke tests when appropriate.
+

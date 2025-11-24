@@ -725,15 +725,35 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
 
         pname = player_data.get('playerName') or player_data.get('player_name') or str(player_data.get('player_id') or '')
         try:
+            # Prefer the structured JSON path when available
+            text_context = _text_fetcher(pname)
+            if hasattr(llm_svc, 'extract_from_text'):
+                try:
+                    structured = llm_svc.extract_from_text(pname, text_context)
+                except Exception:
+                    structured = None
+                if structured:
+                    # structured keys from QualitativeFeatures: news_sentiment, morale_score, motivation, trade_sentiment
+                    features.update({
+                        'injury_sentiment': float(structured.get('news_sentiment') or 0.0),
+                        'morale_score': float(structured.get('morale_score') or 0.0),
+                        'motivation': float(structured.get('motivation') or 0.0),
+                        'trade_sentiment': float(structured.get('trade_sentiment') or 0.0),
+                    })
+                    raise StopIteration  # skip fallback when structured succeeded
+
+            # fallback: older fetch_news_and_extract which may use heuristics or provider text parsing
             llm_feats = llm_svc.fetch_news_and_extract(pname, 'news_v1', _text_fetcher)
             if llm_feats:
-                # expected keys: injury_sentiment, morale_score, motivation
                 features.update({
                     'injury_sentiment': float(llm_feats.get('injury_sentiment') or 0.0),
                     'morale_score': float(llm_feats.get('morale_score') or 0.0),
                     'motivation': float(llm_feats.get('motivation') or 0.0),
                     'trade_sentiment': float(llm_feats.get('trade_sentiment') or llm_feats.get('trade_sent') or 0.0),
                 })
+        except StopIteration:
+            # structured path succeeded; continue
+            pass
         except Exception:
             pass
     except Exception:

@@ -542,6 +542,42 @@ def get_advanced_player_stats_multi(player_id: int, seasons: Optional[List[str]]
     result["aggregated"] = agg
     return result
 
+# Compatibility wrappers expected by callers (legacy names used in `backend.main`)
+def find_player_id(name: str) -> Optional[int]:
+    """Backward-compatible alias for `find_player_id_by_name`.
+
+    Some modules call `find_player_id`; provide an alias to avoid attribute
+    errors when callers expect the older name.
+    """
+    return find_player_id_by_name(name)
+
+
+def fetch_recent_games_by_id(player_id: int, limit: int = 8) -> List[dict]:
+    """Alias for `fetch_recent_games` that matches the older API naming.
+
+    Returns an empty list when the underlying implementation cannot fetch data.
+    """
+    return fetch_recent_games(player_id, limit=limit)
+
+
+def fetch_recent_games_by_name(name: str, limit: int = 8) -> List[dict]:
+    """Fetch recent games by player name by resolving the id then delegating.
+
+    This mirrors the behavior expected by `backend.main` and test code.
+    """
+    pid = find_player_id_by_name(name)
+    if pid:
+        return fetch_recent_games_by_id(pid, limit=limit)
+    return []
+
+__all__ = [
+    "find_player_id_by_name",
+    "find_player_id",
+    "fetch_recent_games",
+    "fetch_recent_games_by_id",
+    "fetch_recent_games_by_name",
+]
+
 
 def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     """Return basic season averages for a player (PTS/AST/REB) for a given season id.

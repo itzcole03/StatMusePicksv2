@@ -22,3 +22,4 @@ urllib3==1.26.16
 pyarrow
 
 mlflow>=2.4.0
+ollama
