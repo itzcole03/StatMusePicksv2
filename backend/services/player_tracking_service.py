@@ -137,10 +137,15 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
     """
     games = _load_tracking_file(player_name, data_dir=data_dir)
     if not games:
+        # include legacy keys for compatibility
         return {
+            "avg_speed": None,
+            "distance_per_game": None,
+            "touches_per_game": None,
+            "time_of_possession": None,
+            "shot_quality": None,
             "avg_speed_mph": None,
             "distance_miles_per_game": None,
-            "touches_per_game": None,
             "time_possession_sec_per_game": None,
             "exp_fg_pct": None,
         }
@@ -230,6 +235,23 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
         "time_possession_sec_per_game": _safe_mean(time_poss),
         "exp_fg_pct": _safe_mean(exp_fg),
     }
+    # Provide legacy keys for compatibility with older callers/tests
+    result = {
+        "avg_speed": _safe_mean(speeds),
+        "distance_per_game": _safe_mean(distances),
+        "touches_per_game": _safe_mean(touches),
+        "time_of_possession": _safe_mean(time_poss),
+        "shot_quality": _safe_mean(exp_fg),
+    }
+    # merge canonical keys as well
+    result.update({
+        "avg_speed_mph": _safe_mean(speeds),
+        "distance_miles_per_game": _safe_mean(distances),
+        "touches_per_game": _safe_mean(touches),
+        "time_possession_sec_per_game": _safe_mean(time_poss),
+        "exp_fg_pct": _safe_mean(exp_fg),
+    })
+    return result
 
 
 def create_default_service():

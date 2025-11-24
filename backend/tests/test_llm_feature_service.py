@@ -1,3 +1,87 @@
+import json
+
+from backend.services.llm_feature_service import LLMFeatureService
+
+
+class FakeClient:
+    def __init__(self, responses):
+        self.responses = responses
+        self.calls = 0
+
+    def generate(self, **kwargs):
+        self.calls += 1
+        # pop next response
+        if not self.responses:
+            return None
+        return self.responses.pop(0)
+
+
+def test_extract_from_text_parses_dict(monkeypatch):
+    fake = FakeClient([
+        {
+            "injury_status": "questionable",
+            "morale_score": 80,
+            "news_sentiment": 0.2,
+            "trade_sentiment": -0.1,
+            "motivation": 0.8,
+        }
+    ])
+
+    # patch the name imported into llm_feature_service module
+    monkeypatch.setattr("backend.services.llm_feature_service.get_default_client", lambda: fake)
+
+    svc = LLMFeatureService()
+    out = svc.extract_from_text("Some Player", "Some context mentioning nothing important.")
+    assert out["injury_status"] == "questionable"
+    assert out["morale_score"] == 80
+    assert abs(out["news_sentiment"] - 0.2) < 1e-6
+
+
+def test_extract_from_text_parses_json_string(monkeypatch):
+    payload = json.dumps({
+        "injury_status": "healthy",
+        "morale_score": 45,
+        "news_sentiment": -0.3,
+        "trade_sentiment": 0.0,
+        "motivation": 0.4,
+    })
+    fake = FakeClient([payload])
+    monkeypatch.setattr("backend.services.llm_feature_service.get_default_client", lambda: fake)
+
+    svc = LLMFeatureService()
+    out = svc.extract_from_text("Some Player", "Another context.")
+    assert out["injury_status"] == "healthy"
+    assert out["morale_score"] == 45
+    assert abs(out["news_sentiment"] + 0.3) < 1e-6
+
+
+def test_fetch_news_and_extract_normalizes_and_caches(monkeypatch):
+    # client returns morale_score 90 -> normalized to (90-50)/50 = 0.8
+    fake = FakeClient([
+        {
+            "injury_status": "healthy",
+            "morale_score": 90,
+            "news_sentiment": 0.1,
+            "trade_sentiment": 0.0,
+            "motivation": 1.0,
+        }
+    ])
+    monkeypatch.setattr("backend.services.llm_feature_service.get_default_client", lambda: fake)
+
+    svc = LLMFeatureService()
+
+    def fetcher(name):
+        return "Routine update with good morale"
+
+    out1 = svc.fetch_news_and_extract("PlayerX", "src1", fetcher)
+    # morale normalized to ~0.8
+    assert abs(out1["morale_score"] - 0.8) < 1e-6
+    assert out1["injury_sentiment"] == 0.1
+
+    # second call should be served from cache; client.calls should remain 1
+    out2 = svc.fetch_news_and_extract("PlayerX", "src1", fetcher)
+    assert out1 == out2
+    assert fake.calls == 1
 import pytest
 
 from backend.services.llm_feature_service import LLMFeatureService

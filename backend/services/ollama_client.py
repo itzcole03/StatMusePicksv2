@@ -68,8 +68,14 @@ class OllamaClient:
         # HTTP fallback
         try:
             import requests
-
-            url = self._base_url.rstrip('/') + '/v1/models' if self._api_key else self._base_url.rstrip('/') + '/api/models'
+            base = self._base_url.rstrip('/')
+            # prefer /v1 endpoints for local hosts; Ollama Cloud uses /api/
+            if 'ollama.com' in base:
+                url = base + '/api/tags'
+            elif self._api_key or any(h in base for h in ("localhost", "127.0.0.1", "0.0.0.0")):
+                url = base + '/v1/models'
+            else:
+                url = base + '/api/models'
             headers = {}
             if self._api_key:
                 headers['Authorization'] = f"Bearer {self._api_key}"
@@ -80,7 +86,7 @@ class OllamaClient:
             logger.debug("Ollama list_models http fallback failed: %s", e)
         return None
 
-    def generate(self, model: Optional[str], prompt: str, stream: bool = False, timeout: float = 10.0) -> Optional[str]:
+    def generate(self, model: Optional[str], prompt: str, stream: bool = False, timeout: float = 10.0, response_format: Optional[str] = None) -> Optional[Any]:
         """Generate text for `prompt` using `model`.
 
         - If `stream` is True and the client supports streaming, attempts stream consumption.
@@ -99,8 +105,18 @@ class OllamaClient:
                         # prefer `input` per cloud docs
                         kwargs['input'] = prompt
                         kwargs['stream'] = stream
+                        # support passing format/response_format to the official client
+                        if response_format is not None:
+                            # different client versions may expect `format` or `response_format`
+                            try:
+                                kwargs['format'] = response_format
+                            except Exception:
+                                kwargs['response_format'] = response_format
                         out = self._client.generate(**kwargs)
                         # try to coerce to string
+                        # if the client returned a dict/object and JSON was requested, return it directly
+                        if response_format == 'json' and isinstance(out, (dict, list)):
+                            return out
                         if isinstance(out, str):
                             return out
                         try:
@@ -125,13 +141,28 @@ class OllamaClient:
         try:
             import requests
 
-            api_path = self._base_url.rstrip('/') + '/v1/generate' if self._api_key else self._base_url.rstrip('/') + '/api/generate'
+            base = self._base_url.rstrip('/')
+            # Ollama Cloud uses /api/chat; local servers typically expose /v1/generate
+            if 'ollama.com' in base:
+                api_path = base + '/api/chat'
+            elif self._api_key or any(h in base for h in ("localhost", "127.0.0.1", "0.0.0.0")):
+                api_path = base + '/v1/generate'
+            else:
+                api_path = base + '/api/generate'
             headers = {}
             if self._api_key:
                 headers['Authorization'] = f"Bearer {self._api_key}"
-            payload: Dict[str, Any] = {"input": prompt, "prompt": prompt}
-            if model:
-                payload['model'] = model
+            # Chat-style payload for cloud API
+            if 'ollama.com' in base:
+                payload = {"model": model or os.environ.get('OLLAMA_DEFAULT_MODEL'), "messages": [{"role": "user", "content": prompt}], "stream": stream}
+            else:
+                payload: Dict[str, Any] = {"input": prompt, "prompt": prompt}
+                if model:
+                    payload['model'] = model
+            # propagate requested response format into payload when supported
+            if response_format:
+                # common parameter name is 'format' for many Ollama APIs
+                payload['format'] = response_format
             try:
                 payload['max_tokens'] = int(os.environ.get('OLLAMA_MAX_TOKENS', '200'))
             except Exception:
@@ -188,19 +219,27 @@ class OllamaClient:
 
             resp = requests.post(api_path, json=payload, headers=headers or None, timeout=timeout)
             resp.raise_for_status()
-            # parse JSON if available
+
+            # Prefer returning JSON when explicitly requested
+            data = None
+            if response_format == 'json':
+                try:
+                    return resp.json()
+                except Exception:
+                    data = None
+
             try:
                 data = resp.json()
             except Exception:
                 data = None
-            if isinstance(data, dict):
-                # common shapes
-                if 'outputs' in data and isinstance(data['outputs'], list):
+
+            if isinstance(data, (dict, list)):
+                if isinstance(data, dict) and 'outputs' in data and isinstance(data['outputs'], list):
                     out0 = data['outputs'][0]
                     if isinstance(out0, dict):
                         return out0.get('content') or out0.get('text') or json.dumps(out0)
                     return str(out0)
-                if 'output' in data and isinstance(data['output'], list):
+                if isinstance(data, dict) and 'output' in data and isinstance(data['output'], list):
                     pieces = []
                     for it in data['output']:
                         if isinstance(it, dict):
@@ -208,9 +247,9 @@ class OllamaClient:
                         elif isinstance(it, str):
                             pieces.append(it)
                     return '\n'.join(pieces).strip()
-                if 'text' in data:
+                if isinstance(data, dict) and 'text' in data:
                     return data.get('text')
-                # fallback: find any string
+
                 def _find_text(obj):
                     if isinstance(obj, str):
                         return obj
@@ -225,10 +264,11 @@ class OllamaClient:
                             if t:
                                 return t
                     return None
+
                 t = _find_text(data)
                 if t:
                     return t
-            # if not JSON return text body
+
             if resp.text:
                 return resp.text
         except Exception as e:

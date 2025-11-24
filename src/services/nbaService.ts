@@ -77,7 +77,10 @@ export interface NBAPlayerContext {
   fetchedAt?: string | null;
   recentSource?: string | null;
   seasonSource?: string | null;
-<<<<<<< HEAD
+  // Rolling averages keyed by window (e.g. sma_5, ema_10)
+  rollingAverages?: Record<string, number | null> | null;
+  // Opponent-specific info and matchup summaries
+  opponentInfo?: Record<string, any> | null;
   // Multi-season aggregated contexts (training-scoped responses)
   seasonsConsidered?: string[] | null;
   seasonStatsMulti?: Record<string, Record<string, number>> | null;
@@ -85,12 +88,6 @@ export interface NBAPlayerContext {
   teamId?: number | null;
   teamStatsMulti?: Record<string, Record<string, number>> | null;
   teamAdvancedMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
-=======
-  // Rolling averages keyed by window (e.g. sma_5, ema_10)
-  rollingAverages?: Record<string, number | null> | null;
-  // Opponent-specific info and matchup summaries
-  opponentInfo?: Record<string, any> | null;
->>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
 }
 
 // Module-level normalizer so both single and batch fetchers can reuse the logic.
@@ -158,18 +155,15 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
     contextualFactors,
     recentSource,
     seasonSource,
-<<<<<<< HEAD
-    // include optional multi-season training fields when present
-    seasonsConsidered,
-    seasonStatsMulti,
-    advancedStatsMulti,
-    teamId,
-    teamStatsMulti,
-    teamAdvancedMulti,
-=======
-    rollingAverages,
-    opponentInfo,
->>>>>>> 5cfaa36 (docs: mark Task 1.5.1 complete; update roadmap & technical guide)
+      // include rolling averages/opponent info and optional multi-season training fields when present
+      rollingAverages,
+      opponentInfo,
+      seasonsConsidered,
+      seasonStatsMulti,
+      advancedStatsMulti,
+      teamId,
+      teamStatsMulti,
+      teamAdvancedMulti,
   } as NBAPlayerContext;
 }
 

@@ -191,7 +191,7 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
         "recentGames": recent,
         "seasonAvg": season_avg,
         # will populate enhanced context below
-        "rollingAverages": None,
+        "rollingAverages": {},
         "contextualFactors": {},
         "opponentInfo": None,
         "fetchedAt": int(time.time()),
