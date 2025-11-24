@@ -38,9 +38,9 @@ def fetch_roster_names() -> list:
     """
     try:
         # compute current season string like '2025-26'
-        from datetime import datetime
+        import datetime
 
-        now = datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         year = now.year
         if now.month >= 10:
             season = f"{year}-{str((year + 1) % 100).zfill(2)}"

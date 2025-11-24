@@ -69,7 +69,7 @@ class AdvancedMetricsService:
                 try:
                     import datetime
 
-                    now = datetime.datetime.utcnow()
+                    now = datetime.datetime.now(datetime.timezone.utc)
                     y = now.year
                     # crude season string like '2024-25' for Nov/Dec belong to prior-year start
                     if now.month < 8:
@@ -136,6 +136,20 @@ class AdvancedMetricsService:
                 or metrics.get("BOX_PLUS_MINUS")
                 or metrics.get("box_plus_minus")
             )
+            # Try to extract Win Shares (season total) when available
+            ws = (
+                metrics.get("WS")
+                or metrics.get("WinShares")
+                or metrics.get("win_shares")
+                or metrics.get("Win_Shares")
+            )
+            try:
+                if ws is not None:
+                    result["WS"] = float(ws)
+                else:
+                    result["WS"] = None
+            except Exception:
+                result["WS"] = None
             try:
                 if bpm is not None:
                     result["BPM"] = float(bpm)

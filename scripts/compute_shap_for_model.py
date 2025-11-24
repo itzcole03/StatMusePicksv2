@@ -28,7 +28,7 @@ import glob
 import numpy as np
 import pandas as pd
 import logging
-from datetime import datetime
+import datetime
 
 logger = logging.getLogger("compute_shap")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -259,7 +259,7 @@ def main():
         Xp = align_feature_count(Xp, expected)
 
     model_basename = os.path.splitext(os.path.basename(model_path))[0]
-    outdir = ensure_outdir(args.out_dir, model_basename + "_" + datetime.utcnow().strftime("%Y%m%dT%H%M%SZ"))
+    outdir = ensure_outdir(args.out_dir, model_basename + "_" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ"))
     # save the processed sample features used for SHAP
     try:
         Xp.to_csv(os.path.join(outdir, "sample_features_processed.csv"), index=False)

@@ -6,7 +6,7 @@ This is intended for CI to validate backtesting logic and produce a downloadable
 import argparse
 import json
 import os
-from datetime import datetime
+import datetime
 import pandas as pd
 
 from backend.evaluation.backtesting import BacktestEngine
@@ -35,7 +35,7 @@ def main():
     res_flat = engine.run(df, stake_mode='flat', flat_stake=50.0)
     res_kelly = engine.run(df, stake_mode='kelly', kelly_cap=0.1)
 
-    ts = datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     out_base = os.path.join(args.output_dir, f'backtest_report_{ts}')
     json_path = out_base + '.json'
     csv_path = out_base + '.csv'

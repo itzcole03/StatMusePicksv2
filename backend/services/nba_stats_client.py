@@ -1520,6 +1520,10 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
     sum_fg3a = 0.0
     sum_fta = 0.0
     sum_ftm = 0.0
+    sum_stl = 0.0
+    sum_blk = 0.0
+    sum_to = 0.0
+    sum_min = 0.0
 
     for g in games:
         try:
@@ -1565,6 +1569,41 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
                     sum_ftm += float(ftm)
                 except Exception:
                     pass
+            # optional defensive / turnover / minutes fields
+            try:
+                stl = g.get('STL') if 'STL' in g else g.get('stl') if 'stl' in g else None
+                if stl is not None:
+                    sum_stl += float(stl)
+            except Exception:
+                pass
+            try:
+                blk = g.get('BLK') if 'BLK' in g else g.get('blk') if 'blk' in g else None
+                if blk is not None:
+                    sum_blk += float(blk)
+            except Exception:
+                pass
+            try:
+                tov = g.get('TO') if 'TO' in g else g.get('TOV') if 'TOV' in g else g.get('to') if 'to' in g else None
+                if tov is not None:
+                    sum_to += float(tov)
+            except Exception:
+                pass
+            try:
+                mins = g.get('MIN') if 'MIN' in g else g.get('min') if 'min' in g else None
+                if mins is not None:
+                    # MIN may be '36:12' format in some logs; attempt float conversion
+                    try:
+                        sum_min += float(mins)
+                    except Exception:
+                        # try parsing mm:ss
+                        try:
+                            parts = str(mins).split(':')
+                            if len(parts) == 2:
+                                sum_min += float(parts[0]) + float(parts[1]) / 60.0
+                        except Exception:
+                            pass
+            except Exception:
+                pass
         except Exception:
             continue
 
@@ -1604,6 +1643,34 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
             stats['TS_PCT'] = None
     except Exception:
         stats['TS_PCT'] = None
+    # Prefer using the play-by-play prototype estimator for PER/WS fallbacks
+    # when available. This centralizes the prototype logic and ensures tuned
+    # scale factors are applied consistently.
+    try:
+        from backend.services import per_ws_from_playbyplay
+
+        try:
+            agg = per_ws_from_playbyplay.aggregate_season_games(games)
+            est = per_ws_from_playbyplay.compute_per_ws_from_aggregates(agg)
+            # copy back useful fields into stats
+            stats['PER_proxy'] = est.get('PER_est_raw') or None
+            stats['PER'] = est.get('PER_est')
+            stats['WS_proxy_per_game'] = est.get('ws_per_game') or None
+            stats['WS'] = est.get('WS_est')
+            # keep raw aggregates for debugging
+            stats.update({'_per_ws_agg_games': agg.get('games', 0)})
+        except Exception:
+            # fallback: leave PER/WS absent
+            stats['PER_proxy'] = None
+            stats['PER'] = None
+            stats['WS_proxy_per_game'] = None
+            stats['WS'] = None
+    except Exception:
+        # If prototype module not importable, leave proxies absent
+        stats['PER_proxy'] = None
+        stats['PER'] = None
+        stats['WS_proxy_per_game'] = None
+        stats['WS'] = None
 
     # persist to caches
     _local_cache[cache_key] = stats

@@ -1,0 +1,20 @@
+{
+  "player": "smoke_test_player",
+  "method": "isotonic",
+  "created_at": "20251123T020413Z",
+  "calibrator_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\smoke_test_player_calibrator.pkl",
+  "before": {
+    "mse": 0.17836992259919768,
+    "rmse": 0.4223386349828745,
+    "mae": 0.3374132948948077,
+    "brier": 0.17836992259919768,
+    "ece": 0.05715469580410046
+  },
+  "after": {
+    "mse": 0.171294400641091,
+    "rmse": 0.4138772772708004,
+    "mae": 0.342588801282182,
+    "brier": 0.171294400641091,
+    "ece": 3.76747244512643e-17
+  }
+}

@@ -82,6 +82,27 @@ def _train_worker(kwargs: dict) -> dict:
                     df[c] = 0.0
 
         train_for_model = train_df[feat_cols + ["target"]].reset_index(drop=True)
+        # Optional feature selection prior to training
+        if kwargs.get("feature_selection", False):
+            try:
+                from backend.services.feature_selection import select_by_correlation, rfe_select
+                # run a lightweight correlation filter first
+                sel_corr = select_by_correlation(train_for_model, target_col="target", thresh=0.01)
+                if len(sel_corr) >= 3:
+                    # retain a small core set; then run RFE to choose final features
+                    reduced = train_for_model[sel_corr + ["target"]].copy()
+                    chosen = rfe_select(reduced, target_col="target", n_features=min(6, max(1, len(sel_corr)//2)))
+                else:
+                    # fallback: run RFE on full feature set
+                    chosen = rfe_select(train_for_model, target_col="target", n_features=min(6, max(1, train_for_model.shape[1]//2)))
+                if chosen and len(chosen) > 0:
+                    # ensure target present
+                    train_for_model = train_for_model[chosen + ["target"]].reset_index(drop=True)
+                    # persist chosen feature list next to model later in worker
+                    kwargs["_selected_features"] = chosen
+            except Exception:
+                # if feature-selection fails, continue with default features
+                pass
         # optional hyperparameter tuning for RandomForest component
         tune_info = None
         if kwargs.get("tune", False):
@@ -109,6 +130,16 @@ def _train_worker(kwargs: dict) -> dict:
 
         registry = ModelRegistry(model_dir=str(out_dir))
         registry.save_model(player, model, version=None, notes="orchestrator-parallel")
+
+        # persist selected features list if present
+        try:
+            sel = kwargs.get("_selected_features")
+            if sel:
+                feat_path = Path(out_dir) / f"{player}_selected_features.json"
+                with open(feat_path, "w", encoding="utf8") as fh:
+                    json.dump({"player": player, "selected_features": sel}, fh)
+        except Exception:
+            pass
 
         # optionally fit calibrator
         if fit_calibrator and val_df.shape[0] >= 3:
@@ -189,7 +220,7 @@ def build_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def main(manifest: str, min_games: int, out_dir: str, report_csv: str, limit: int | None, workers: int = 1, fit_calibrators: bool = False, tune: bool = False, tune_trials: int = 20):
+def main(manifest: str, min_games: int, out_dir: str, report_csv: str, limit: int | None, workers: int = 1, fit_calibrators: bool = False, tune: bool = False, tune_trials: int = 20, feature_selection: bool = False):
     manifest_path = Path(manifest)
     m = load_manifest(manifest_path)
 
@@ -224,6 +255,7 @@ def main(manifest: str, min_games: int, out_dir: str, report_csv: str, limit: in
             "fit_calibrator": bool(fit_calibrators),
             "tune": bool(tune),
             "tune_trials": int(tune_trials),
+            "feature_selection": bool(feature_selection),
         })
 
     report_rows = []
@@ -278,6 +310,7 @@ if __name__ == "__main__":
     p.add_argument("--fit-calibrators", action="store_true", help="Fit calibrators from validation set when available")
     p.add_argument("--tune", action="store_true", help="Run RF hyperparameter tuning per-player before training and persist best params")
     p.add_argument("--tune-trials", type=int, default=20, help="Number of Optuna trials to run when --tune is set")
+    p.add_argument("--feature-selection", action="store_true", help="Run feature selection (correlation + RFE) before training")
     args = p.parse_args()
     main(
         args.manifest,
@@ -289,4 +322,5 @@ if __name__ == "__main__":
         fit_calibrators=args.fit_calibrators,
         tune=args.tune,
         tune_trials=args.tune_trials,
+        feature_selection=args.feature_selection,
     )

@@ -240,6 +240,54 @@ $env:PROMETHEUS_MULTIPROC_DIR = (Resolve-Path .\prom_metrics).Path
 uvicorn backend.main:app --host 127.0.0.1 --port 8000 --workers 4
 ```
 
+## MLflow (development)
+
+This project includes optional, best-effort MLflow instrumentation in the training pipeline. MLflow is used during local development to record hyperparameters, training metrics, and model artifacts. The instrumentation is gated by the `MLFLOW_TRACKING` environment variable and the presence of the `mlflow` package.
+
+Enable MLflow logging (PowerShell):
+
+```powershell
+$env:MLFLOW_TRACKING = '1'
+$env:PYTHONPATH = '.'
+python backend/scripts/retrain_with_advanced_features.py --min-games 5
+```
+
+Enable MLflow logging (bash):
+
+```bash
+export MLFLOW_TRACKING=1
+export PYTHONPATH=.
+python backend/scripts/retrain_with_advanced_features.py --min-games 5
+```
+
+Start the local MLflow UI (serves the `./mlruns` backend by default):
+
+```powershell
+# PowerShell
+mlflow ui --backend-store-uri ./mlruns --port 5000
+```
+
+Notes:
+
+- If you want to run a remote tracking server set `MLFLOW_TRACKING_URI` before starting runs (e.g. `http://mlflow-server:5000`).
+- The training code logs best-effort artifacts and metrics; MLflow failures will not abort training (non-fatal).
+- Add `mlflow` to your `backend/requirements.txt` to make the feature available in your dev environment.
+
+Recommendation: use a SQLite tracking DB for local runs
+
+For local development we recommend using a SQLite-backed MLflow tracking store which is more robust
+than the filesystem-only backend. To use SQLite, set `MLFLOW_TRACKING=1` and optionally `MLFLOW_TRACKING_URI`:
+
+```powershell
+$env:MLFLOW_TRACKING = '1'
+# Optional: override default sqlite DB location
+$env:MLFLOW_TRACKING_URI = 'sqlite:///C:/path/to/mlflow.db'
+```
+
+If `MLFLOW_TRACKING_URI` is not set and `MLFLOW_TRACKING=1`, the training pipeline will default to
+`sqlite:///<repo-root>/mlflow.db` and persist runs there.
+
+
 Notes:
 - Ensure the directory is writable by all worker processes.
 - In CI or systemd setups, set `PROMETHEUS_MULTIPROC_DIR` in the unit/service environment and

@@ -16,7 +16,7 @@ def test_model_metadata_insert(tmp_path):
     env["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
 
     # Run alembic migrations to create tables
-    subprocess.run([sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "head"], check=True, env=env, cwd=str(ROOT))
+    subprocess.run([sys.executable, "-m", "alembic", "-c", "backend/alembic.ini", "upgrade", "heads"], check=True, env=env, cwd=str(ROOT))
 
     # Run the training script which now uses ModelRegistry.save_model
     subprocess.run([sys.executable, "backend/scripts/train_example.py"], check=True, env=env, cwd=str(ROOT))

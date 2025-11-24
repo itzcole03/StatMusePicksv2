@@ -22,7 +22,7 @@ def register_manifest(manifest_path: str, registry_dir: str = 'backend/models_st
             manifest = json.load(f)
 
         name = manifest.get('name', 'dataset')
-        version = manifest.get('version', datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ'))
+        version = manifest.get('version', datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
         uid = manifest.get('uid') or ''
 
         dest_root = Path(registry_dir)
@@ -58,7 +58,7 @@ def register_manifest(manifest_path: str, registry_dir: str = 'backend/models_st
             'name': name,
             'version': version,
             'uid': uid,
-            'created_at': manifest.get('created_at') or datetime.datetime.utcnow().isoformat() + 'Z',
+            'created_at': manifest.get('created_at') or datetime.datetime.now(datetime.timezone.utc).isoformat() + 'Z',
             'rows': manifest.get('rows', 0),
             'columns': manifest.get('columns', []),
             '_registry_path': str(dest_dir)
@@ -154,7 +154,7 @@ def create_dataset_version(name: str, seasons: str, df_train: pd.DataFrame, df_v
 
     Returns manifest metadata dict.
     """
-    version = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+    version = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     uid = uuid.uuid4().hex[:8]
     base_name = name
     target_base = Path(output_dir)
@@ -167,7 +167,7 @@ def create_dataset_version(name: str, seasons: str, df_train: pd.DataFrame, df_v
         'name': base_name,
         'version': version,
         'uid': uid,
-        'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
+        'created_at': datetime.datetime.now(datetime.timezone.utc).isoformat() + 'Z',
         'seasons': seasons,
         'rows_train': int(len(df_train)),
         'rows_val': int(len(df_val)),

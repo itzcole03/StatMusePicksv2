@@ -244,6 +244,15 @@ python -m pytest -q
 python -m pytest backend/tests/test_ml_prediction_service_unit.py -q
 ```
 
+Run tests with coverage
+
+```powershell
+# Install coverage tooling
+pip install pytest-cov
+# Run tests and print coverage report
+python -m pytest -q --cov=backend --cov-report=term --cov-report=xml
+```
+
 CI / Deterministic smoke tests
 
 - The repo uses an in-process FastAPI TestClient for a deterministic smoke test of `/api/predict` in CI. See `.github/workflows/backend-ci.yml` for details.

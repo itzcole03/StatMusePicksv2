@@ -21,3 +21,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Temporary debug artifacts (local)
+tmp_debug/

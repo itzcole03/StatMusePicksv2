@@ -16,6 +16,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor, VotingRegressor
 from sklearn.linear_model import ElasticNet
 from sklearn.linear_model import Ridge
+from backend.services.feature_engineering import prune_contextual_features
 
 try:
     from backend.services.xgboost_wrapper import XGBoostWrapper
@@ -33,6 +34,29 @@ except Exception:
     _HAS_STACKING = False
 
 import joblib
+
+# Optional MLflow integration (best-practice for experiment tracking)
+try:
+    import mlflow
+    import mlflow.sklearn
+    _HAS_MLFLOW = True
+except Exception:
+    mlflow = None
+    _HAS_MLFLOW = False
+
+# If MLflow is available and tracking requested, set a sensible default
+# tracking URI to a local sqlite DB to avoid relying on filesystem-only
+# experiment storage which is deprecated and can miss run metadata.
+if _HAS_MLFLOW and os.environ.get('MLFLOW_TRACKING', '0') == '1':
+    try:
+        tracking_uri = os.environ.get('MLFLOW_TRACKING_URI')
+        if not tracking_uri:
+            default_db = os.path.join(os.getcwd(), 'mlflow.db')
+            tracking_uri = f"sqlite:///{default_db}"
+        mlflow.set_tracking_uri(tracking_uri)
+    except Exception:
+        # best-effort initialization; don't fail imports
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +96,38 @@ def _build_ensemble() -> VotingRegressor:
     return ensemble
 
 
+def build_ensemble_with_weights(weights: list[float]) -> VotingRegressor:
+    """Build the same ensemble but accept explicit weights list.
+
+    weights: list of floats matching the available estimators (RF, XGB?, Elastic)
+    """
+    estimators = []
+    rf = RandomForestRegressor(n_estimators=100, random_state=42)
+    estimators.append(("rf", rf))
+
+    if _HAS_XGB and XGBoostWrapper is not None:
+        try:
+            from backend.services import xgboost_wrapper as _xwb
+            if getattr(_xwb, 'xgb', None) is not None:
+                xgb_cls = _xwb.xgb.XGBRegressor
+                xgb = xgb_cls(n_estimators=100, random_state=42)
+                estimators.append(("xgb", xgb))
+        except Exception:
+            pass
+
+    elastic = ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42)
+    estimators.append(("elastic", elastic))
+
+    # trim or pad weights to match estimators
+    w = list(weights)[: len(estimators)]
+    if len(w) < len(estimators):
+        # pad with equal share for remaining
+        rem = len(estimators) - len(w)
+        w = w + [max(0.0, 1.0 / max(1, len(estimators))) for _ in range(rem)]
+
+    return VotingRegressor(estimators=estimators, weights=w)
+
+
 def train_player_model(df: pd.DataFrame, target_col: str = "target", use_stacking: bool = False) -> object:
     """Train an ensemble model from a feature DataFrame.
 
@@ -81,6 +137,17 @@ def train_player_model(df: pd.DataFrame, target_col: str = "target", use_stackin
     """
     if target_col not in df.columns:
         raise ValueError(f"target_col '{target_col}' not in DataFrame")
+
+    # Phase 3: prune low-importance contextual features before training.
+    kept_ctx = []
+    try:
+        thresh = float(os.environ.get('CONTEXT_FEATURE_THRESHOLD', '0.01'))
+        df, kept_ctx = prune_contextual_features(df, target_col=target_col, threshold=thresh)
+        if kept_ctx:
+            logger.info("Kept contextual features: %s", ",".join(kept_ctx))
+    except Exception:
+        # non-fatal: proceed with original df if pruning fails
+        kept_ctx = []
 
     X = df.drop(columns=[target_col])
     y = df[target_col]
@@ -139,20 +206,106 @@ def train_player_model(df: pd.DataFrame, target_col: str = "target", use_stackin
         enet = ElasticNet(alpha=0.1, l1_ratio=0.5, random_state=42)
         base_models = [("rf", rf), ("xg", xgb_est), ("en", enet)]
         stacking = StackingEnsemble(base_models=base_models, meta_model=Ridge(alpha=1.0), n_folds=5)
-        stacking.train(X, y)
-        logger.info("Trained StackingEnsemble on %d rows, %d features", X.shape[0], X.shape[1])
-        return stacking
+        # MLflow: log run metadata if enabled
+        mlflow_enabled = os.environ.get('MLFLOW_TRACKING', '0') == '1' and _HAS_MLFLOW
+        if mlflow_enabled:
+            with mlflow.start_run(nested=False):
+                mlflow.log_param('model_type', 'stacking')
+                mlflow.log_param('rows', int(X.shape[0]))
+                mlflow.log_param('features', int(X.shape[1]))
+                stacking.train(X, y)
+                logger.info("Trained StackingEnsemble on %d rows, %d features", X.shape[0], X.shape[1])
+                # training metric (RMSE)
+                try:
+                    preds = stacking.predict(X)
+                    rmse = float(np.sqrt(np.mean((preds - y) ** 2)))
+                    mlflow.log_metric('train_rmse', rmse)
+                except Exception:
+                    pass
+                # attempt to log model artifact
+                try:
+                    mlflow.sklearn.log_model(stacking, artifact_path='model')
+                except Exception:
+                    pass
+                return stacking
+        else:
+            stacking.train(X, y)
+            logger.info("Trained StackingEnsemble on %d rows, %d features", X.shape[0], X.shape[1])
+            return stacking
 
     model = _build_ensemble()
-    model.fit(X, y)
 
-    logger.info("Trained model on %d rows, %d features", X.shape[0], X.shape[1])
-    return model
+    mlflow_enabled = os.environ.get('MLFLOW_TRACKING', '0') == '1' and _HAS_MLFLOW
+    # Ensure any previously active MLflow run is closed to avoid start_run collisions
+    if mlflow_enabled:
+        try:
+            if mlflow.active_run() is not None:
+                mlflow.end_run()
+        except Exception:
+            try:
+                mlflow.end_run()
+            except Exception:
+                pass
+    if mlflow_enabled:
+        with mlflow.start_run(nested=False):
+            mlflow.log_param('model_type', 'voting_ensemble')
+            mlflow.log_param('rows', int(X.shape[0]))
+            mlflow.log_param('features', int(X.shape[1]))
+            # log estimator list
+            try:
+                est_names = [name for name, _ in model.estimators]
+                mlflow.log_param('estimators', ','.join(est_names))
+            except Exception:
+                pass
+            model.fit(X, y)
+            logger.info("Trained model on %d rows, %d features", X.shape[0], X.shape[1])
+            try:
+                # attach kept contextual features for persistence by ModelRegistry
+                setattr(model, '_kept_contextual_features', kept_ctx or [])
+            except Exception:
+                pass
+            try:
+                preds = model.predict(X)
+                rmse = float(np.sqrt(np.mean((preds - y) ** 2)))
+                mlflow.log_metric('train_rmse', rmse)
+            except Exception:
+                pass
+            try:
+                mlflow.sklearn.log_model(model, artifact_path='model')
+            except Exception:
+                # fallback: save joblib artifact and log file
+                try:
+                    tmp_path = os.path.join('/tmp' if os.name != 'nt' else os.environ.get('TEMP', '.'), 'model_tmp.pkl')
+                    joblib.dump(model, tmp_path)
+                    mlflow.log_artifact(tmp_path)
+                except Exception:
+                    pass
+            return model
+    else:
+        model.fit(X, y)
+        logger.info("Trained model on %d rows, %d features", X.shape[0], X.shape[1])
+        try:
+            setattr(model, '_kept_contextual_features', kept_ctx or [])
+        except Exception:
+            pass
+        return model
 
 
 def save_model(model, path: str) -> None:
     os.makedirs(os.path.dirname(path), exist_ok=True)
     joblib.dump(model, path)
+    # If MLflow is enabled, record the saved artifact for traceability
+    try:
+        mlflow_enabled = os.environ.get('MLFLOW_TRACKING', '0') == '1' and _HAS_MLFLOW
+        if mlflow_enabled:
+            if _HAS_MLFLOW:
+                try:
+                    mlflow.log_artifact(path)
+                except Exception:
+                    # best-effort; don't fail save on mlflow issues
+                    logger.debug("Failed to log model artifact to MLflow")
+    except Exception:
+        pass
 
 
 def load_model(path: str):

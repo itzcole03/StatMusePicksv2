@@ -1,0 +1,6 @@
+player,status,n_rows,rmse_advanced,rmse_baseline,delta_rmse
+LeBron James,no_data,,,,
+Stephen Curry,ok,13.0,21.551346038977737,21.551346038977737,0.0
+Luka Doncic,ok,10.0,10.517349018660667,10.517349018660667,0.0
+Kevin Durant,ok,13.0,7.367890589853134,7.367890589853134,0.0
+Jayson Tatum,no_data,,,,

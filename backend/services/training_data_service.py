@@ -10,6 +10,7 @@ import tempfile
 import pandas as pd
 
 from . import nba_stats_client
+from . import per_ws_from_playbyplay as perws
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +90,8 @@ def generate_training_data(player_name: str, stat: str = 'points', min_games: in
     for g in games:
         # support keys used by different clients
         date = g.get('GAME_DATE') or g.get('gameDate') or g.get('date') or g.get('GAME_DATE_EST')
+        # season may be present on per-game records from nba_api
+        season_raw = g.get('SEASON') or g.get('SEASON_ID') or g.get('season') or None
         stat_val = _extract_stat_from_game(g, STAT_MAP.get(stat, ['PTS'])[0])
         matchup = g.get('MATCHUP') or g.get('matchup') or g.get('opponent')
         opp_def = g.get('opponentDefRating') or g.get('opponentDef') or g.get('opponentDefRating')
@@ -97,7 +100,8 @@ def generate_training_data(player_name: str, stat: str = 'points', min_games: in
             # NBA matchup format like 'LAL vs BOS' (home) or 'LAL @ BOS' (away)
             is_home = int(' vs ' in matchup or ' vs. ' in matchup)
 
-        norm.append({'date': date, 'stat': stat_val, 'is_home': is_home, 'opp_def': opp_def})
+        # keep raw game dict for per-game proxy computation
+        norm.append({'date': date, 'stat': stat_val, 'is_home': is_home, 'opp_def': opp_def, 'season': season_raw, 'raw': g})
 
     # parse dates and filter
     for r in norm:
@@ -108,6 +112,48 @@ def generate_training_data(player_name: str, stat: str = 'points', min_games: in
     # Build sliding windows
     rows = []
     n = len(norm)
+
+    # Precompute per-game PER/WS proxies on each normalized record so we can build
+    # season-to-date rolling means for adv_* features.
+    for r in norm:
+        try:
+            g = r.get('raw', {}) or {}
+            pts = float(g.get('PTS') or g.get('points') or 0)
+            ast = float(g.get('AST') or 0)
+            reb = float(g.get('REB') or 0)
+            fga = g.get('FGA') if 'FGA' in g else g.get('FG_ATT') if 'FG_ATT' in g else 0
+            fgm = g.get('FGM') if 'FGM' in g else 0
+            fta = g.get('FTA') if 'FTA' in g else 0
+            ftm = g.get('FTM') if 'FTM' in g else 0
+            stl = float(g.get('STL') or g.get('stl') or 0)
+            blk = float(g.get('BLK') or g.get('blk') or 0)
+            tov = float(g.get('TO') or g.get('TOV') or g.get('to') or 0)
+            mins = g.get('MIN') or g.get('min') or 0
+            try:
+                mins = float(mins)
+            except Exception:
+                try:
+                    parts = str(mins).split(':')
+                    if len(parts) == 2:
+                        mins = float(parts[0]) + float(parts[1]) / 60.0
+                    else:
+                        mins = 0.0
+                except Exception:
+                    mins = 0.0
+
+            missed_fg = max(0.0, float(fga or 0) - float(fgm or 0))
+            missed_ft = max(0.0, float(fta or 0) - float(ftm or 0))
+            eff = pts + reb + ast + stl + blk - missed_fg - missed_ft - tov
+            per_est_raw = eff * 2.5
+            per_est = per_est_raw * getattr(perws, 'PER_SCALE', perws.PER_SCALE)
+            mins_factor = (mins / 30.0) if mins and mins > 0 else 1.0
+            ws_per_game_raw = max(0.0, eff) * 0.018 * mins_factor
+            ws_per_game = ws_per_game_raw * getattr(perws, 'WS_SCALE', perws.WS_SCALE)
+            r['proxy_PER'] = float(per_est if per_est is not None else 0.0)
+            r['proxy_WS_per_game'] = float(ws_per_game if ws_per_game is not None else 0.0)
+        except Exception:
+            r['proxy_PER'] = 0.0
+            r['proxy_WS_per_game'] = 0.0
     for i in range(n):
         # need at least one prior game to compute features and a target at i
         if i < 1:
@@ -157,10 +203,68 @@ def generate_training_data(player_name: str, stat: str = 'points', min_games: in
             'is_home': norm[i].get('is_home'),
             'opp_def': norm[i].get('opp_def'),
         }
+        # Attach single-season advanced metrics when available (per-season lookup)
+        try:
+            per_season_map = adv_multi.get('per_season', {}) if isinstance(adv_multi, dict) else {}
+            # determine season string for this row: prefer explicit season on game, otherwise infer from date
+            season_for_row = norm[i].get('season')
+            if not season_for_row:
+                # infer season like '2024-25' from date_parsed
+                try:
+                    gd = norm[i]['date_parsed']
+                    y = gd.year
+                    # NBA season spans Oct -> Jun: if month >= 10, season is y-(y+1), else (y-1)-y
+                    if gd.month >= 10:
+                        season_for_row = f"{y}-{str((y+1)%100).zfill(2)}"
+                    else:
+                        season_for_row = f"{y-1}-{str(y%100).zfill(2)}"
+                except Exception:
+                    season_for_row = None
+
+            sstats = per_season_map.get(season_for_row) if season_for_row else None
+
+            # Prefer season-to-date rolling mean of proxies computed from game logs.
+            # Filter history to same season when season_for_row is available.
+            hist_same_season = [h for h in history if (not season_for_row) or (h.get('season') == season_for_row)]
+            proxy_per_vals = [h.get('proxy_PER', 0.0) for h in hist_same_season if h.get('proxy_PER') is not None]
+            proxy_ws_vals = [h.get('proxy_WS_per_game', 0.0) for h in hist_same_season if h.get('proxy_WS_per_game') is not None]
+            # Use decay-weighted rolling average (more weight to recent games).
+            try:
+                decay = float(os.environ.get('ADV_PROXY_DECAY', '0.6'))
+            except Exception:
+                decay = 0.6
+
+            def _decay_weighted_avg(vals, decay_factor: float):
+                if not vals:
+                    return None
+                k = len(vals)
+                # weights: older -> smaller, most recent -> largest
+                weights = [decay_factor ** (k - 1 - i) for i in range(k)]
+                s = sum(weights)
+                if s == 0:
+                    return sum(vals) / len(vals)
+                return sum(v * w for v, w in zip(vals, weights)) / s
+
+            w_per = _decay_weighted_avg(proxy_per_vals, decay) if proxy_per_vals else None
+            w_ws = _decay_weighted_avg(proxy_ws_vals, decay) if proxy_ws_vals else None
+
+            if w_per is not None:
+                row['adv_PER'] = float(w_per)
+            else:
+                row['adv_PER'] = float(sstats.get('PER')) if isinstance(sstats, dict) and sstats.get('PER') is not None else 0.0
+
+            if w_ws is not None:
+                row['adv_WS'] = float(w_ws)
+            else:
+                row['adv_WS'] = float(sstats.get('WS')) if isinstance(sstats, dict) and sstats.get('WS') is not None else 0.0
+        except Exception:
+            row['adv_PER'] = 0.0
+            row['adv_WS'] = 0.0
         # attach aggregated multi-season features (same for all rows)
         try:
             adv_agg = adv_multi.get('aggregated', {}) if isinstance(adv_multi, dict) else {}
             row['multi_PER'] = float(adv_agg.get('PER') or 0.0)
+            row['multi_WS'] = float(adv_agg.get('WS') or 0.0)
             row['multi_TS_PCT'] = float(adv_agg.get('TS_PCT') or 0.0)
         except Exception:
             row['multi_PER'] = 0.0
@@ -194,6 +298,14 @@ def generate_training_data(player_name: str, stat: str = 'points', min_games: in
     df['days_rest'] = df['days_rest'].fillna(2).astype(float)
     df['is_home'] = df['is_home'].fillna(0).astype(int)
     df['opp_def'] = df['opp_def'].fillna(df['opp_def'].mean() if not df['opp_def'].isnull().all() else 100.0).astype(float)
+
+    # ensure adv columns present
+    if 'adv_PER' not in df.columns:
+        df['adv_PER'] = 0.0
+    if 'adv_WS' not in df.columns:
+        df['adv_WS'] = 0.0
+    df['adv_PER'] = df['adv_PER'].fillna(0.0).astype(float)
+    df['adv_WS'] = df['adv_WS'].fillna(0.0).astype(float)
 
     return df
 
@@ -255,9 +367,11 @@ def build_training_sample(player: str, stat: str, game_date: str, season: Option
         season_multi = ctx.get('seasonStatsMulti', {}) or {}
         # single-season advanced
         features['adv_PER'] = float(adv.get('PER') or 0.0)
+        features['adv_WS'] = float(adv.get('WS') or 0.0)
         features['adv_TS_PCT'] = float(adv.get('TS_PCT') or 0.0)
         # multi-season aggregated
         features['multi_PER'] = float(adv_multi_agg.get('PER') or 0.0)
+        features['multi_WS'] = float(adv_multi_agg.get('WS') or 0.0)
         features['multi_TS_PCT'] = float(adv_multi_agg.get('TS_PCT') or 0.0)
         # aggregated season-level stat (e.g., PTS)
         try:
@@ -395,7 +509,7 @@ def export_dataset_with_version(df: pd.DataFrame, y: Optional[pd.Series] = None,
     outp.mkdir(parents=True, exist_ok=True)
 
     name = name or 'dataset'
-    version = version or datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+    version = version or datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     uid = uuid.uuid4().hex[:8]
     dir_name = f"{name}_v{version}_{uid}"
     target = outp / dir_name
@@ -405,7 +519,7 @@ def export_dataset_with_version(df: pd.DataFrame, y: Optional[pd.Series] = None,
         'name': name,
         'version': version,
         'uid': uid,
-        'created_at': datetime.datetime.utcnow().isoformat() + 'Z',
+        'created_at': datetime.datetime.now(datetime.timezone.utc).isoformat() + 'Z',
         'rows': int(len(df)),
         'columns': list(df.columns),
     }

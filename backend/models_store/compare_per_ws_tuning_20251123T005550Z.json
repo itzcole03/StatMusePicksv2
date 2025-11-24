@@ -1,0 +1,127 @@
+{
+  "sample_path": "C:\\Users\\bcmad\\Downloads\\StatMusePicksv2\\backend\\models_store\\per_ws_playbyplay_sample_20251122T215239Z.json",
+  "per_scale": 0.3427291900845268,
+  "ws_scale": 0.3117658169287415,
+  "rows": [
+    {
+      "player": "Stephen Curry",
+      "season": "2024-25",
+      "PER_est": 58.750000000000014,
+      "PER_can": 26.0,
+      "WS_est": 31.710900000000006,
+      "WS_can": 11.0
+    },
+    {
+      "player": "Stephen Curry",
+      "season": "2023-24",
+      "PER_est": 58.00675675675676,
+      "PER_can": 27.0,
+      "WS_est": 33.69032432432432,
+      "WS_can": 12.0
+    },
+    {
+      "player": "Stephen Curry",
+      "season": "2022-23",
+      "PER_est": 73.03571428571426,
+      "PER_can": 28.0,
+      "WS_est": 34.02295714285713,
+      "WS_can": 11.5
+    },
+    {
+      "player": "Nikola Jokic",
+      "season": "2024-25",
+      "PER_est": 105.46428571428575,
+      "PER_can": 31.0,
+      "WS_est": 65.17692857142858,
+      "WS_can": 20.0
+    },
+    {
+      "player": "Nikola Jokic",
+      "season": "2023-24",
+      "PER_est": 96.17088607594935,
+      "PER_can": 30.0,
+      "WS_est": 63.1727316455696,
+      "WS_can": 19.0
+    },
+    {
+      "player": "Nikola Jokic",
+      "season": "2022-23",
+      "PER_est": 95.0,
+      "PER_can": 30.0,
+      "WS_est": 52.941599999999994,
+      "WS_can": 19.0
+    },
+    {
+      "player": "Kevin Durant",
+      "season": "2024-25",
+      "PER_est": 65.76612903225808,
+      "PER_can": 22.0,
+      "WS_est": 35.797819354838715,
+      "WS_can": 8.0
+    },
+    {
+      "player": "Kevin Durant",
+      "season": "2023-24",
+      "PER_est": 69.16666666666667,
+      "PER_can": 23.0,
+      "WS_est": 46.314,
+      "WS_can": 9.0
+    },
+    {
+      "player": "Kevin Durant",
+      "season": "2022-23",
+      "PER_est": 77.28723404255318,
+      "PER_can": 24.0,
+      "WS_est": 31.03237021276595,
+      "WS_can": 9.5
+    },
+    {
+      "player": "Luka Doncic",
+      "season": "2024-25",
+      "PER_est": 74.05000000000001,
+      "PER_can": 29.0,
+      "WS_est": 31.385352000000005,
+      "WS_can": 18.0
+    },
+    {
+      "player": "Luka Doncic",
+      "season": "2023-24",
+      "PER_est": 92.14285714285711,
+      "PER_can": 31.0,
+      "WS_est": 58.02788571428569,
+      "WS_can": 22.0
+    },
+    {
+      "player": "Luka Doncic",
+      "season": "2022-23",
+      "PER_est": 83.86363636363639,
+      "PER_can": 30.0,
+      "WS_est": 48.084054545454556,
+      "WS_can": 17.0
+    },
+    {
+      "player": "Devin Booker",
+      "season": "2024-25",
+      "PER_est": 60.09999999999999,
+      "PER_can": 21.0,
+      "WS_est": 40.31507999999999,
+      "WS_can": 7.0
+    },
+    {
+      "player": "Devin Booker",
+      "season": "2023-24",
+      "PER_est": 66.8014705882353,
+      "PER_can": 22.0,
+      "WS_est": 39.19910294117648,
+      "WS_can": 8.0
+    },
+    {
+      "player": "Devin Booker",
+      "season": "2022-23",
+      "PER_est": 63.01886792452833,
+      "PER_can": 23.0,
+      "WS_est": 27.753509433962275,
+      "WS_can": 8.5
+    }
+  ]
+}

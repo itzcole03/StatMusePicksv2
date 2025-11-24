@@ -1,0 +1,30 @@
+name: Phase3 Smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+      - name: Run retrain A/B (small)
+        run: |
+          python backend/scripts/retrain_ab_selected.py --limit 2 --min-games 5
+      - name: Run eval report
+        run: |
+          # manifest path is expected to be in repo data
+          python backend/scripts/run_eval_report.py --manifest backend/data/datasets/points_dataset_v20251121T235153Z_c71436ea/dataset_manifest.json --models-dir backend/models_store --out-csv backend/models_store/eval_after_ab.csv
+      - name: Compute LLM ROI
+        run: |
+          python backend/scripts/llm_roi.py --eval-a backend/models_store/eval_after_ab.csv --eval-b backend/models_store/eval_after_ab.csv || true

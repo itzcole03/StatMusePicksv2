@@ -18,7 +18,7 @@ import shutil
 import logging
 from typing import Optional
 from sqlalchemy import create_engine, select
-from datetime import datetime
+import datetime
 
 from backend.services.model_registry import ModelRegistry, _sync_db_url
 
@@ -33,7 +33,10 @@ def _print_file_info(path: str) -> None:
     try:
         st = os.stat(path)
         size = st.st_size
-        mtime = datetime.utcfromtimestamp(st.st_mtime).isoformat() + "Z"
+        try:
+            mtime = datetime.datetime.fromtimestamp(st.st_mtime, tz=datetime.timezone.utc).isoformat() + "Z"
+        except Exception:
+            mtime = None
         print(f"  size={size} bytes  mtime={mtime}")
     except Exception:
         pass
@@ -93,7 +96,7 @@ def promote_model(reg: ModelRegistry, player: str, tag: str = "production", forc
     print(f"Promoted {src} -> {dst}")
     # attempt to record metadata for the promoted artifact
     try:
-        _insert_metadata_row(player, version=tag, path=dst, notes=f"promoted at {datetime.utcnow().isoformat()}Z")
+        _insert_metadata_row(player, version=tag, path=dst, notes=f"promoted at {datetime.datetime.now(datetime.timezone.utc).isoformat()}Z")
     except Exception:
         pass
 
