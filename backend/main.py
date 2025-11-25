@@ -268,7 +268,7 @@ async def batch_player_context(request: Request, default_limit: int = 8, max_con
         except Exception as e:
             return {"player_name": name, "ok": False, "error": str(e)}
 
-    tasks = [asyncio.create_task(_fetch_one(r)) for r in requests]
+    tasks = [asyncio.create_task(_fetch_one(r)) for r in data]
     gathered = await asyncio.gather(*tasks)
 
     results = [g for g in gathered if g.get("ok")]

@@ -30,6 +30,17 @@ def _ensure_engine_and_session():
     """Create the async engine and sessionmaker if not already created."""
     global engine, AsyncSessionLocal
     if engine is None:
+        # Validate DATABASE_URL for async-compatible dialects to fail-fast
+        # when a sync-only URL (e.g., 'postgresql://') is provided by mistake.
+        url = DATABASE_URL or ""
+        # allow sqlite aiosqlite, postgres+asyncpg, mysql+asyncmy or other async drivers
+        allowed_async_prefixes = ("sqlite+aiosqlite://", "postgresql+asyncpg://", "mysql+asyncmy://", "mysql+aiomysql://")
+        if url and not url.startswith("sqlite+") and not any(url.startswith(p) for p in allowed_async_prefixes):
+            # If the URL looks like a sync-only driver, raise a clear error.
+            raise RuntimeError(
+                "DATABASE_URL must use an async DB driver for async SQLAlchemy engines. "
+                f"Got: '{url}'. Use an async dialect suffix (e.g. postgresql+asyncpg://) or set a sqlite+aiosqlite URL for local dev."
+            )
         from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
         engine = create_async_engine(DATABASE_URL, echo=False, future=True)

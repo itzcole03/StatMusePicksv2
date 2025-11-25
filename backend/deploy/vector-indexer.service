@@ -1,0 +1,25 @@
+[Unit]
+Description=StatMusePicksV2 Vector Indexer
+After=network.target
+
+[Service]
+Type=simple
+User=statmuse
+WorkingDirectory=%h/Downloads/StatMusePicksv2
+Environment=PYTHONUNBUFFERED=1
+Environment=INDEXER_SOURCE_FILE=%h/Downloads/StatMusePicksv2/backend/ingest_audit/news_to_index.jsonl
+Environment=INDEXER_INTERVAL_SECONDS=300
+Environment=OLLAMA_URL=https://api.ollama.com
+Environment=OLLAMA_DEFAULT_MODEL=your-embedding-model
+Environment=OLLAMA_CLOUD_API_KEY=
+Environment=OLLAMA_EMBEDDINGS_FALLBACK=false
+Environment=VECTOR_STORE=memory
+Environment=CHROMA_PERSIST_DIR=%h/Downloads/StatMusePicksv2/chroma_data
+Environment=CHROMA_COLLECTION_NAME=statmuse
+Environment=OLLAMA_ALLOW_AUTO_PULL=false
+ExecStart=%h/Downloads/StatMusePicksv2/.venv/bin/python %h/Downloads/StatMusePicksv2/backend/scripts/run_vector_indexer.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
