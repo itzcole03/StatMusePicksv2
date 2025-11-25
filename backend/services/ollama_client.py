@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import subprocess
 from typing import Optional, Any, Dict
 
 logger = logging.getLogger(__name__)
@@ -86,7 +87,7 @@ class OllamaClient:
             logger.debug("Ollama list_models http fallback failed: %s", e)
         return None
 
-    def generate(self, model: Optional[str], prompt: str, stream: bool = False, timeout: float = 10.0, response_format: Optional[str] = None) -> Optional[Any]:
+    def generate(self, model: Optional[str], prompt: str, stream: bool = False, timeout: float = 10.0, response_format: Optional[str] = None, tools: Optional[list] = None) -> Optional[Any]:
         """Generate text for `prompt` using `model`.
 
         - If `stream` is True and the client supports streaming, attempts stream consumption.
@@ -105,6 +106,12 @@ class OllamaClient:
                         # prefer `input` per cloud docs
                         kwargs['input'] = prompt
                         kwargs['stream'] = stream
+                        # pass tools if provided (newer client versions support tool-calling)
+                        if tools is not None:
+                            try:
+                                kwargs['tools'] = tools
+                            except Exception:
+                                pass
                         # support passing format/response_format to the official client
                         if response_format is not None:
                             # different client versions may expect `format` or `response_format`
@@ -163,6 +170,12 @@ class OllamaClient:
             if response_format:
                 # common parameter name is 'format' for many Ollama APIs
                 payload['format'] = response_format
+            # include tools in payload when provided (HTTP fallback)
+            if tools is not None:
+                try:
+                    payload['tools'] = tools
+                except Exception:
+                    pass
             try:
                 payload['max_tokens'] = int(os.environ.get('OLLAMA_MAX_TOKENS', '200'))
             except Exception:
@@ -273,6 +286,194 @@ class OllamaClient:
                 return resp.text
         except Exception as e:
             logger.debug("Ollama HTTP generate failed: %s", e)
+        return None
+
+    def embeddings(self, model: Optional[str], input: str, timeout: float = 10.0) -> Optional[list]:
+        """Return embeddings for `input` using the underlying client or HTTP fallback.
+
+        Returns a list of floats (single vector) on success or None on failure.
+        """
+        # Try official client first
+        if self._has_ollama and self._client is not None:
+            try:
+                # many clients expose an `embeddings` or `embed` method
+                if hasattr(self._client, 'embeddings'):
+                    try:
+                        out = self._client.embeddings(model=model, input=input)
+                        return out
+                    except TypeError:
+                        try:
+                            out = self._client.embeddings(input)
+                            return out
+                        except Exception:
+                            pass
+                if hasattr(self._client, 'embed'):
+                    try:
+                        out = self._client.embed(model=model, input=input)
+                        return out
+                    except Exception:
+                        try:
+                            out = self._client.embed(input)
+                            return out
+                        except Exception:
+                            pass
+            except Exception as e:
+                logger.debug("ollama client embeddings failed: %s", e)
+
+        # HTTP fallback: try multiple common endpoints (per Ollama docs use /api/embed)
+        try:
+            import requests
+
+            base = self._base_url.rstrip('/')
+            endpoints = []
+            # prefer documented cloud path /api/embed
+            endpoints.append(base + '/api/embed')
+            # fallback variants
+            endpoints.append(base + '/api/embeddings')
+            endpoints.append(base + '/v1/embeddings')
+
+            headers = {'Content-Type': 'application/json'}
+            if self._api_key:
+                headers['Authorization'] = f"Bearer {self._api_key}"
+
+            # prepare candidate models: prioritized list (explicit model first)
+            env_candidates = os.environ.get('OLLAMA_EMBEDDING_CANDIDATES', '')
+            defaults = ['embeddinggemma', 'qwen3-embedding', 'all-minilm']
+            candidates = []
+            if model:
+                candidates.append(model)
+            if env_candidates:
+                for m in [m.strip() for m in env_candidates.split(',') if m.strip()]:
+                    if m not in candidates:
+                        candidates.append(m)
+            for d in defaults:
+                if d not in candidates:
+                    candidates.append(d)
+
+            def _make_payload(m):
+                return {"model": m or os.environ.get('OLLAMA_DEFAULT_MODEL'), "input": input}
+
+            def _extract_vector(data):
+                # common shapes: {"embeddings": [[...]]} or {"data": [{"embedding": [...]}, ...]} or {"embedding": [...]} or list
+                if data is None:
+                    return None
+                if isinstance(data, dict):
+                    if 'embeddings' in data and isinstance(data['embeddings'], list) and data['embeddings']:
+                        first = data['embeddings'][0]
+                        if isinstance(first, list):
+                            return first
+                    if 'data' in data and isinstance(data['data'], list) and data['data']:
+                        first = data['data'][0]
+                        if isinstance(first, dict) and 'embedding' in first:
+                            return first['embedding']
+                    if 'embedding' in data and isinstance(data['embedding'], list):
+                        return data['embedding']
+                if isinstance(data, list) and data and isinstance(data[0], list):
+                    return data[0]
+
+                # deep search for any numeric vector
+                def _find_vector(obj):
+                    if isinstance(obj, list) and obj and all(isinstance(x, (int, float)) for x in obj):
+                        return obj
+                    if isinstance(obj, dict):
+                        for v in obj.values():
+                            r = _find_vector(v)
+                            if r:
+                                return r
+                    if isinstance(obj, list):
+                        for v in obj:
+                            r = _find_vector(v)
+                            if r:
+                                return r
+                    return None
+
+                return _find_vector(data)
+
+            # try each candidate model until we get an embedding
+            for m in candidates:
+                payload = _make_payload(m)
+                for api_path in endpoints:
+                    try:
+                        resp = requests.post(api_path, json=payload, headers=headers, timeout=timeout)
+                        # do not raise_for_status here; we want to inspect body for model-not-found
+                    except Exception:
+                        # try next endpoint
+                        continue
+
+                    data = None
+                    try:
+                        data = resp.json()
+                    except Exception:
+                        data = None
+
+                    vec = _extract_vector(data)
+                    if vec:
+                        logger.debug("ollama_client.embeddings: got embedding using model=%s, endpoint=%s", m, api_path)
+                        return vec
+
+                    # detect model-not-found hints and continue to next model candidate
+                    try:
+                        if isinstance(data, dict):
+                            # common error shapes
+                            err = data.get('error') or data.get('message') or data.get('error_message') or data.get('detail')
+                            if err and isinstance(err, str) and 'model' in err and 'not found' in err:
+                                logger.debug("ollama_client.embeddings: model %s not found at %s; trying next candidate", m, api_path)
+                                # If configured, attempt an opt-in auto-pull of the missing model
+                                allow_auto = os.environ.get('OLLAMA_ALLOW_AUTO_PULL', '').lower()
+                                if allow_auto in ('1', 'true', 'yes'):
+                                    try:
+                                        pull_cmd = os.environ.get('OLLAMA_PULL_CMD', 'ollama')
+                                        pull_timeout = int(os.environ.get('OLLAMA_PULL_TIMEOUT', '600'))
+                                        logger.info("OLLAMA_ALLOW_AUTO_PULL enabled: attempting to pull model %s using %s", m, pull_cmd)
+                                        subprocess.run([pull_cmd, 'pull', m], check=True, timeout=pull_timeout)
+                                        # try the same endpoint once more after pulling
+                                        try:
+                                            resp2 = requests.post(api_path, json=payload, headers=headers, timeout=timeout)
+                                            try:
+                                                data2 = resp2.json()
+                                            except Exception:
+                                                data2 = None
+                                            vec2 = _extract_vector(data2)
+                                            if vec2:
+                                                logger.info("ollama_client.embeddings: pulled model %s and retrieved embedding", m)
+                                                return vec2
+                                        except Exception:
+                                            logger.debug("ollama_client.embeddings: pull succeeded but second request failed for model %s", m)
+                                    except Exception as e:
+                                        logger.debug("ollama_client.embeddings: auto-pull failed for model %s: %s", m, e)
+                                continue
+                            # nested shape: {"error": {"message": "model \"...\" not found"}}
+                            if isinstance(err, dict):
+                                msg = err.get('message')
+                                if msg and 'not found' in msg:
+                                    logger.debug("ollama_client.embeddings: model %s not found (nested error); trying next candidate", m)
+                                    allow_auto = os.environ.get('OLLAMA_ALLOW_AUTO_PULL', '').lower()
+                                    if allow_auto in ('1', 'true', 'yes'):
+                                        try:
+                                            pull_cmd = os.environ.get('OLLAMA_PULL_CMD', 'ollama')
+                                            pull_timeout = int(os.environ.get('OLLAMA_PULL_TIMEOUT', '600'))
+                                            logger.info("OLLAMA_ALLOW_AUTO_PULL enabled: attempting to pull model %s using %s", m, pull_cmd)
+                                            subprocess.run([pull_cmd, 'pull', m], check=True, timeout=pull_timeout)
+                                            try:
+                                                resp2 = requests.post(api_path, json=payload, headers=headers, timeout=timeout)
+                                                try:
+                                                    data2 = resp2.json()
+                                                except Exception:
+                                                    data2 = None
+                                                vec2 = _extract_vector(data2)
+                                                if vec2:
+                                                    logger.info("ollama_client.embeddings: pulled model %s and retrieved embedding", m)
+                                                    return vec2
+                                            except Exception:
+                                                logger.debug("ollama_client.embeddings: pull succeeded but second request failed for model %s", m)
+                                        except Exception as e:
+                                            logger.debug("ollama_client.embeddings: auto-pull failed for model %s: %s", m, e)
+                                    continue
+                    except Exception:
+                        pass
+
+        except Exception as e:
+            logger.debug("Ollama embeddings http fallback failed: %s", e)
         return None
 
 

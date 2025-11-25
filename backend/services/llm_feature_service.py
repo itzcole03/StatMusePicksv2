@@ -10,10 +10,12 @@ import json
 import logging
 import os
 from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List, Tuple
 
 from pydantic import BaseModel, Field, ValidationError
 
 from backend.services.ollama_client import get_default_client
+from backend.services.vector_store import InMemoryVectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ class QualitativeFeatures(BaseModel):
 
 
 class LLMFeatureService:
-    def __init__(self, default_model: Optional[str] = None, redis_client: Optional[object] = None, ttl_seconds: int = 24 * 3600):
+    def __init__(self, default_model: Optional[str] = None, redis_client: Optional[object] = None, ttl_seconds: int = 24 * 3600, vector_store: Optional[InMemoryVectorStore] = None):
         self.client = get_default_client()
         self.default_model = default_model or os.environ.get('OLLAMA_DEFAULT_MODEL') or 'llama3'
         # optional Redis client for caching; fall back to in-process cache
@@ -35,6 +37,10 @@ class LLMFeatureService:
         self.ttl = int(ttl_seconds)
         self._cache: Dict[str, Dict[str, float]] = {}
         self._ollama_last_call = 0.0
+        # allow injection of a vector store (useful for tests / production swap)
+        self.vector_store = vector_store if vector_store is not None else InMemoryVectorStore()
+        # last embedding source used: 'live'|'fallback'|None
+        self._last_embedding_source: Optional[str] = None
 
     def _build_prompt(self, player_name: str, text: str) -> str:
         return (
@@ -55,9 +61,28 @@ class LLMFeatureService:
         model = model or self.default_model
         prompt = self._build_prompt(player_name, text)
 
+        # define a lightweight tool descriptor for the LLM to call when it
+        # needs fresh web information. Ollama tool-calling expects a small
+        # JSON schema describing the tool; we keep it minimal here.
+        # Tool descriptor compatible with common tool-calling formats (name + JSON Schema `parameters`).
+        tools = [
+            {
+                "name": "web_search",
+                "description": "Search the web for recent news or quotes; returns plain-text summary.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "Search query"}
+                    },
+                    "required": ["query"]
+                },
+            }
+        ]
+
         for _ in range(max_attempts):
             try:
-                resp = self.client.generate(model=model, prompt=prompt, timeout=30, response_format='json')
+                # pass both `response_format` and `format` to support different client APIs
+                resp = self.client.generate(model=model, prompt=prompt, timeout=30, response_format='json', format='json', tools=tools)
             except Exception as e:
                 logger.debug("LLM client.generate failed: %s", e)
                 resp = None
@@ -84,6 +109,36 @@ class LLMFeatureService:
 
             if parsed is None:
                 continue
+
+            # tool-calling helper: if the model returned an explicit tool call
+            # shape, execute it and supply the result back to the model.
+            if isinstance(parsed, dict) and (
+                parsed.get('tool_call') or parsed.get('tool') or parsed.get('web_search') or parsed.get('call_tool')
+            ):
+                try:
+                    # support multiple possible shapes; expect a query string
+                    query = None
+                    # shape: {"tool_call": {"name": "web_search", "arguments": {"query": "..."}}}
+                    tc = parsed.get('tool_call') or parsed.get('tool') or parsed.get('call_tool') or parsed
+                    if isinstance(tc, dict):
+                        args = tc.get('arguments') or tc.get('args') or tc
+                        if isinstance(args, dict):
+                            query = args.get('query') or args.get('q') or args.get('search')
+                    if query is None:
+                        # fallback: if top-level web_search key present, use it
+                        query = parsed.get('web_search')
+
+                    if query:
+                        # import local web search and call it
+                        from backend.services.web_search import web_search
+
+                        result = web_search(str(query))
+                        # append tool result to prompt and retry generation
+                        prompt = prompt + "\n\n[web_search result]\n" + str(result)
+                        continue
+                except Exception:
+                    # on any failure, ignore and continue parsing attempt
+                    pass
 
             if isinstance(parsed, list) and parsed:
                 if isinstance(parsed[0], dict):
@@ -184,8 +239,15 @@ class LLMFeatureService:
                     api_path = base + '/api/chat'
                     payload = {"model": self.default_model, "messages": [{"role": "user", "content": prompt}], "stream": stream_enabled}
                 else:
-                    api_path = base + '/v1/generate'
-                    payload = {"input": prompt, "prompt": prompt, "model": self.default_model}
+                    # local Ollama HTTP API uses /api/generate (not /v1/generate)
+                    api_path = base + '/api/generate'
+                    # include both keys for compatibility and expose stream flag
+                    payload = {
+                        "model": self.default_model,
+                        "input": prompt,
+                        "prompt": prompt,
+                        "stream": stream_enabled,
+                    }
 
                 headers = {}
                 if api_key:
@@ -284,6 +346,190 @@ class LLMFeatureService:
         logger.error("Ollama request failed after %s attempts", max_attempts)
         return None
 
+    # -------------------- Embedding + Similarity helpers --------------------
+    def generate_embedding(self, text: str, model: Optional[str] = None) -> Optional[List[float]]:
+        """Generate an embedding vector for `text` using the Ollama client.
+
+        Returns a single vector (list of floats) or None.
+        """
+        import time as _time
+        try:
+            from backend.services import metrics
+        except Exception:
+            metrics = None
+
+        model = model or self.default_model
+        _start = _time.time()
+        emb = None
+        try:
+            # try live embeddings via the client wrapper
+            if hasattr(self.client, 'embeddings'):
+                emb = self.client.embeddings(model=model, input=text)
+            else:
+                # attempt to call underlying client directly
+                try:
+                    emb = self.client._client.embeddings(model=model, input=text)  # type: ignore
+                except Exception:
+                    try:
+                        emb = self.client._client.embed(text)  # type: ignore
+                    except Exception:
+                        emb = None
+
+            # if API returns nested shapes, extract vector
+            if emb is not None:
+                logger.info("generate_embedding: obtained live embedding from client for model=%s (text len=%d)", model, len(text or ""))
+                # Some clients return plain lists, dicts with `embedding`, or
+                # custom response objects (e.g. EmbedResponse) with `embedding`,
+                # `data` or `embeddings` attributes. Normalize these shapes.
+                try:
+                    # Empty list -> treat as failure so fallback can run
+                    if isinstance(emb, list) and len(emb) == 0:
+                        emb = None
+
+                    # Dict shape: {'embedding': [...]} or [{'embedding': [...]}, ...]
+                    if isinstance(emb, dict) and 'embedding' in emb and isinstance(emb['embedding'], (list, tuple)):
+                        self._last_embedding_source = 'live'
+                        return emb['embedding']
+
+                    if isinstance(emb, list) and emb and isinstance(emb[0], (int, float)):
+                        self._last_embedding_source = 'live'
+                        return emb
+
+                    if isinstance(emb, list) and emb and isinstance(emb[0], dict) and 'embedding' in emb[0]:
+                        self._last_embedding_source = 'live'
+                        return emb[0]['embedding']
+
+                    # Object-like shapes: try common attributes
+                    if not isinstance(emb, (dict, list, tuple)):
+                        # try `.embedding` attribute
+                        vec = None
+                        if hasattr(emb, 'embedding'):
+                            try:
+                                tmp = getattr(emb, 'embedding')
+                                if isinstance(tmp, (list, tuple)) and tmp:
+                                    vec = list(tmp)
+                            except Exception:
+                                pass
+
+                        # try `.data` -> list of {"embedding": [...]}
+                        if vec is None and hasattr(emb, 'data'):
+                            try:
+                                d = getattr(emb, 'data')
+                                if isinstance(d, list) and d:
+                                    first = d[0]
+                                    if isinstance(first, dict) and 'embedding' in first:
+                                        vec = first['embedding']
+                            except Exception:
+                                pass
+
+                        # try `.embeddings` attribute
+                        if vec is None and hasattr(emb, 'embeddings'):
+                            try:
+                                e = getattr(emb, 'embeddings')
+                                if isinstance(e, list) and e and isinstance(e[0], (list, tuple)):
+                                    vec = list(e[0])
+                            except Exception:
+                                pass
+
+                        # last resort: if emb is iterable of numbers, coerce to list
+                        if vec is None:
+                            try:
+                                it = list(emb)
+                                if it and all(isinstance(x, (int, float)) for x in it):
+                                    vec = it
+                            except Exception:
+                                vec = None
+
+                        if vec is not None:
+                            self._last_embedding_source = 'live'
+                            return vec
+                except Exception:
+                    # normalization shouldn't crash the main flow
+                    pass
+        except Exception:
+            emb = None
+
+        # If live embeddings failed, optionally fall back to deterministic local embedding.
+        # Production-safe default: if `OLLAMA_EMBEDDINGS_FALLBACK` is not set and
+        # the runtime environment indicates production, disable fallback.
+        try:
+            fb_env = os.environ.get('OLLAMA_EMBEDDINGS_FALLBACK')
+            if fb_env is not None:
+                allow_fb = str(fb_env).lower() in ('1', 'true', 'yes')
+            else:
+                # infer from common environment vars
+                env = (os.environ.get('ENV') or os.environ.get('APP_ENV') or os.environ.get('FLASK_ENV') or os.environ.get('PYTHON_ENV') or '').lower()
+                allow_fb = False if env in ('production', 'prod') else True
+        except Exception:
+            allow_fb = True
+
+        if (emb is None) and allow_fb:
+            try:
+                import hashlib, random
+
+                dim = int(os.environ.get('OLLAMA_EMBEDDING_DIM', '384'))
+                h = hashlib.sha256(text.encode('utf-8')).hexdigest()
+                seed = int(h[:16], 16)
+                rnd = random.Random(seed)
+                vec = [rnd.uniform(-1.0, 1.0) for _ in range(dim)]
+                logger.info("generate_embedding: using deterministic fallback embedding (dim=%d)", dim)
+                self._last_embedding_source = 'fallback'
+                return vec
+            except Exception:
+                return None
+
+        # record metrics
+        _dur = _time.time() - _start
+        try:
+            if metrics is not None:
+                metrics.embedding_requests_total.inc()
+                metrics.embedding_latency_seconds.observe(_dur)
+                if emb is not None:
+                    metrics.embedding_success_total.inc()
+        except Exception:
+            # metrics should never break main logic
+            pass
+
+        if emb is None and not allow_fb:
+            # In production we prefer failing fast and logging when live embeddings
+            # are unavailable rather than silently using deterministic vectors.
+            logger.error("generate_embedding: live embedding failed and fallback disabled (production mode)")
+            self._last_embedding_source = None
+            return None
+
+        return None
+
+    def index_texts(self, items: List[Tuple[str, str, Optional[Dict[str, Any]]]], model: Optional[str] = None) -> List[str]:
+        """Index a list of items into the vector store.
+
+        `items` is a list of tuples: (id, text, metadata).
+        Returns list of ids successfully indexed.
+        """
+        indexed = []
+        for id, text, meta in items:
+            try:
+                emb = self.generate_embedding(text, model=model)
+                if emb:
+                    self.vector_store.add(id, emb, meta or {})
+                    indexed.append(id)
+            except Exception:
+                continue
+        return indexed
+
+    def similarity_with_history(self, current_text: str, top_k: int = 3, model: Optional[str] = None) -> Dict[str, Any]:
+        """Compute similarity features between `current_text` and indexed history.
+
+        Returns a dict with `top_matches` list and summary features.
+        """
+        emb = self.generate_embedding(current_text, model=model)
+        if emb is None:
+            return {"top_matches": [], "max_similarity": 0.0, "avg_topk_similarity": 0.0}
+        results = self.vector_store.search(emb, top_k=top_k)
+        scores = [r['score'] for r in results]
+        max_sim = float(scores[0]) if scores else 0.0
+        avg_sim = float(sum(scores) / len(scores)) if scores else 0.0
+        return {"top_matches": results, "max_similarity": max_sim, "avg_topk_similarity": avg_sim}
+
     def fetch_news_and_extract(self, player_name: str, source_id: str, text_fetcher) -> Dict[str, float]:
         """Fetch text via `text_fetcher` and return numeric features.
 
@@ -347,7 +593,22 @@ _default_llm_service: Optional[LLMFeatureService] = None
 def create_default_service(default_model: Optional[str] = None) -> LLMFeatureService:
     global _default_llm_service
     if _default_llm_service is None:
-        _default_llm_service = LLMFeatureService(default_model=default_model)
+        # allow selecting a production vector store via env var VECTOR_STORE=chroma
+        vector_store = None
+        try:
+            vs = os.environ.get('VECTOR_STORE', '').lower()
+            if vs == 'chroma':
+                try:
+                    from backend.services.chroma_vector_store import ChromaVectorStore
+
+                    persist = os.environ.get('CHROMA_PERSIST_DIR')
+                    vector_store = ChromaVectorStore(persist_directory=persist)
+                except Exception:
+                    logger.exception('ChromaVectorStore requested but failed to initialize; falling back to InMemoryVectorStore')
+                    vector_store = None
+        except Exception:
+            vector_store = None
+        _default_llm_service = LLMFeatureService(default_model=default_model, vector_store=vector_store)
     return _default_llm_service
 
 

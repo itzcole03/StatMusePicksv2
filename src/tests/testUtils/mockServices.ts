@@ -1,3 +1,4 @@
+/* global vi */
 // Centralized mocks for component tests that need external NBA/AI services.
 // Importing this module registers `vi.mock` handlers so tests can import
 // components without hitting real network or LLM endpoints.
@@ -7,7 +8,7 @@
 // module mocks.
 
 vi.mock('../../services/nbaService', () => ({
-  buildExternalContextForProjections: async (projs: any[], settings: any) => {
+  buildExternalContextForProjections: async (projs: any[], _settings: any) => {
     const contexts: Record<string, any> = {};
     for (const p of projs) {
       contexts[p.id] = {
@@ -25,7 +26,7 @@ vi.mock('../../services/nbaService', () => ({
     }
     return contexts;
   },
-  fetchPlayerContextFromNBA: async (proj: any, settings: any) => {
+  fetchPlayerContextFromNBA: async (proj: any, _settings: any) => {
     return {
       player: proj.player,
       stat: proj.stat,
@@ -42,7 +43,7 @@ vi.mock('../../services/nbaService', () => ({
 }));
 
 vi.mock('../../services/aiService', () => ({
-  analyzeWithLocalLLM: async (prompt: string, settings: any, onChunk: any) => {
+  analyzeWithLocalLLM: async (_prompt: string, _settings: any, onChunk: any) => {
     const arr = [
       {
         player: 'Test Player',
@@ -56,18 +57,49 @@ vi.mock('../../services/aiService', () => ({
     ];
     onChunk(JSON.stringify(arr));
   },
-  buildAnalysisPromptAsync: async (projs: any[], settings: any) => {
-    const nba = await vi.importMock('../../services/nbaService');
-    const contexts = await nba.buildExternalContextForProjections(projs, settings);
+  buildAnalysisPromptAsync: async (projs: any[], _settings: any) => {
+    const nba: any = await vi.importMock('../../services/nbaService');
+    const contexts = await nba.buildExternalContextForProjections(projs, _settings);
     return { prompt: 'ok', externalUsed: true, contexts };
   },
-  scoreModelOutput: (parsed: any[], projections: any[], contextsMap: Record<string, any> | null) => {
+  scoreModelOutput: (parsed: any[], _projections: any[], _contextsMap: Record<string, any> | null) => {
     const items = parsed.map((p, idx) => ({ index: idx, expectedRec: null, modelRec: p.recommendation || null, match: true, trustedAvg: null, heuristicScore: 50, modelScore: p.modelConfidenceScore || null }));
     return { items, agreement: 100 };
   }
 }));
 
-vi.mock('../../services/aiService.v2', () => ({ buildPredictionFromFeatures: (player: string) => ({ recommendation: 'OVER', calibratedConfidence: 70 }) }));
+vi.mock('../../services/aiService.v2', () => ({
+  buildPredictionFromFeatures: (_player: string) => ({ recommendation: 'OVER', calibratedConfidence: 70 }),
+  // Mocked streaming helper: calls `onChunk` with incremental text pieces,
+  // then signals completion via `onChunk({done:true})` and `onDone()`.
+  streamOllamaAnalysis: async (
+    _prompt: string,
+    _opts: any,
+    onChunk: (_c: any) => void = () => {},
+    onDone: () => void = () => {},
+    onError: (_e: any) => void = () => {}
+  ) => {
+    try {
+      const parts = [
+        'Parsing analysis...',
+        'Found supporting evidence from recent games.',
+        'Model recommends OVER with moderate confidence.'
+      ];
+      for (const p of parts) {
+        // emulate async streaming delays
+        await new Promise((r) => setTimeout(r, 5));
+        onChunk({ text: p });
+      }
+      // final structured payload (JSON) that consumers may parse
+      onChunk({ text: JSON.stringify({ recommendation: 'OVER', confidence: 'Moderate' }) });
+      onChunk({ done: true });
+      onDone();
+    } catch (_err) {
+      onChunk({ error: String(_err) });
+      onError(_err);
+    }
+  },
+}));
 
 vi.mock('../../services/analysisValidator', () => ({ validateOutput: () => ({ ok: true }) }));
 

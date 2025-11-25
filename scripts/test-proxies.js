@@ -1,3 +1,6 @@
+/* eslint-env node */
+/* global fetch, process, console */
+
 async function test() {
   const players = ["LeBron James", "Stephen Curry"];
   for (const player of players) {

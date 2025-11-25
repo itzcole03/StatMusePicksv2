@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query, Request, Body
+from fastapi.responses import Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -9,6 +10,7 @@ import logging
 import re
 from typing import Dict
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 # Caching
 from cachetools import TTLCache
@@ -41,6 +43,45 @@ except Exception:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("fastapi_nba")
+
+
+def _resolve_base_url(client=None):
+    """Resolve the Ollama base URL with local-preference guards.
+
+    Priority:
+    1. If env `OLLAMA_PREFER_LOCAL` is truthy or marker file `DEV_OLLAMA_LOCAL`
+       exists at the repo root, return `http://localhost:11434`.
+    2. `OLLAMA_URL` env var if set.
+    3. `client._base_url` if a client was provided.
+    4. Fallback to empty string.
+    """
+    try:
+        repo_root = Path(__file__).resolve().parents[1]
+    except Exception:
+        repo_root = None
+
+    prefer_local = os.environ.get('OLLAMA_PREFER_LOCAL') in ('1', 'true', 'True')
+    try:
+        if repo_root is not None and repo_root.joinpath('DEV_OLLAMA_LOCAL').exists():
+            prefer_local = True
+    except Exception:
+        pass
+
+    if prefer_local:
+        return 'http://localhost:11434'
+
+    env_base = os.environ.get('OLLAMA_URL')
+    if env_base:
+        return env_base.rstrip('/')
+
+    if client is not None:
+        try:
+            return client._base_url.rstrip('/')
+        except Exception:
+            pass
+
+    return os.environ.get('OLLAMA_URL', '').rstrip('/')
+
 
 
 @asynccontextmanager
@@ -110,7 +151,14 @@ app = FastAPI(title="NBA Data Backend (example)", lifespan=_lifespan)
 # Allow requests from local frontend dev servers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    # Common local dev origins: vite (5173), frontend dev (3000/3001),
+    # and backend proxy (3002) used in some workflows.
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:5173",
+        "http://localhost:3002",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -341,6 +389,74 @@ def fetch_recent_games(player_id: int, limit: int = 8):
 @app.get('/health')
 def health():
     return {'ok': True}
+
+
+@app.get('/api/proxy/prizepicks')
+def proxy_prizepicks():
+    """Server-side proxy for PrizePicks projections.
+
+    This endpoint fetches the remote `partner-api.prizepicks.com/projections`
+    server-side to avoid CORS issues in the browser. It's intentionally
+    simple for dev use; in production consider adding caching, rate
+    limiting, and auth as required.
+    """
+    target = 'https://partner-api.prizepicks.com/projections'
+    try:
+        import requests
+        resp = requests.get(target, timeout=15)
+        resp.raise_for_status()
+        content_type = resp.headers.get('content-type', 'application/json')
+        headers = {}
+        # pass through ETag/Last-Modified if present for client caching
+        if resp.headers.get('etag'):
+            headers['etag'] = resp.headers.get('etag')
+        if resp.headers.get('last-modified'):
+            headers['last-modified'] = resp.headers.get('last-modified')
+        return Response(content=resp.content, media_type=content_type, headers=headers)
+    except Exception as e:
+        logger.exception('proxy_prizepicks error: %s', e)
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+@app.get('/health/embeddings')
+async def health_embeddings():
+    """Run a quick embedding generation check and return status.
+
+    This endpoint attempts to generate a single embedding using the default
+    LLMFeatureService. It is intended for CI and runtime health checks.
+    """
+    import asyncio, time
+    from backend.services.llm_feature_service import create_default_service
+
+    svc = create_default_service()
+    sample = "health check"
+    start = time.time()
+    try:
+        # run in thread to avoid blocking event loop; timeout quickly
+        vec = await asyncio.wait_for(asyncio.to_thread(svc.generate_embedding, sample), timeout=6.0)
+        dur = time.time() - start
+        ok = vec is not None and isinstance(vec, (list, tuple)) and len(vec) > 0
+        return {"ok": bool(ok), "source": svc._last_embedding_source, "latency_ms": int(dur * 1000)}
+    except asyncio.TimeoutError:
+        return {"ok": False, "error": "timeout", "source": svc._last_embedding_source}
+    except Exception as e:
+        return {"ok": False, "error": str(e), "source": svc._last_embedding_source}
+
+
+@app.get('/metrics')
+def metrics_endpoint():
+    """Prometheus metrics endpoint.
+
+    Exposes metrics via `prometheus_client.generate_latest()` so a Prometheus
+    scraper can collect embedding and indexer metrics.
+    """
+    try:
+        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+        data = generate_latest()
+        return Response(content=data, media_type=CONTENT_TYPE_LATEST)
+    except Exception:
+        # Fail gracefully if prometheus_client not available
+        return Response(content=b"", media_type="text/plain")
 
 
 @app.get('/api/nba_status')
@@ -810,7 +926,10 @@ def api_team_advanced(req: AdvancedTeamRequest, use_fallback: bool = Query(True,
 
 # --- ML prediction endpoints (scaffold) ---------------------------------
 try:
-    from .services import MLPredictionService
+    # Import the ML prediction service explicitly from its module to avoid
+    # relying on package-level eager imports (which intentionally avoid
+    # importing heavy ML deps at import time).
+    from backend.services.ml_prediction_service import MLPredictionService
 except Exception:
     MLPredictionService = None
 
@@ -1000,6 +1119,321 @@ def api_load_model(player: str):
         loaded = registry.load_model(player)
         return {'player': player, 'loaded': bool(loaded)}
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post('/api/ollama_stream')
+async def ollama_stream(request: Request):
+    """Stream Ollama `generate(..., stream=True)` output as Server-Sent Events (SSE).
+
+    Accepts JSON body: { "model": "<model>", "prompt": "..." }
+    Falls back to an HTTP streaming request when the official client isn't available.
+    """
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail='invalid json body')
+
+    model = body.get('model')
+    prompt = body.get('prompt') or body.get('input') or ''
+
+    if not prompt:
+        raise HTTPException(status_code=400, detail='prompt is required')
+
+    # Attempt to use the internal Ollama client when present for streaming support
+    try:
+        from backend.services.ollama_client import get_default_client
+        client = get_default_client()
+    except Exception:
+        client = None
+
+    async def _event_generator():
+        # Dev/testing override: if `DEV_OLLAMA_MOCK` is set, emit a small
+        # synthetic SSE token stream so local frontend dev can exercise
+        # streaming UI without a real Ollama backend.
+        try:
+            # Enable mock streaming if env var is set or if a marker file
+            # `DEV_OLLAMA_MOCK` exists at the repository root. The file-based
+            # switch allows enabling the mock for detached processes that may
+            # not inherit transient environment variables.
+            repo_root = os.path.dirname(os.path.dirname(__file__))
+            mock_file = os.path.join(repo_root, 'DEV_OLLAMA_MOCK')
+            mock_enabled = os.environ.get('DEV_OLLAMA_MOCK') in ('1', 'true', 'True') or os.path.exists(mock_file)
+            if mock_enabled:
+                import asyncio
+                for token in ("Hello", "from", "mock", "ollama", "stream."):
+                    for line in str(token).split('\n'):
+                        yield f"data: {line}\n\n"
+                    await asyncio.sleep(0.06)
+                yield 'data: [DONE]\n\n'
+                return
+        except Exception:
+            # non-fatal: fall through to normal behavior
+            pass
+        # Use official client streaming API when possible
+        if client is not None and getattr(client, '_has_ollama', False) and getattr(client, '_client', None) is not None:
+            try:
+                # Try to call the underlying client's generate with stream=True
+                gen = None
+                try:
+                    gen = client._client.generate(model=model, input=prompt, stream=True)
+                except TypeError:
+                    try:
+                        gen = client._client.generate(model, prompt, stream=True)
+                    except Exception:
+                        gen = None
+
+                if gen is not None:
+                    # If it's an async iterator
+                    try:
+                        async for part in gen:  # type: ignore
+                            logger.debug("ollama_stream: client part raw=%r", part)
+                            text = None
+                            try:
+                                if isinstance(part, dict):
+                                    # extract common fields
+                                    text = part.get('content') or part.get('text') or part.get('message')
+                                else:
+                                    text = str(part)
+                            except Exception:
+                                text = str(part)
+                            # Filter out noisy model-id-only fragments (some Ollama
+                            # HTTP/stream formats emit the model id repeatedly).
+                            model_name = model or os.environ.get('OLLAMA_DEFAULT_MODEL')
+                            if isinstance(text, str) and model_name:
+                                tclean = text.strip()
+                                # Skip exact model-name fragments
+                                if tclean == model_name:
+                                    continue
+                                # Skip single-token fragments that look like model ids
+                                if ' ' not in tclean and ':' in tclean and len(tclean) < 80:
+                                    continue
+                            if text is None:
+                                continue
+                            # SSE data lines must prefix each line with 'data:'
+                            for line in str(text).split('\n'):
+                                yield f"data: {line}\n\n"
+                        # signal done
+                        yield 'data: [DONE]\n\n'
+                        return
+                    except TypeError:
+                        # not an async iterator, try sync iteration
+                        try:
+                            for part in gen:  # type: ignore
+                                text = None
+                                if isinstance(part, dict):
+                                    text = part.get('content') or part.get('text') or part.get('message')
+                                else:
+                                    text = str(part)
+                                if text is None:
+                                    continue
+                                for line in str(text).split('\n'):
+                                    yield f"data: {line}\n\n"
+                            yield 'data: [DONE]\n\n'
+                            return
+                        except Exception:
+                            # Fall through to HTTP fallback
+                            pass
+            except Exception:
+                # Fall back to HTTP streaming
+                pass
+
+        # HTTP streaming fallback using requests with stream=True
+        try:
+            import requests
+
+            # Resolve base URL with local preference helper
+            base = _resolve_base_url(client) or 'http://localhost:11434'
+            if 'ollama.com' in base:
+                api_path = base + '/api/chat'
+                payload = {"model": model or os.environ.get('OLLAMA_DEFAULT_MODEL'), "messages": [{"role": "user", "content": prompt}], "stream": True}
+            else:
+                # Local Ollama HTTP API uses /api/generate and supports a
+                # `model` and `stream` flag. Use that path for local hosts.
+                api_path = base + '/api/generate'
+                payload = {"model": model or os.environ.get('OLLAMA_DEFAULT_MODEL'), "input": prompt, "prompt": prompt, "stream": True}
+
+            headers = {}
+            api_key = getattr(client, '_api_key', None) if client is not None else (os.environ.get('OLLAMA_CLOUD_API_KEY') or os.environ.get('OLLAMA_API_KEY'))
+            if api_key:
+                headers['Authorization'] = f"Bearer {api_key}"
+
+            resp = requests.post(api_path, json=payload, headers=headers or None, timeout=float(os.environ.get('OLLAMA_TIMEOUT', '60')), stream=True)
+            resp.raise_for_status()
+            for raw in resp.iter_lines(decode_unicode=True):
+                logger.debug("ollama_stream: http raw line=%r", raw)
+                if not raw:
+                    continue
+                line = raw.strip()
+                if line.startswith('data:'):
+                    line = line[len('data:'):].strip()
+                if line == '[DONE]':
+                    yield 'data: [DONE]\n\n'
+                    break
+                # Attempt to parse JSON fragments and extract text/content
+                text = None
+                try:
+                    j = json.loads(line)
+                    if isinstance(j, dict):
+                        text = j.get('content') or j.get('text') or j.get('message')
+                        if text is None:
+                            # deep search
+                            def _find_text(obj):
+                                if isinstance(obj, str):
+                                    return obj
+                                if isinstance(obj, dict):
+                                    for v in obj.values():
+                                        r = _find_text(v)
+                                        if r:
+                                            return r
+                                if isinstance(obj, list):
+                                    for v in obj:
+                                        r = _find_text(v)
+                                        if r:
+                                            return r
+                                return None
+                            text = _find_text(j)
+                    else:
+                        text = str(j)
+                except Exception:
+                    text = line
+
+                if text is None:
+                    continue
+                # Filter out noisy model-id-only fragments
+                model_name = model or os.environ.get('OLLAMA_DEFAULT_MODEL')
+                if isinstance(text, str) and model_name:
+                    tclean = text.strip()
+                    if tclean == model_name:
+                        continue
+                    if ' ' not in tclean and ':' in tclean and len(tclean) < 80:
+                        continue
+                for l in str(text).split('\n'):
+                    yield f"data: {l}\n\n"
+        except Exception as e:
+            # Stream a friendlier error event then close. Detect common
+            # Ollama Cloud connection issues and provide actionable hints.
+            try:
+                msg = str(e)
+                friendly = msg
+                try:
+                    import requests as _req
+                    conn_err_types = (_req.exceptions.ConnectionError, _req.exceptions.RequestException)
+                except Exception:
+                    conn_err_types = ()
+
+                # If the base appears to target Ollama Cloud or the exception
+                # message references api.ollama.com, show a suggestion to check
+                # cloud API key and network/DNS.
+                base = _resolve_base_url(client) or 'http://localhost:11434'
+                if ('ollama.com' in base) or ('api.ollama.com' in msg) or any(t.__name__ in msg for t in conn_err_types):
+                    friendly = (
+                        "Could not connect to Ollama Cloud at api.ollama.com. "
+                        "Check that `OLLAMA_CLOUD_API_KEY` is set and valid, and that "
+                        "this host has network/DNS access to https://api.ollama.com. "
+                        f"(detail: {msg})"
+                    )
+
+                yield f"event: error\ndata: {friendly}\n\n"
+            except Exception:
+                pass
+
+    try:
+        return StreamingResponse(_event_generator(), media_type='text/event-stream')
+    except Exception as e:
+        logger.exception('Error while creating streaming response: %s', e)
+        # Return a simple JSON error response if streaming fails at creation time
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=500, content={"error": "streaming_error", "detail": str(e)})
+
+
+@app.get('/api/ollama_health')
+def ollama_health():
+    """Basic health check for the configured Ollama host.
+
+    Returns JSON with connectivity information and actionable suggestions
+    (useful when running with Ollama Cloud where DNS or API key issues occur).
+    """
+    try:
+        from backend.services.ollama_client import get_default_client
+        client = get_default_client()
+    except Exception:
+        client = None
+
+    # Resolve base URL with local preference helper
+    base = _resolve_base_url(client)
+    api_key = getattr(client, '_api_key', None) if client is not None else (os.environ.get('OLLAMA_CLOUD_API_KEY') or os.environ.get('OLLAMA_API_KEY'))
+
+    # Provide a helpful default when nothing is configured
+    if not base:
+        return {"ok": False, "base": base, "error": "No Ollama URL configured", "suggestion": "Set OLLAMA_URL or OLLAMA_CLOUD_API_KEY depending on deployment"}
+
+    headers = {}
+    if api_key:
+        headers['Authorization'] = f"Bearer {api_key}"
+
+    try:
+        import requests
+        # choose a lightweight listing endpoint to test connectivity
+        # prefer the newer /api/models (used by local Ollama and cloud),
+        # fall back to /v1/models for older local installs.
+        test_url = base + '/api/models'
+
+        resp = requests.get(test_url, headers=(headers or None), timeout=float(os.environ.get('OLLAMA_TIMEOUT', '10')))
+        # If we got a non-200 from /api/models on a local host, try the older v1 path
+        if resp is not None and resp.status_code >= 400 and not ('ollama.com' in base):
+            try:
+                resp2 = requests.get(base + '/v1/models', headers=(headers or None), timeout=float(os.environ.get('OLLAMA_TIMEOUT', '10')))
+                resp = resp2
+            except Exception:
+                pass
+
+        return {
+            "ok": True,
+            "base": base,
+            "status_code": resp.status_code,
+            "detail": (resp.text[:1000] if resp is not None else None),
+        }
+    except Exception as e:
+        msg = str(e)
+        suggestion = ""
+        if 'getaddrinfo' in msg or 'Name or service not known' in msg or 'Failed to establish a new connection' in msg:
+            suggestion = "DNS resolution or network connectivity failed. Try resolving api.ollama.com from this host or set OLLAMA_URL to a reachable host (e.g. http://localhost:11434)."
+        elif '401' in msg or '401 Client Error' in msg:
+            suggestion = "Authentication failed. Verify OLLAMA_CLOUD_API_KEY / OLLAMA_API_KEY is set and correct."
+        else:
+            suggestion = "See 'detail' for the exception message."
+
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=502, content={"ok": False, "base": base, "error": msg, "suggestion": suggestion})
+
+
+class OllamaFeaturesRequest(BaseModel):
+    player: str
+    text: Optional[str] = None
+    model: Optional[str] = None
+
+
+@app.post('/api/ollama_features')
+def api_ollama_features(req: OllamaFeaturesRequest):
+    """Return LLM-derived qualitative features for a player given text/context.
+
+    Body: { "player": "Name", "text": "news summary or context", "model": "optional model" }
+    """
+    try:
+        from backend.services.llm_feature_service import create_default_service
+    except Exception:
+        raise HTTPException(status_code=503, detail='LLM feature service unavailable')
+
+    svc = create_default_service()
+    text = req.text or ''
+    try:
+        out = svc.extract_from_text(req.player, text, model=req.model)
+        return out
+    except Exception as e:
+        logger.exception('api_ollama_features failed')
         raise HTTPException(status_code=500, detail=str(e))
 
 

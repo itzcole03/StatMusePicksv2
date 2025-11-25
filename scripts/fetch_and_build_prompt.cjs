@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* global fetch, process, console */
 const url = require("url");
 
 async function fetchJson(u) {

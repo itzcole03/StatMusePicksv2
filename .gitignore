@@ -24,3 +24,17 @@ dist-ssr
 
 # Temporary debug artifacts (local)
 tmp_debug/
+
+# Python / virtualenvs
+.venv/
+.venv*/
+.venv312/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Editor / OS
+*.pyc
+*.pyo
+*.pyd

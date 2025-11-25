@@ -2,10 +2,10 @@ import { useEffect, useState, useRef } from "react";
 import { marked } from "marked";
 import { ParsedProjection, Settings } from "../types";
 import {
-  analyzeWithLocalLLM,
   buildAnalysisPromptAsync,
   scoreModelOutput,
 } from "../services/aiService";
+import { streamOllamaAnalysis } from "../services/aiService.v2";
 import { buildPredictionFromFeatures } from "../services/aiService.v2";
 import { validateOutput } from "../services/analysisValidator";
 import { buildExternalContextForProjections } from "../services/nbaService";
@@ -149,12 +149,33 @@ export default function AnalysisSection({
             setV2Predictions(null);
           }
 
-        // Run LLM and capture output
+        // Run LLM via backend SSE stream and capture output in real-time
         let full = "";
-        await analyzeWithLocalLLM(prompt, settings, (chunk) => {
-          full += chunk;
-          setContent(full);
-        });
+        await streamOllamaAnalysis(
+          prompt,
+          { model: settings.llmModel, testProjections: (settings as any).testProjections },
+          (chunk) => {
+            if (chunk.error) {
+              // surface error but continue to let exception handling decide
+              // this will be handled by the outer try/catch below
+              return;
+            }
+            if (chunk.text) {
+              full += chunk.text;
+              setContent(full);
+            }
+            if (chunk.done) {
+              // noop; stream helper will resolve
+            }
+          },
+          () => {
+            // onDone
+          },
+          (err) => {
+            // bubble up as thrown error to trigger retry/fallback
+            throw new Error(String(err));
+          }
+        );
 
         // Try parsing and validating. If invalid, retry once with stricter enforcement.
         let parsed = extractFirstJsonArray(full);
@@ -196,10 +217,21 @@ export default function AnalysisSection({
             sampleSkeleton +
             "\n\nReturn ONLY the JSON array, nothing else.\n";
           let full2 = "";
-          await analyzeWithLocalLLM(prompt + enforcement, settings, (chunk) => {
-            full2 += chunk;
-            setContent(full2);
-          });
+          await streamOllamaAnalysis(
+            prompt + enforcement,
+            { model: settings.llmModel, testProjections: (settings as any).testProjections },
+            (chunk) => {
+              if (chunk.error) return;
+              if (chunk.text) {
+                full2 += chunk.text;
+                setContent(full2);
+              }
+            },
+            () => {},
+            (err) => {
+              throw new Error(String(err));
+            }
+          );
           parsed = extractFirstJsonArray(full2);
           const valid2 = parsed
             ? validateOutput(

@@ -137,3 +137,110 @@ export default {
   buildPredictionFromFeatures,
   scoreToProbability,
 };
+
+// Streaming helper: connect to backend `/api/ollama_stream` POST endpoint and
+// stream Server-Sent-Event style fragments delivered by the backend. The
+// backend currently accepts POST JSON { model, prompt } and responds with
+// text/event-stream chunks prefixed with `data:`. We consume the raw
+// ReadableStream and invoke callbacks per fragment (word/line level).
+export type StreamChunk = { text?: string; done?: boolean; error?: string };
+
+export async function streamOllamaAnalysis(
+  prompt: string,
+  opts: { model?: string; signal?: AbortSignal; testProjections?: any[] } = {},
+  onChunk: (_c: StreamChunk) => void = () => {},
+  onDone: () => void = () => {},
+  onError: (_err: any) => void = () => {}
+): Promise<void> {
+  const payload = { model: opts.model, prompt };
+  // Resolve backend base URL: prefer Vite env `VITE_API_BASE`, fallback to localhost:3002
+  const apiBase = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:3002';
+  const url = apiBase.replace(/\/$/, '') + '/api/ollama_stream';
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: opts.signal,
+    });
+
+    if (!resp.ok || !resp.body) {
+      const text = await resp.text().catch(() => '')
+      const msg = `stream request failed: ${resp.status} ${resp.statusText} ${text}`;
+      onError(msg);
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE messages are separated by double-newline; process complete frames
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop() || '';
+
+      for (const p of parts) {
+        const line = p.trim();
+        if (!line) continue;
+        // Only handle `data:` lines; ignore other SSE meta for now
+        if (line.startsWith('data:')) {
+          const data = line.replace(/^data:\s*/i, '');
+          if (data === '[DONE]') {
+            onChunk({ done: true });
+            onDone();
+            return;
+          }
+          // Try to parse JSON payloads, otherwise return raw text
+          try {
+            const parsed = JSON.parse(data);
+            // common shapes: { content } or { text }
+            const text = parsed?.content ?? parsed?.text ?? String(parsed);
+            onChunk({ text });
+          } catch {
+            // not JSON — emit raw string (could be partial word/phrase)
+            onChunk({ text: data });
+          }
+        } else if (line.startsWith('event:')) {
+          // example: event: error\ndata: message
+          if (/event:\s*error/i.test(line)) {
+            const msgMatch = line.match(/data:\s*(.*)/i);
+            const msg = msgMatch ? msgMatch[1] : 'unknown';
+            onChunk({ error: msg });
+            onError(msg);
+            return;
+          }
+        } else {
+          // fallback: emit raw frame
+          onChunk({ text: line });
+        }
+      }
+    }
+
+    // Flush any remaining buffer
+    if (buffer.trim()) {
+      const lr = buffer.trim();
+      if (lr === '[DONE]') {
+        onChunk({ done: true });
+        onDone();
+        return;
+      }
+      try {
+        const parsed = JSON.parse(lr);
+        const text = parsed?.content ?? parsed?.text ?? String(parsed);
+        onChunk({ text });
+      } catch {
+        onChunk({ text: lr });
+      }
+    }
+
+    onDone();
+  } catch (err) {
+    onError(err);
+  }
+}
