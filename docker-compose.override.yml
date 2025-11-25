@@ -1,0 +1,16 @@
+version: "3.8"
+services:
+  backend:
+    environment:
+      # Ollama settings for local development — override these per-developer or in CI secrets
+      - OLLAMA_URL=${OLLAMA_URL:-https://api.ollama.com}
+      - OLLAMA_DEFAULT_MODEL=${OLLAMA_DEFAULT_MODEL:-your-embedding-model}
+      - OLLAMA_CLOUD_API_KEY=${OLLAMA_CLOUD_API_KEY:-}
+      # Disable deterministic local fallback in dev by default; set to 'true' to allow fallback
+      - OLLAMA_EMBEDDINGS_FALLBACK=${OLLAMA_EMBEDDINGS_FALLBACK:-false}
+      # Vector store options: memory or chroma
+      - VECTOR_STORE=${VECTOR_STORE:-memory}
+      - CHROMA_PERSIST_DIR=${CHROMA_PERSIST_DIR:-./chroma_data}
+      - CHROMA_COLLECTION_NAME=${CHROMA_COLLECTION_NAME:-statmuse}
+      # Optional auto-pull behavior (false by default)
+      - OLLAMA_ALLOW_AUTO_PULL=${OLLAMA_ALLOW_AUTO_PULL:-false}

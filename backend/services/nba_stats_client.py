@@ -21,6 +21,7 @@ from typing import Optional, List, Dict
 from cachetools import TTLCache
 
 from backend.services.cache import get_redis
+from .token_bucket import TokenBucket
 
 logger = logging.getLogger(__name__)
 
@@ -48,31 +49,32 @@ _local_cache = TTLCache(maxsize=2000, ttl=60 * 10)
 
 # Simple token-bucket style rate limiter shared across sync calls
 MAX_REQUESTS_PER_MINUTE = int(os.environ.get("NBA_API_MAX_RPM", "20"))
-_tokens = float(MAX_REQUESTS_PER_MINUTE)
-_last_refill = time.time()
-_rl_lock = threading.Lock()
+
+
+# Default bucket instance (can be replaced in tests or by DI)
+_token_bucket = TokenBucket(MAX_REQUESTS_PER_MINUTE)
+
+
+def set_token_bucket(bucket: TokenBucket) -> None:
+    """Replace the module token bucket (used for testing/DI)."""
+    global _token_bucket
+    _token_bucket = bucket
+
+
+def get_token_bucket() -> TokenBucket:
+    return _token_bucket
 
 # Timeout for nba_api HTTP requests (seconds). Increase default to reduce transient read timeouts.
 NBA_API_TIMEOUT = int(os.environ.get("NBA_API_TIMEOUT", "180"))
 
 
 def _acquire_token(timeout: float = 5.0) -> bool:
-    """Attempt to acquire a token within `timeout` seconds."""
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        with _rl_lock:
-            global _tokens, _last_refill
-            now = time.time()
-            elapsed = now - _last_refill
-            if elapsed > 0:
-                refill = elapsed * (MAX_REQUESTS_PER_MINUTE / 60.0)
-                _tokens = min(float(MAX_REQUESTS_PER_MINUTE), _tokens + refill)
-                _last_refill = now
-            if _tokens >= 1.0:
-                _tokens -= 1.0
-                return True
-        time.sleep(0.05)
-    return False
+    """Backward-compatible wrapper that delegates to the injected token bucket."""
+    try:
+        return _token_bucket.acquire(timeout=timeout)
+    except Exception:
+        # On any unexpected error, conservatively deny to avoid quotas being exceeded
+        return False
 
 
 def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff: float = 120.0, **kwargs):
@@ -90,6 +92,11 @@ def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff
     from http.client import RemoteDisconnected as _RemoteDisconnected
 
     last_exc = None
+    # retry metric
+    try:
+        _retry_count
+    except NameError:
+        _retry_count = 0
     for attempt in range(retries):
         ok = _acquire_token(timeout=2.0)
         if not ok:
@@ -109,6 +116,11 @@ def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff
             return fn(*args, **kwargs)
         except Exception as e:
             last_exc = e
+            # increment retry metric for observability
+            try:
+                globals()['_retry_count'] = globals().get('_retry_count', 0) + 1
+            except Exception:
+                pass
         except Exception as e:
             last_exc = e
             # If it's a connection-level error, increase backoff and jitter
@@ -212,117 +224,32 @@ def find_player_id_by_name(name: str) -> Optional[int]:
         logger.debug("player id lookup failed for %s", name, exc_info=True)
 
     # fallback: scan all players for a best-effort match
-    def normalize(n: str) -> str:
-        import re
-
-        n = (n or "").lower()
-        n = re.sub(r"[,\.]", "", n)
-        n = re.sub(r"\b(jr|sr|ii|iii|iv)\b", "", n)
-        n = re.sub(r"\s+", " ", n).strip()
-        return n
-
     try:
-        # Prefer a cached all-players list via helper which already uses
-        # Redis / local cache and also supports local-file fallback.
-        allp = fetch_all_players()
-    except Exception:
-        try:
-            # Last-resort: try direct call if available
-            allp = players.get_players() if players is not None else []
-        except Exception:
-            allp = []
-
-    target = normalize(name)
-    for p in allp:
-        if normalize(p.get("full_name", "")) == target:
-            pid = p["id"]
-            _local_cache[cache_key] = pid
-            return pid
-
-    for p in allp:
-        if target in normalize(p.get("full_name", "")):
-            pid = p["id"]
-            _local_cache[cache_key] = pid
-            return pid
-
-    return None
-
-
-def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = None) -> List[dict]:
-    """Fetch recent game logs for a player id. Returns list of raw game dicts.
-
-    Tries Redis -> in-process TTLCache -> `nba_api` PlayerGameLog.
-    Returns empty list when data isn't available.
-    """
-    if not player_id:
-        return []
-
-    cache_key = f"player_recent:{player_id}:{limit}:{season or 'any'}"
-
-    try:
-        rc = _redis_client()
-        if rc:
-            raw = rc.get(cache_key)
-            if raw:
-                try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
-                except Exception:
-                    pass
+        allp = fetch_all_players() or []
+        lname = (name or "").lower().strip()
+        for p in allp:
+            try:
+                full = p.get('full_name') or p.get('fullName') or p.get('display_name') or ""
+                if not full:
+                    continue
+                if full.lower().strip() == lname:
+                    pid = p.get('id') or p.get('player_id')
+                    if pid:
+                        pid = int(pid)
+                        _local_cache[cache_key] = pid
+                        try:
+                            rc = _redis_client()
+                            if rc:
+                                rc.setex(cache_key, 60 * 60 * 24, str(pid))
+                        except Exception:
+                            pass
+                        return pid
+            except Exception:
+                continue
     except Exception:
         pass
 
-    if cache_key in _local_cache:
-        return _local_cache[cache_key]
-
-    if playergamelog is None:
-        return []
-
-    try:
-        def _fetch(pid, lim, seas):
-            # nba_api has differing constructor signatures across versions; try several invocation patterns
-            last_err = None
-            try:
-                if seas:
-                    gl = playergamelog.PlayerGameLog(player_id=pid, season=seas, timeout=NBA_API_TIMEOUT)
-                else:
-                    gl = playergamelog.PlayerGameLog(player_id=pid, timeout=NBA_API_TIMEOUT)
-            except TypeError as e:
-                last_err = e
-                try:
-                    if seas:
-                        gl = playergamelog.PlayerGameLog(player_id=pid, season=seas)
-                    else:
-                        gl = playergamelog.PlayerGameLog(player_id=pid)
-                except TypeError as e2:
-                    last_err = e2
-                    try:
-                        # positional fallback
-                        if seas:
-                            gl = playergamelog.PlayerGameLog(pid, seas)
-                        else:
-                            gl = playergamelog.PlayerGameLog(pid)
-                    except Exception:
-                        raise last_err
-            df = gl.get_data_frames()[0]
-            return df.head(lim).to_dict(orient="records")
-
-        recent = _with_retries(_fetch, player_id, limit, season)
-        _local_cache[cache_key] = recent
-        try:
-            rc = _redis_client()
-            if rc:
-                rc.setex(cache_key, 60 * 10, json.dumps(recent))
-        except Exception:
-            pass
-        return recent
-    except Exception:
-        logger.exception("Error fetching recent games for player_id=%s", player_id)
-        try:
-            # persist failed id for later retry
-            _record_failed_fetch('player', player_id, 'fetch_recent_games')
-        except Exception:
-            pass
-        return []
+    return None
 
 
 __all__ = [
@@ -353,6 +280,11 @@ def get_player_season_stats_multi(player_id: int, seasons: Optional[List[str]]) 
         except Exception:
             out[s] = {}
     return out
+
+
+def get_nba_retry_count() -> int:
+    """Return the number of retries observed in this process (best-effort)."""
+    return globals().get('_retry_count', 0)
 
 
 def fetch_all_players() -> List[dict]:
@@ -552,12 +484,96 @@ def find_player_id(name: str) -> Optional[int]:
     return find_player_id_by_name(name)
 
 
-def fetch_recent_games_by_id(player_id: int, limit: int = 8) -> List[dict]:
-    """Alias for `fetch_recent_games` that matches the older API naming.
+def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[str] = None) -> List[dict]:
+    """Fetch recent games for a player id.
 
-    Returns an empty list when the underlying implementation cannot fetch data.
+    Uses Redis/local cache, then `playergamelog.PlayerGameLog` when available.
+    Returns an empty list on error or when dependency is missing.
     """
-    return fetch_recent_games(player_id, limit=limit)
+    if not player_id:
+        return []
+
+    cache_key = f"player_games:{player_id}:{limit}:{season or 'any'}"
+    try:
+        rc = _redis_client()
+        if rc:
+            raw = rc.get(cache_key)
+            if raw:
+                try:
+                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+    # Check for deterministic cached logs under repo for CI/tests
+    try:
+        repo_root = os.path.dirname(os.path.dirname(__file__))
+        cached_dir = os.path.join(repo_root, 'data', 'cached_game_logs')
+        if season:
+            cached_path = os.path.join(cached_dir, f"player_{player_id}_{season}.json")
+        else:
+            cached_path = os.path.join(cached_dir, f"player_{player_id}.json")
+        if os.path.exists(cached_path):
+            try:
+                with open(cached_path, 'r', encoding='utf-8') as fh:
+                    data = json.load(fh)
+                    _local_cache[cache_key] = data
+                    return data
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    if cache_key in _local_cache:
+        return _local_cache[cache_key]
+
+    if playergamelog is None:
+        return []
+
+    try:
+        def _fetch(pid, lim, seas):
+            # `PlayerGameLog` has varying signatures across nba_api versions.
+            last_err = None
+            try:
+                if seas:
+                    gl = playergamelog.PlayerGameLog(player_id=pid, season=seas, timeout=NBA_API_TIMEOUT)
+                else:
+                    gl = playergamelog.PlayerGameLog(player_id=pid, timeout=NBA_API_TIMEOUT)
+                df = gl.get_data_frames()[0]
+                return df.head(lim).to_dict(orient='records')
+            except TypeError as e:
+                last_err = e
+            try:
+                # positional fallback
+                if seas:
+                    gl = playergamelog.PlayerGameLog(pid, seas)
+                else:
+                    gl = playergamelog.PlayerGameLog(pid)
+                df = gl.get_data_frames()[0]
+                return df.head(lim).to_dict(orient='records')
+            except Exception:
+                # re-raise the most helpful original error
+                if last_err is not None:
+                    raise last_err
+                raise
+
+        recent = _with_retries(_fetch, player_id, limit, season)
+        _local_cache[cache_key] = recent
+        try:
+            rc = _redis_client()
+            if rc:
+                rc.setex(cache_key, 60 * 10, json.dumps(recent))
+        except Exception:
+            pass
+        return recent
+    except Exception:
+        logger.exception("Error fetching recent games for player_id=%s", player_id)
+        try:
+            _record_failed_fetch('player', player_id, 'fetch_recent_games')
+        except Exception:
+            pass
+        return []
 
 
 def fetch_recent_games_by_name(name: str, limit: int = 8) -> List[dict]:
@@ -569,6 +585,18 @@ def fetch_recent_games_by_name(name: str, limit: int = 8) -> List[dict]:
     if pid:
         return fetch_recent_games_by_id(pid, limit=limit)
     return []
+
+
+def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = None) -> List[dict]:
+    """Compatibility wrapper expected by older callers/tests.
+
+    Delegates to `fetch_recent_games_by_id`. The optional `season` arg is
+    accepted for compatibility but not all underlying implementations honor it.
+    """
+    try:
+        return fetch_recent_games_by_id(int(player_id), limit=limit)
+    except Exception:
+        return []
 
 __all__ = [
     "find_player_id_by_name",

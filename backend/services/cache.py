@@ -33,6 +33,7 @@ _metrics = {
     "misses": 0,
     "sets": 0,
     "deletes": 0,
+    "expirations": 0,
 }
 
 # module logger
@@ -89,6 +90,7 @@ async def redis_set_json(key: str, obj: Any, ex: Optional[int] = None) -> bool:
 
     try:
         await client.set(key, json.dumps(obj), ex=ex)
+        _inc_metric("sets")
         return True
     except Exception:
         return False
@@ -134,6 +136,7 @@ async def redis_get_json(key: str) -> Optional[Any]:
             except Exception:
                 pass
             _inc_metric("misses")
+            _inc_metric("expirations")
             return None
 
         try:
@@ -152,6 +155,8 @@ async def redis_delete(key: str) -> bool:
             existed = key in _fallback_store
             if key in _fallback_store:
                 del _fallback_store[key]
+        if existed:
+            _inc_metric("deletes")
         return existed
 
     try:

@@ -1,3 +1,24 @@
+import os
+import pytest
+
+from backend.services import nba_stats_client as nbc
+
+
+skip_cond = (nbc.players is None) or os.getenv("NBA_INTEGRATION", "") != "1"
+
+
+@pytest.mark.skipif(skip_cond, reason="Requires nba_api installed and NBA_INTEGRATION=1")
+def test_integration_fetch_lebron():
+    """Basic integration test that uses real `nba_api` to fetch a known player.
+
+    This test is gated by the `NBA_INTEGRATION=1` env var to avoid running
+    external network calls in normal CI.
+    """
+    pid = nbc.find_player_id_by_name("LeBron James")
+    assert pid is not None
+    recent = nbc.fetch_recent_games(pid, limit=5)
+    assert isinstance(recent, list)
+    assert len(recent) <= 5
 import json
 import threading
 import socket

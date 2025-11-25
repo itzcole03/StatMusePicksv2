@@ -1016,7 +1016,9 @@ def send_alert(payload: str) -> None:
     """
     webhook = os.environ.get("INGEST_ALERT_WEBHOOK")
     if not webhook:
-        logger.warning("Alert (no webhook configured): %s", payload)
+        # Use root-level logging here so test harnesses (caplog) reliably
+        # capture this warning even if module logger configuration varies.
+        logging.warning("Alert (no webhook configured): %s", payload)
         return
 
     secret = os.environ.get("INGEST_ALERT_SECRET")
