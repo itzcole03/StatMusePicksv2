@@ -1,7 +1,8 @@
 # Start uvicorn in a detached process and write PID + logs
 # Run from repository root: `./backend/start_uvicorn_detached.ps1`
 param(
-    [int]$Port = 8000
+    [int]$Port = 8000,
+    [string]$OllamaUrl = ''
 )
 
 $repoRoot = (Get-Location).Path
@@ -20,6 +21,10 @@ $pidFile = Join-Path $logDir "uvicorn.pid"
 $args = "-m uvicorn backend.main:app --host 127.0.0.1 --port $Port"
 
 Write-Host "Starting uvicorn with: $venvPy $args"
+if ($OllamaUrl -and $OllamaUrl.Trim() -ne '') {
+    Write-Host "Setting OLLAMA_URL=$OllamaUrl for process"
+    $env:OLLAMA_URL = $OllamaUrl
+}
 $proc = Start-Process -FilePath $venvPy -ArgumentList $args -NoNewWindow -RedirectStandardOutput $outFile -RedirectStandardError $errFile -PassThru
 
 # Save PID

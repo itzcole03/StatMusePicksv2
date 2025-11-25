@@ -69,6 +69,45 @@ vi.mock("../../../src/services/aiService", async () => {
 
 // Also ensure aiService.v2 is real so the component uses its prediction logic
 // We don't mock it; import normally
+// Provide a mock for streaming so tests don't call the network
+vi.mock("../../../src/services/aiService.v2", async () => {
+  const actual = await vi.importActual('../../../src/services/aiService.v2');
+  return {
+    ...actual,
+    streamOllamaAnalysis: async (
+      _prompt: string,
+      _opts: any,
+      onChunk: (_c: any) => void,
+      onDone: () => void,
+      onError: (e: any) => void
+    ) => {
+      try {
+        const arr = _opts?.testProjections?.map((p: any, idx: number) => ({
+          player: p.player,
+          stat: p.stat,
+          line: p.line,
+          recommendation: 'OVER',
+          confidence: 'High',
+          modelConfidenceScore: 85,
+          numericEvidence: {
+            recentGames: [{ statValue: 12 + idx }, { statValue: 13 + idx }, { statValue: 11 + idx }],
+            seasonAvg: 12 + idx,
+            opponent: { name: 'Opp' },
+            projectedMinutes: 30,
+          },
+          reasoning: 'Recent games and season average exceed the line',
+          dataUsed: { external: true, sources: ['nba'] },
+        })) || [];
+        onChunk({ text: JSON.stringify(arr) });
+        onChunk({ done: true });
+        onDone();
+      } catch (err) {
+        onChunk({ error: String(err) });
+        onError(err);
+      }
+    },
+  };
+});
 
 const sampleProjections = [
   {

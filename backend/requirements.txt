@@ -23,3 +23,5 @@ pyarrow
 
 mlflow>=2.4.0
 ollama
+APScheduler
+chromadb

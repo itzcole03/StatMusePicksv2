@@ -1,3 +1,20 @@
+"""Prometheus metrics for backend services.
+
+Keep this module minimal to avoid heavy imports in startup paths.
+"""
+from prometheus_client import Counter, Histogram
+
+embedding_requests_total = Counter(
+    'embedding_requests_total', 'Total number of embedding requests attempted'
+)
+
+embedding_success_total = Counter(
+    'embedding_success_total', 'Total number of successful embedding requests'
+)
+
+embedding_latency_seconds = Histogram(
+    'embedding_latency_seconds', 'Embedding generation latency in seconds'
+)
 """Prometheus metrics helper with multiprocess support.
 
 Provides `generate_latest` and `CONTENT_TYPE_LATEST` compatible exports used

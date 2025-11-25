@@ -326,421 +326,47 @@ export function scoreModelOutput(
 }
 
 export async function analyzeWithLocalLLM(
-  prompt: string,
-  settings: Settings,
-  onChunk: (_chunk: string) => void
+  _prompt: string,
+  _settings: Settings,
+  _onChunk: (_chunk: string) => void
 ): Promise<void> {
-  // Build candidate endpoints to try when the configured endpoint doesn't match the server
-  const buildCandidates = (base: string) => {
-    try {
-      const url = new URL(base);
-      const origin = url.origin;
-      const candidates = [base];
-      // Common OpenAI-compatible and Ollama endpoints
-      candidates.push(origin + "/api/chat");
-      candidates.push(origin + "/api/generate");
-      candidates.push(origin + "/v1/chat/completions");
-      candidates.push(origin + "/v1/completions");
-      candidates.push(origin + "/models");
-      return Array.from(new Set(candidates));
-    } catch {
-      return [base];
-    }
-  };
-
-  const candidates = buildCandidates(settings.llmEndpoint);
-  const decoder = new TextDecoder();
-  const errors: string[] = [];
-
-  for (const endpoint of candidates) {
-    try {
-      // Try OpenAI chat-compatible body first
-      const chatBody = JSON.stringify({
-        model: settings.llmModel,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert sports analyst with deep knowledge of player statistics and performance trends.",
-          },
-          { role: "user", content: prompt },
-        ],
-        stream: true,
-      });
-
-      let response: Response | null = null;
-      try {
-        response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: chatBody,
-        });
-      } catch (_e) {
-        // network-level error
-        errors.push(`Network error to ${endpoint}: ${String(_e)}`);
-        response = null;
-      }
-
-      if (!response) continue;
-
-      // 200-level OK - handle stream or non-stream
-      if (!response.ok) {
-        // collect body for diagnostics
-        let txt = "";
-        try {
-          txt = await response.text();
-        } catch {
-            txt = String(new Error("parse failure"));
-          }
-        errors.push(`Endpoint ${endpoint} returned ${response.status}: ${txt}`);
-        continue;
-      }
-
-      const contentType = response.headers.get("content-type") || "";
-
-      // If it's a stream (SSE or chunked), parse lines and JSON shapes
-      if (
-        contentType.includes("text/event-stream") ||
-        contentType.includes("stream") ||
-        contentType.includes("application/x-ndjson")
-      ) {
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("No response body (stream)");
-
-        let buf = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buf += decoder.decode(value, { stream: true });
-          const parts = buf.split(/\r?\n/);
-          buf = parts.pop() || "";
-          for (const part of parts) {
-            const line = part.trim();
-            if (!line) continue;
-            const data = line.startsWith("data:")
-              ? line.replace(/^data:\s*/, "")
-              : line;
-            if (data === "[DONE]") continue;
-            try {
-              const json = JSON.parse(data);
-              if (json.message?.content) onChunk(json.message.content);
-              else if (json.choices && json.choices[0]?.delta?.content)
-                onChunk(json.choices[0].delta.content);
-              else if (json.choices && json.choices[0]?.message?.content)
-                onChunk(json.choices[0].message.content);
-              else if (json.results && json.results[0]?.content)
-                onChunk(json.results[0].content);
-              else if (json.completion?.content)
-                onChunk(json.completion.content);
-              else if (typeof json === "string")
-                onChunk(json as unknown as string);
-            } catch {
-              if (data) onChunk(data);
-            }
-          }
-        }
-        if (buf.trim()) {
-          try {
-            const j = JSON.parse(buf);
-            if (j.message?.content) onChunk(j.message.content);
-          } catch {}
-        }
-        return;
-      }
-
-      // Fallback: try to parse JSON body (non-stream)
-      try {
-        const json = await response.json();
-        if (json.choices && json.choices[0]?.message?.content) {
-          onChunk(json.choices[0].message.content);
-          return;
-        }
-        if (json.results && json.results[0]?.content) {
-          onChunk(json.results[0].content);
-          return;
-        }
-        if (json.choices && json.choices[0]?.text) {
-          onChunk(json.choices[0].text);
-          return;
-        }
-        // try Ollama generate shape: { output: [...] } or { text: '...' }
-        if (
-          json.output &&
-          Array.isArray(json.output) &&
-          json.output[0]?.content
-        ) {
-          onChunk(json.output[0].content);
-          return;
-        }
-        if (json.text) {
-          onChunk(json.text);
-          return;
-        }
-        // final fallback: stringify
-        onChunk(JSON.stringify(json));
-        return;
-      } catch {
-        // if parsing fails, return the raw text
-        try {
-          const txt = await response.text();
-          onChunk(txt);
-          return;
-        } catch {
-          // ignore
-        }
-      }
-    } catch (err) {
-      errors.push(String(err));
-      continue;
-    }
-  }
-
-  // if we reach here, none of the candidate endpoints worked
-  throw new Error("All endpoints failed. Diagnostics: " + errors.join(" | "));
+  // Deprecated: frontend direct LLM access is no longer supported.
+  // Use the backend proxy (e.g. POST to `/api/ollama_stream`) which handles
+  // authentication, model configuration, and streaming per the server-side docs.
+  console.warn(
+    "analyzeWithLocalLLM: direct frontend LLM access is deprecated. Use backend proxy at /api/ollama_stream"
+  );
+  throw new Error(
+    "Direct LLM access from the browser is disabled. Configure and use the backend proxy endpoint instead."
+  );
 }
 
 // Try to discover available models from a local LLM endpoint.
 // Tries a few common endpoints derived from the provided llmEndpoint.
-export async function discoverModels(llmEndpoint: string): Promise<string[]> {
-  const candidates = new Set<string>();
-  try {
-    const url = new URL(llmEndpoint);
-    const origin = url.origin;
-    // common paths
-    const paths = ["/models", "/api/models", "/v1/models", "/models/list"];
-    for (const p of paths) {
-      candidates.add(origin + p);
-    }
-    // also try the exact endpoint if it looks like a base list
-    candidates.add(llmEndpoint);
-  } catch {
-    // not a URL, try raw candidates
-    candidates.add(llmEndpoint);
-  }
-
-  const found = new Set<string>();
-  for (const candidate of candidates) {
-    try {
-      const resp = await fetch(candidate, { method: "GET" });
-      if (!resp.ok) continue;
-      const ct = resp.headers.get("content-type") || "";
-      if (ct.includes("application/json")) {
-        const json = await resp.json();
-        // try common shapes
-        if (Array.isArray(json)) {
-          json.forEach((m: any) => {
-            if (typeof m === "string") found.add(m);
-            else if (m?.name) found.add(m.name);
-            else if (m?.id) found.add(m.id);
-          });
-        } else if (json?.models && Array.isArray(json.models)) {
-          json.models.forEach((m: any) => {
-            if (m?.name) found.add(m.name);
-            else if (m?.id) found.add(m.id);
-          });
-        } else if (json?.results && Array.isArray(json.results)) {
-          // Ollama or similar may return { results: [...] }
-          json.results.forEach((r: any) => {
-            if (r?.model) found.add(r.model);
-          });
-        } else if (json?.name) {
-          found.add(json.name);
-        }
-      } else {
-        // if plain text, try to parse lines
-        const text = await resp.text();
-        text
-          .split(/\r?\n/)
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .forEach((s) => found.add(s));
-      }
-    } catch {
-      // ignore and try next
-    }
-  }
-
-  return Array.from(found).sort();
+export async function discoverModels(_llmEndpoint: string): Promise<string[]> {
+  console.warn(
+    "discoverModels: frontend model discovery is deprecated. Query models from the backend instead."
+  );
+  return [];
 }
 
 // Probe candidate endpoints and return the first working endpoint plus any discovered models.
 export async function findWorkingEndpoint(
-  llmEndpoint: string
+  _llmEndpoint: string
 ): Promise<{ endpoint: string; models: string[] } | null> {
-  const candidates = new Set<string>();
-  try {
-    const url = new URL(llmEndpoint);
-    const origin = url.origin;
-    const paths = [
-      "/models",
-      "/api/models",
-      "/v1/models",
-      "/models/list",
-      "/api/chat",
-      "/api/generate",
-      "/v1/chat/completions",
-      "/v1/completions",
-    ];
-    for (const p of paths) candidates.add(origin + p);
-    candidates.add(llmEndpoint);
-  } catch {
-    candidates.add(llmEndpoint);
-  }
-
-  // Prefer endpoints that accept generation POSTs. For each candidate, try POST first (chat-style),
-  // and if it returns a generation-like response, choose it. If none accept POST, fall back to
-  // GET endpoints that list models.
-  let fallbackModels: string[] = [];
-  for (const candidate of candidates) {
-    // Try POST (OpenAI chat-style). Many Ollama installs accept /api/chat or /v1/chat/completions etc.
-    try {
-      const chatBody = JSON.stringify({
-        model: "test",
-        messages: [{ role: "user", content: "ping" }],
-        stream: false,
-      });
-      const resp = await fetch(candidate, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: chatBody,
-      });
-      if (resp.ok) {
-        // parse JSON if possible and look for generation shapes
-        try {
-          const ct = resp.headers.get("content-type") || "";
-          let json: any = null;
-          if (ct.includes("application/json")) json = await resp.json();
-          else {
-            const txt = await resp.text();
-            try {
-              json = JSON.parse(txt);
-            } catch {
-              json = null;
-            }
-          }
-          // heuristics for a generation response
-          const hasGeneration = !!(
-            json &&
-            (json.choices ||
-              json.message ||
-              json.response ||
-              json.id ||
-              json.output)
-          );
-          let models: string[] = [];
-          // try to extract any models mentioned in the response
-          if (json) {
-            if (Array.isArray(json))
-              json.forEach((m: any) => {
-                if (typeof m === "string") models.push(m);
-                else if (m?.name) models.push(m.name);
-                else if (m?.id) models.push(m.id);
-              });
-            else if (json?.models && Array.isArray(json.models))
-              json.models.forEach((m: any) => {
-                if (m?.name) models.push(m.name);
-                else if (m?.id) models.push(m.id);
-              });
-            else if (json?.model) models.push(json.model);
-            else if (json?.results && Array.isArray(json.results))
-              json.results.forEach((r: any) => {
-                if (r?.model) models.push(r.model);
-              });
-          }
-          if (hasGeneration) return { endpoint: candidate, models };
-        } catch {
-          // parsing error - still consider a 200 as success for POST
-          return { endpoint: candidate, models: [] };
-        }
-      }
-    } catch {
-      // ignore POST error and continue to try GET below
-    }
-
-    // If POST didn't succeed, try GET for model listing and collect as fallback
-    try {
-      const respGet = await fetch(candidate, { method: "GET" });
-      if (respGet.ok) {
-        try {
-          const ct = respGet.headers.get("content-type") || "";
-          if (ct.includes("application/json")) {
-            const json = await respGet.json();
-            const models: string[] = [];
-            if (Array.isArray(json))
-              json.forEach((m: any) => {
-                if (typeof m === "string") models.push(m);
-                else if (m?.name) models.push(m.name);
-                else if (m?.id) models.push(m.id);
-              });
-            else if (json?.models && Array.isArray(json.models))
-              json.models.forEach((m: any) => {
-                if (m?.name) models.push(m.name);
-                else if (m?.id) models.push(m.id);
-              });
-            else if (json?.data && Array.isArray(json.data))
-              json.data.forEach((d: any) => {
-                if (d?.id) models.push(d.id);
-              });
-            if (models.length) fallbackModels = models;
-            // do not immediately return - prefer POST endpoints above
-          } else {
-            // text listing
-            const text = await respGet.text();
-            const lines = text
-              .split(/\r?\n/)
-              .map((s) => s.trim())
-              .filter(Boolean);
-            if (lines.length) fallbackModels = lines;
-          }
-        } catch {
-              // ignore parse errors
-            }
-      }
-    } catch {
-      // ignore GET error
-    }
-  }
-
-  if (fallbackModels.length) {
-    // if we only found a models listing, return the base listing endpoint as a fallback
-    // try to return the canonical /v1/models if reachable
-    try {
-      const base = new URL(llmEndpoint).origin + "/v1/models";
-      return { endpoint: base, models: fallbackModels };
-    } catch {
-      return { endpoint: llmEndpoint, models: fallbackModels };
-    }
-  }
-
+  console.warn(
+    "findWorkingEndpoint: frontend endpoint discovery is deprecated. Use the backend to manage LLM endpoints and models."
+  );
   return null;
 }
 
 // Run a small non-stream test request against the endpoint to verify connectivity and the selected model.
 export async function testModelEndpoint(
-  llmEndpoint: string,
-  model: string
+  _llmEndpoint: string,
+  _model: string
 ): Promise<{ ok: boolean; status: number; body: any }> {
-  try {
-    const body = JSON.stringify({
-      model,
-      messages: [{ role: "user", content: "hello" }],
-      stream: false,
-    });
-    const resp = await fetch(llmEndpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body,
-    });
-    const ct = resp.headers.get("content-type") || "";
-    let parsed: any = null;
-    try {
-      if (ct.includes("application/json")) parsed = await resp.json();
-      else parsed = await resp.text();
-        } catch {
-              // ignore parse errors
-            }
-    return { ok: resp.ok, status: resp.status, body: parsed };
-  } catch (err: any) {
-    return { ok: false, status: 0, body: String(err?.message || err) };
-  }
+  console.warn(
+    "testModelEndpoint: frontend model testing is deprecated. Use the backend health check or model API instead."
+  );
+  return { ok: false, status: 0, body: "deprecated" };
 }

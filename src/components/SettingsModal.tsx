@@ -1,11 +1,7 @@
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { Settings } from "../types";
-import {
-  discoverModels,
-  testModelEndpoint,
-  findWorkingEndpoint,
-} from "../services/aiService";
+import { getSettings as getAutoSettings, updateSettings as updateAutoSettings, startAutoRefresh, stopAutoRefresh } from "../services/autoRefreshService";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -23,9 +19,7 @@ export default function SettingsModal({
   // map underscore-prefixed prop to `settings` local name for readability
   const settings = _settings;
   const [localSettings, setLocalSettings] = useState<Settings>(settings);
-  const [serverModels, setServerModels] = useState<string[]>([]);
-  const [testResult, setTestResult] = useState<string | null>(null);
-  const [isDiscovering, setIsDiscovering] = useState(false);
+  
   const [saveAsDefault, setSaveAsDefault] = useState(true);
   const [requireExternal, setRequireExternal] = useState<boolean>(
     !!settings.requireExternalData
@@ -41,110 +35,20 @@ export default function SettingsModal({
     setLocalSettings(settings);
     setReviewThreshold(settings.reviewThreshold ?? 60);
     setModelHeuristicDelta(settings.modelHeuristicDelta ?? 20);
-    if (!isOpen) return;
-    (async () => {
-      setIsDiscovering(true);
-      try {
-        const probe = await findWorkingEndpoint(settings.llmEndpoint);
-        if (probe) {
-          // apply detected endpoint and model immediately and persist
-          const updated = {
-            ...settings,
-            llmEndpoint: probe.endpoint,
-            llmModel: (probe.models && probe.models[0]) || settings.llmModel,
-          };
-          setLocalSettings(updated);
-          setServerModels(probe.models || []);
-          try {
-            onSave(updated);
-          } catch {}
-          try {
-            window.dispatchEvent(
-              new CustomEvent("llm-model-applied", {
-                detail: { model: updated.llmModel },
-              })
-            );
-          } catch {}
-        } else {
-          const list = await discoverModels(settings.llmEndpoint);
-          setServerModels(list);
-        }
-        } catch {
-        // ignore discovery errors
-      }
-      setIsDiscovering(false);
-    })();
+    // load auto-refresh settings
+    try {
+      const s = getAutoSettings();
+      setAutoEnabled(!!s.enabled);
+      setAutoInterval(s.intervalMinutes || 60);
+    } catch {}
   }, [settings, isOpen, onSave]);
 
-  const handleSelectModel = (m: string) => {
-    setLocalSettings({ ...localSettings, llmModel: m });
-    try {
-      window.dispatchEvent(
-        new CustomEvent("llm-model-applied", { detail: { model: m } })
-      );
-    } catch {}
-  };
+  const [autoEnabled, setAutoEnabled] = useState(false);
+  const [autoInterval, setAutoInterval] = useState<number>(60);
 
-  const handleDetect = async () => {
-    setIsDiscovering(true);
-    try {
-      const probe = await findWorkingEndpoint(localSettings.llmEndpoint);
-      if (probe) {
-        const updated = {
-          ...localSettings,
-          llmEndpoint: probe.endpoint,
-          llmModel: (probe.models && probe.models[0]) || localSettings.llmModel,
-        };
-        setLocalSettings(updated);
-        setServerModels(probe.models || []);
-          try {
-            onSave(updated);
-          } catch {}
-          try {
-            window.dispatchEvent(
-              new CustomEvent("llm-model-applied", {
-                detail: { model: updated.llmModel },
-              })
-            );
-          } catch {}
-      } else {
-        const list = await discoverModels(localSettings.llmEndpoint);
-        setServerModels(list);
-      }
-    } catch {
-      // ignore
-    }
-    setIsDiscovering(false);
-  };
+  
 
-  const handleTestModel = async () => {
-    setTestResult("Testing...");
-    try {
-      const res = await testModelEndpoint(
-        localSettings.llmEndpoint,
-        localSettings.llmModel
-      );
-      if (res.ok)
-        setTestResult(
-          `OK ${res.status}: ${
-            typeof res.body === "string"
-              ? res.body
-              : JSON.stringify(res.body).slice(0, 200)
-          }`
-        );
-      else
-        setTestResult(
-          `Error ${res.status}: ${
-            typeof res.body === "string"
-              ? res.body
-              : JSON.stringify(res.body).slice(0, 200)
-          }`
-        );
-    } catch (err: any) {
-      setTestResult(`Error: ${String(err?.message || err)}`);
-    }
-    setTimeout(() => setTestResult(null), 8000);
-  };
+  // Discovery and direct local LLM testing disabled in UI. Use the backend proxy instead.
 
   const handleSave = () => {
     const s = {
@@ -155,6 +59,11 @@ export default function SettingsModal({
     } as Settings;
     if (!saveAsDefault) s.llmModel = settings.llmModel;
     onSave(s);
+    // persist auto-refresh settings into the autoRefresh service
+    try {
+      updateAutoSettings({ enabled: autoEnabled, intervalMinutes: autoInterval });
+      if (autoEnabled) startAutoRefresh(); else stopAutoRefresh();
+    } catch {}
     onClose();
   };
 
@@ -187,7 +96,7 @@ export default function SettingsModal({
                   llmEndpoint: e.target.value,
                 })
               }
-              placeholder="http://localhost:11434"
+              placeholder="(leave blank to use backend proxy)"
               className="w-full px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#5D5CDE] focus:border-transparent"
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -203,74 +112,16 @@ export default function SettingsModal({
                 type="text"
                 value={localSettings.llmModel}
                 onChange={(e) =>
-                  setLocalSettings({
-                    ...localSettings,
-                    llmModel: e.target.value,
-                  })
+                  setLocalSettings({ ...localSettings, llmModel: e.target.value })
                 }
-                placeholder="llama3.2:latest"
+                placeholder="(configured via backend proxy)"
                 className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700"
               />
-              <button
-                onClick={handleTestModel}
-                className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
-              >
-                Test Model
-              </button>
             </div>
-            {testResult && (
-              <div className="mt-2 text-sm text-gray-700 dark:text-gray-300 break-words">
-                {testResult}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Available On Server
-            </label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleDetect}
-                disabled={isDiscovering}
-                className="px-2 py-1 text-sm bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
-              >
-                {isDiscovering ? "Detecting..." : "Detect"}
-              </button>
-              <select
-                value={localSettings.llmModel}
-                onChange={(e) => handleSelectModel(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-              >
-                <option value="">-- Select model --</option>
-                {serverModels.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={async () => {
-                  if (localSettings.llmModel)
-                    await navigator.clipboard.writeText(
-                      `ollama pull ${localSettings.llmModel}`
-                    );
-                }}
-                className="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
-              >
-                Copy Pull Cmd
-              </button>
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-              Detected server endpoint:{" "}
-              <span className="font-mono">{localSettings.llmEndpoint}</span>
-            </div>
-          </div>
-
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-            <p className="text-xs text-blue-800 dark:text-blue-200">
-              💡 Make sure your local LLM server (like Ollama) is running and
-              accessible at the endpoint above.
+            <p className="text-xs text-gray-500 mt-1">
+              The frontend no longer connects directly to local LLM servers.
+              Configure and run an LLM on the server-side and use the backend
+              proxy (recommended) to handle model selection and streaming.
             </p>
           </div>
 
@@ -341,6 +192,25 @@ export default function SettingsModal({
                 Allowed difference (0-100) before marking strong disagreement.
               </p>
             </div>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="font-semibold mb-2">Auto Refresh</h4>
+            <div className="flex items-center gap-2 mb-2">
+              <input type="checkbox" checked={autoEnabled} onChange={(e) => setAutoEnabled(e.target.checked)} className="w-4 h-4" />
+              <label className="text-sm">Enable Auto Refresh</label>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <label className="text-sm">Interval (min)</label>
+              <input
+                type="number"
+                min={1}
+                value={autoInterval}
+                onChange={(e) => setAutoInterval(Number(e.target.value))}
+                className="w-24 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-[#5D5CDE] focus:border-transparent"
+              />
+            </div>
+            
           </div>
         </div>
 

@@ -27,9 +27,8 @@ describe('AnalysisSection rolling averages display', () => {
       expect(chip).not.toBeNull();
     } catch (err) {
       // Dump DOM to aid debugging of flaky render failures
-      // eslint-disable-next-line no-console
       console.error('Debug DOM snapshot:');
-      // eslint-disable-next-line testing-library/no-node-access
+      // Dump DOM using testing library helper
       screen.debug();
       throw err;
     }
