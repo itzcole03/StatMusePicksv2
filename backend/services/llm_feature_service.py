@@ -16,6 +16,11 @@ from pydantic import BaseModel, Field, ValidationError
 
 from backend.services.ollama_client import get_default_client
 from backend.services.vector_store import InMemoryVectorStore
+try:
+    from backend.services import metrics
+except Exception:
+    metrics = None
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +87,25 @@ class LLMFeatureService:
         for _ in range(max_attempts):
             try:
                 # pass both `response_format` and `format` to support different client APIs
+                if metrics is not None:
+                    try:
+                        metrics.llm_tool_calls_total.inc()
+                    except Exception:
+                        pass
+                start = time.time()
                 resp = self.client.generate(model=model, prompt=prompt, timeout=30, response_format='json', format='json', tools=tools)
+                dur = time.time() - start
+                try:
+                    if metrics is not None:
+                        metrics.llm_tool_call_latency_seconds.observe(dur)
+                except Exception:
+                    pass
+                if resp is not None:
+                    try:
+                        if metrics is not None:
+                            metrics.llm_tool_calls_success.inc()
+                    except Exception:
+                        pass
             except Exception as e:
                 logger.debug("LLM client.generate failed: %s", e)
                 resp = None
@@ -131,8 +154,30 @@ class LLMFeatureService:
                     if query:
                         # import local web search and call it
                         from backend.services.web_search import web_search
-
-                        result = web_search(str(query))
+                        # telemetry for tool call
+                        try:
+                            if metrics is not None:
+                                metrics.llm_tool_calls_total.inc()
+                        except Exception:
+                            pass
+                        t0 = time.time()
+                        result = None
+                        try:
+                            result = web_search(str(query))
+                            if metrics is not None:
+                                try:
+                                    metrics.llm_tool_calls_success.inc()
+                                    metrics.llm_tool_call_latency_seconds.observe(time.time() - t0)
+                                except Exception:
+                                    pass
+                        except Exception as e:
+                            logger.exception('web_search tool call failed: %s', e)
+                            if metrics is not None:
+                                try:
+                                    metrics.llm_tool_calls_failed.inc()
+                                except Exception:
+                                    pass
+                            result = ''
                         # append tool result to prompt and retry generation
                         prompt = prompt + "\n\n[web_search result]\n" + str(result)
                         continue
@@ -149,14 +194,42 @@ class LLMFeatureService:
 
             try:
                 vf = QualitativeFeatures.parse_obj(parsed)
+                try:
+                    if metrics is not None:
+                        metrics.llm_structured_accepted.inc()
+                except Exception:
+                    pass
                 return vf.dict()
-            except ValidationError:
+            except ValidationError as ve:
+                # structured logging for validation failures (truncated parsed sample)
+                try:
+                    sample = str(parsed)
+                    if len(sample) > 1000:
+                        sample = sample[:1000] + '...'
+                except Exception:
+                    sample = '<unserializable>'
+                logger.warning({'event': 'llm_schema_validation', 'player': player_name, 'sample': sample, 'error': str(ve)})
+                try:
+                    if metrics is not None:
+                        metrics.llm_schema_validation_failures.inc()
+                except Exception:
+                    pass
                 coerced = self._coerce_partial(parsed)
                 if coerced:
                     try:
                         vf = QualitativeFeatures.parse_obj(coerced)
+                        try:
+                            if metrics is not None:
+                                metrics.llm_structured_coerced.inc()
+                        except Exception:
+                            pass
                         return vf.dict()
                     except ValidationError:
+                        try:
+                            if metrics is not None:
+                                metrics.llm_structured_invalid.inc()
+                        except Exception:
+                            pass
                         pass
                 continue
 
