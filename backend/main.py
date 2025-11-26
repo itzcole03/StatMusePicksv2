@@ -3,23 +3,23 @@
 This file exposes `app` for tools that expect `backend.main:app` and
 provides minimal startup/shutdown hooks.
 """
-from fastapi import FastAPI, Response, Request
-from pydantic import BaseModel
-from typing import List
-from backend.schemas.player_context import PlayerContextResponse
-import os
-import importlib
-import pathlib
-from typing import Optional
-import time
 
-from backend.services import nba_stats_client
-from backend.services.cache import redis_get_json, redis_set_json, get_redis
-from backend.services.cache import get_cache_metrics
-from backend.services import feature_engineering
+import importlib
+import os
+import pathlib
+import time
+from typing import Optional
+
+from fastapi import FastAPI, Request, Response
+from pydantic import BaseModel
+
+from backend.schemas.player_context import PlayerContextResponse
+from backend.services import feature_engineering, nba_stats_client
+from backend.services.cache import get_cache_metrics, redis_get_json, redis_set_json
+
 try:
     # Prefer using our metrics helper which supports multiprocess mode.
-    from backend.services.metrics import generate_latest, CONTENT_TYPE_LATEST
+    from backend.services.metrics import CONTENT_TYPE_LATEST, generate_latest
 except Exception:
     generate_latest = None
     CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
@@ -37,6 +37,7 @@ except Exception:
 app: FastAPI = nba_app
 
 if not any(getattr(r, "path", None) == "/health" for r in app.routes):
+
     @app.get("/health")
     async def _health():
         return {"ok": True}
@@ -48,23 +49,25 @@ async def _debug_status():
     # DB status (quick heuristic with optional async connectivity test)
     try:
         from backend import db as backend_db
-        db_url = getattr(backend_db, 'DATABASE_URL', None)
+
+        db_url = getattr(backend_db, "DATABASE_URL", None)
     except Exception:
-        db_url = os.environ.get('DATABASE_URL') or 'sqlite+aiosqlite:///./dev.db'
+        db_url = os.environ.get("DATABASE_URL") or "sqlite+aiosqlite:///./dev.db"
 
     db_ok = False
     db_error = None
     try:
-        if db_url and db_url.startswith('sqlite'):
+        if db_url and db_url.startswith("sqlite"):
             # check for local file existence
-            db_path = pathlib.Path('./dev.db')
+            db_path = pathlib.Path("./dev.db")
             db_ok = db_path.exists()
         else:
             # try an async DB connection if backend.db available
             try:
                 from backend import db as backend_db
+
                 backend_db._ensure_engine_and_session()
-                if getattr(backend_db, 'engine', None) is not None:
+                if getattr(backend_db, "engine", None) is not None:
                     async with backend_db.engine.connect() as conn:
                         await conn.run_sync(lambda sync_conn: None)
                     db_ok = True
@@ -78,14 +81,15 @@ async def _debug_status():
         db_error = str(e)
 
     # Redis status
-    redis_url = os.environ.get('REDIS_URL')
-    redis_installed = importlib.util.find_spec('redis') is not None
+    redis_url = os.environ.get("REDIS_URL")
+    redis_installed = importlib.util.find_spec("redis") is not None
     redis_can_connect = False
     redis_error = None
     if redis_installed:
         try:
             import redis
-            url = redis_url or 'redis://127.0.0.1:6379'
+
+            url = redis_url or "redis://127.0.0.1:6379"
             client = redis.from_url(url, socket_connect_timeout=1)
             redis_can_connect = client.ping()
         except Exception as e:
@@ -97,14 +101,18 @@ async def _debug_status():
         cache_metrics = None
 
     return {
-        'db': {'url': db_url, 'ok': db_ok, 'error': db_error},
-        'redis': {'installed': redis_installed, 'env': redis_url, 'can_connect': redis_can_connect, 'error': redis_error},
-        'cache_metrics': cache_metrics,
+        "db": {"url": db_url, "ok": db_ok, "error": db_error},
+        "redis": {
+            "installed": redis_installed,
+            "env": redis_url,
+            "can_connect": redis_can_connect,
+            "error": redis_error,
+        },
+        "cache_metrics": cache_metrics,
     }
 
 
-
-@app.get('/metrics')
+@app.get("/metrics")
 async def _metrics():
     """Expose Prometheus metrics if available (dev-only)."""
     if generate_latest is None:
@@ -114,11 +122,12 @@ async def _metrics():
         return Response(content=data, media_type=CONTENT_TYPE_LATEST)
     except Exception:
         return {"error": "failed to render metrics"}
-    
 
 
 @app.get("/api/player_context", response_model=PlayerContextResponse)
-async def player_context(player_name: Optional[str] = None, player: Optional[str] = None, limit: int = 8):
+async def player_context(
+    player_name: Optional[str] = None, player: Optional[str] = None, limit: int = 8
+):
     """Return recent games and simple numeric context for a player.
 
     - Tries Redis cache first (key: `player_context:{player_name}:{limit}`).
@@ -145,7 +154,9 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
 
     # Resolve player id and fetch recent games
     try:
-        pid = nba_stats_client.find_player_id_by_name(player_name) or nba_stats_client.find_player_id(player_name)
+        pid = nba_stats_client.find_player_id_by_name(
+            player_name
+        ) or nba_stats_client.find_player_id(player_name)
     except Exception:
         pid = None
 
@@ -154,14 +165,16 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
         if pid:
             recent = nba_stats_client.fetch_recent_games_by_id(pid, limit=limit)
         else:
-            recent = nba_stats_client.fetch_recent_games_by_name(player_name, limit=limit)
+            recent = nba_stats_client.fetch_recent_games_by_name(
+                player_name, limit=limit
+            )
     except Exception:
         recent = []
 
     # derive simple seasonAvg if possible
     season_avg = None
     try:
-        vals = [g.get('statValue') or g.get('PTS') or g.get('points') for g in recent]
+        vals = [g.get("statValue") or g.get("PTS") or g.get("points") for g in recent]
         vals = [v for v in vals if v is not None]
         if vals:
             season_avg = sum(vals) / len(vals)
@@ -170,15 +183,35 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
 
     # DEV helper: populate deterministic sample recent games when requested
     try:
-        dev_mock = os.environ.get('DEV_MOCK_CONTEXT')
+        dev_mock = os.environ.get("DEV_MOCK_CONTEXT")
         if dev_mock and (not recent or len(recent) == 0):
             # lightweight sample recent games to enable frontend/dev smoke tests
             recent = [
-                {"date": "2025-11-01", "statValue": 28, "opponentTeamId": "BOS", "opponentDefRating": 105.0, "opponentPace": 98.3},
-                {"date": "2025-10-29", "statValue": 24, "opponentTeamId": "NYK", "opponentDefRating": 110.0, "opponentPace": 100.1},
-                {"date": "2025-10-26", "statValue": 30, "opponentTeamId": "GSW", "opponentDefRating": 103.5, "opponentPace": 101.2},
+                {
+                    "date": "2025-11-01",
+                    "statValue": 28,
+                    "opponentTeamId": "BOS",
+                    "opponentDefRating": 105.0,
+                    "opponentPace": 98.3,
+                },
+                {
+                    "date": "2025-10-29",
+                    "statValue": 24,
+                    "opponentTeamId": "NYK",
+                    "opponentDefRating": 110.0,
+                    "opponentPace": 100.1,
+                },
+                {
+                    "date": "2025-10-26",
+                    "statValue": 30,
+                    "opponentTeamId": "GSW",
+                    "opponentDefRating": 103.5,
+                    "opponentPace": 101.2,
+                },
             ]
-            vals = [g.get('statValue') or g.get('PTS') or g.get('points') for g in recent]
+            vals = [
+                g.get("statValue") or g.get("PTS") or g.get("points") for g in recent
+            ]
             vals = [v for v in vals if v is not None]
             if vals:
                 season_avg = sum(vals) / len(vals)
@@ -206,14 +239,22 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
 
     # Build enhanced numeric context using local feature engineering helpers
     try:
-        player_data = {"seasonAvg": season_avg, "recentGames": recent, "contextualFactors": {}}
+        player_data = {
+            "seasonAvg": season_avg,
+            "recentGames": recent,
+            "contextualFactors": {},
+        }
         # opponent info: try to extract from most recent game if available
         opponent_info = None
         if recent and isinstance(recent, list) and len(recent) > 0:
             g0 = recent[0]
             opponent_info = {
-                "teamId": g0.get("opponentTeamId") or g0.get("opponent") or g0.get("opponentAbbrev"),
-                "defensiveRating": g0.get("opponentDefRating") or g0.get("opponentDef") or None,
+                "teamId": g0.get("opponentTeamId")
+                or g0.get("opponent")
+                or g0.get("opponentAbbrev"),
+                "defensiveRating": g0.get("opponentDefRating")
+                or g0.get("opponentDef")
+                or None,
                 "pace": g0.get("opponentPace") or None,
             }
         out["opponentInfo"] = opponent_info
@@ -222,10 +263,21 @@ async def player_context(player_name: Optional[str] = None, player: Optional[str
         if df is not None and not df.empty:
             # extract rolling averages and opponent-adjusted fields
             row = df.iloc[0].to_dict()
-            rolling_keys = [k for k in row.keys() if k.startswith("last_") or "exponential" in k or k.startswith("wma_") or k in ("slope_10", "momentum_vs_5_avg")]
+            rolling_keys = [
+                k
+                for k in row.keys()
+                if k.startswith("last_")
+                or "exponential" in k
+                or k.startswith("wma_")
+                or k in ("slope_10", "momentum_vs_5_avg")
+            ]
             rolling = {k: row.get(k) for k in rolling_keys}
             out["rollingAverages"] = rolling
-            out["contextualFactors"] = {"is_home": int(row.get("is_home", 0)), "days_rest": int(row.get("days_rest", 0)), "is_back_to_back": int(row.get("is_back_to_back", 0))}
+            out["contextualFactors"] = {
+                "is_home": int(row.get("is_home", 0)),
+                "days_rest": int(row.get("days_rest", 0)),
+                "is_back_to_back": int(row.get("is_back_to_back", 0)),
+            }
     except Exception:
         # non-fatal: return best-effort context
         pass
@@ -241,7 +293,9 @@ class BatchPlayerRequest(BaseModel):
 
 
 @app.post("/api/batch_player_context")
-async def batch_player_context(request: Request, default_limit: int = 8, max_concurrency: int = 6):
+async def batch_player_context(
+    request: Request, default_limit: int = 8, max_concurrency: int = 6
+):
     """Fetch player contexts for a batch of players in parallel (bounded concurrency).
 
     Returns a dict with `results` (list) and `errors` (list of player names with errors).
@@ -252,7 +306,10 @@ async def batch_player_context(request: Request, default_limit: int = 8, max_con
     # read raw JSON to avoid Pydantic body validation differences between callers
     data = await request.json()
     if not isinstance(data, list):
-        return {"results": [], "errors": [{"error": "request body must be an array of player requests"}]}
+        return {
+            "results": [],
+            "errors": [{"error": "request body must be an array of player requests"}],
+        }
 
     semaphore = asyncio.Semaphore(max_concurrency)
 
@@ -284,7 +341,7 @@ async def db_health():
         from backend import db as backend_db
 
         backend_db._ensure_engine_and_session()
-        if getattr(backend_db, 'engine', None) is None:
+        if getattr(backend_db, "engine", None) is None:
             return {"ok": False, "db": {"ok": False, "error": "no engine"}}
 
         # run a lightweight sync no-op to validate connection
@@ -307,7 +364,7 @@ async def _startup():
 
         # quick connectivity check for non-sqlite DBs
         try:
-            if getattr(backend_db, 'engine', None) is not None:
+            if getattr(backend_db, "engine", None) is not None:
                 async with backend_db.engine.connect() as conn:
                     # no-op sync call to validate connection
                     await conn.run_sync(lambda sync_conn: None)
@@ -320,6 +377,7 @@ async def _startup():
     # Start fallback cleanup for in-memory cache to avoid unbounded growth
     try:
         from backend.services import cache as cache_mod
+
         try:
             cache_mod.start_fallback_cleanup_task()
         except Exception:

@@ -3,13 +3,13 @@
 Usage:
   python backend/scripts/compute_per_ws_sample.py --players "Stephen Curry,Kevin Durant" --seasons 2024-25,2023-24
 """
+
 from __future__ import annotations
 
 import argparse
 import datetime
 import json
 import os
-from typing import List
 
 from backend.services import nba_stats_client
 from backend.services.per_ws_from_playbyplay import compute_player_season_estimates
@@ -38,15 +38,15 @@ def main():
 
     ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     repo_root = os.path.dirname(os.path.dirname(__file__))
-    out_dir = os.path.join(repo_root, 'models_store')
+    out_dir = os.path.join(repo_root, "models_store")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"per_ws_playbyplay_sample_{ts}.json")
-    with open(out_path, 'w', encoding='utf-8') as fh:
+    with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(results, fh, indent=2)
 
     print(f"Wrote results to: {out_path}")
     print(json.dumps(results, indent=2))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

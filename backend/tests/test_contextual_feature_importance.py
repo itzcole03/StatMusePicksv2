@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from backend.services.feature_engineering import prune_contextual_features
 
 
@@ -16,22 +17,24 @@ def test_prune_contextual_features_keeps_signal_and_drops_noise():
     # target correlated with trade_sentiment
     target = 2.0 * trade + rng.normal(scale=0.1, size=n)
 
-    df = pd.DataFrame({
-        'trade_sentiment': trade,
-        'is_playoff': rng.randint(0, 2, size=n),
-        'is_national_tv': rng.randint(0, 2, size=n),
-        'travel_distance_km': noise1,
-        'opp_altitude_m': noise2,
-        'is_contract_year': rng.randint(0, 2, size=n),
-        'recent_awards_count': rng.randint(0, 3, size=n),
-        'noise3': noise3,
-        'target': target,
-    })
+    df = pd.DataFrame(
+        {
+            "trade_sentiment": trade,
+            "is_playoff": rng.randint(0, 2, size=n),
+            "is_national_tv": rng.randint(0, 2, size=n),
+            "travel_distance_km": noise1,
+            "opp_altitude_m": noise2,
+            "is_contract_year": rng.randint(0, 2, size=n),
+            "recent_awards_count": rng.randint(0, 3, size=n),
+            "noise3": noise3,
+            "target": target,
+        }
+    )
 
-    pruned_df, kept = prune_contextual_features(df, target_col='target', threshold=0.02)
+    pruned_df, kept = prune_contextual_features(df, target_col="target", threshold=0.02)
 
     # The strong signal 'trade_sentiment' should be kept
-    assert 'trade_sentiment' in kept
+    assert "trade_sentiment" in kept
     # At least one noisy contextual numeric column should be dropped
-    dropped_candidates = {'travel_distance_km', 'opp_altitude_m', 'noise3'}
+    dropped_candidates = {"travel_distance_km", "opp_altitude_m", "noise3"}
     assert any(c not in pruned_df.columns for c in dropped_candidates)

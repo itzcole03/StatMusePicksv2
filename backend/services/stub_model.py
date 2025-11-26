@@ -3,6 +3,7 @@
 This class implements `.predict(X)` and returns a constant value so
 tests that expect a persisted model can load and run it deterministically.
 """
+
 from typing import Any
 
 

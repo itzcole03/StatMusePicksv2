@@ -1,10 +1,9 @@
-import os
-import sys
-import subprocess
 import importlib
+import os
+import subprocess
+import sys
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -18,18 +17,28 @@ def test_migrations_train_and_endpoints(tmp_path):
     env["DATABASE_URL"] = f"sqlite+aiosqlite:///{db_file}"
 
     # Run alembic migrations
-    subprocess.run([
-        sys.executable,
-        "-m",
-        "alembic",
-        "-c",
-        "backend/alembic.ini",
-        "upgrade",
-        "heads",
-    ], check=True, env=env, cwd=str(repo_root))
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "alembic",
+            "-c",
+            "backend/alembic.ini",
+            "upgrade",
+            "heads",
+        ],
+        check=True,
+        env=env,
+        cwd=str(repo_root),
+    )
 
     # Run the synthetic training script to produce a model artifact
-    subprocess.run([sys.executable, "backend/scripts/train_example.py"], check=True, env=env, cwd=str(repo_root))
+    subprocess.run(
+        [sys.executable, "backend/scripts/train_example.py"],
+        check=True,
+        env=env,
+        cwd=str(repo_root),
+    )
 
     # Import the FastAPI app and use TestClient to hit endpoints
     app_module = importlib.import_module("backend.fastapi_nba")
@@ -40,7 +49,9 @@ def test_migrations_train_and_endpoints(tmp_path):
     assert r.status_code == 200
     data = r.json()
     assert "models" in data
-    assert any("synthetic_player" in m for m in data["models"]) or any(m.endswith("synthetic_player.pkl") for m in data["models"]) 
+    assert any("synthetic_player" in m for m in data["models"]) or any(
+        m.endswith("synthetic_player.pkl") for m in data["models"]
+    )
 
     r2 = client.post("/api/models/load?player=synthetic_player")
     assert r2.status_code == 200

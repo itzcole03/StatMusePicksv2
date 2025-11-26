@@ -1,24 +1,24 @@
-from fastapi import FastAPI, HTTPException, Query, Request, Body
-from fastapi.responses import Response, StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import List, Optional
-import time
-import os
 import json
 import logging
+import os
 import re
-from typing import Dict
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Dict, List, Optional
 
 # Caching
 from cachetools import TTLCache
+from fastapi import Body, FastAPI, HTTPException, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, StreamingResponse
+from pydantic import BaseModel
 
 # Optional Redis support via the shared cache helper
 redis_client = None
 try:
     from .services.cache import get_redis
+
     redis_client = get_redis()
 except Exception:
     redis_client = None
@@ -26,16 +26,16 @@ except Exception:
 # NOTE: `nba_api` is an optional dependency. Install it in the backend venv.
 try:
     # Prefer using the centralized client which encapsulates imports and caching
-    from .services.nba_stats_client import find_player_id_by_name, fetch_recent_games
+    from .services.nba_stats_client import fetch_recent_games, find_player_id_by_name
+
     players = None
     playergamelog = None
     playercareerstats = None
 except Exception:
     # Fall back to direct `nba_api` imports (older setups)
     try:
+        from nba_api.stats.endpoints import playercareerstats, playergamelog
         from nba_api.stats.static import players
-        from nba_api.stats.endpoints import playergamelog
-        from nba_api.stats.endpoints import playercareerstats
     except Exception:
         players = None
         playergamelog = None
@@ -60,28 +60,27 @@ def _resolve_base_url(client=None):
     except Exception:
         repo_root = None
 
-    prefer_local = os.environ.get('OLLAMA_PREFER_LOCAL') in ('1', 'true', 'True')
+    prefer_local = os.environ.get("OLLAMA_PREFER_LOCAL") in ("1", "true", "True")
     try:
-        if repo_root is not None and repo_root.joinpath('DEV_OLLAMA_LOCAL').exists():
+        if repo_root is not None and repo_root.joinpath("DEV_OLLAMA_LOCAL").exists():
             prefer_local = True
     except Exception:
         pass
 
     if prefer_local:
-        return 'http://localhost:11434'
+        return "http://localhost:11434"
 
-    env_base = os.environ.get('OLLAMA_URL')
+    env_base = os.environ.get("OLLAMA_URL")
     if env_base:
-        return env_base.rstrip('/')
+        return env_base.rstrip("/")
 
     if client is not None:
         try:
-            return client._base_url.rstrip('/')
+            return client._base_url.rstrip("/")
         except Exception:
             pass
 
-    return os.environ.get('OLLAMA_URL', '').rstrip('/')
-
+    return os.environ.get("OLLAMA_URL", "").rstrip("/")
 
 
 @asynccontextmanager
@@ -99,6 +98,7 @@ async def _lifespan(app: FastAPI):
         if registry is None:
             try:
                 from backend.services.model_registry import ModelRegistry as _MR
+
                 registry = _MR()
             except Exception:
                 registry = None
@@ -106,6 +106,7 @@ async def _lifespan(app: FastAPI):
         if ml_service is None:
             try:
                 from .services import MLPredictionService as _MS
+
                 ml_service = _MS()
             except Exception:
                 ml_service = None
@@ -113,7 +114,7 @@ async def _lifespan(app: FastAPI):
         model_dir = None
         if registry is not None:
             model_dir = registry.model_dir
-        elif ml_service is not None and hasattr(ml_service, 'registry'):
+        elif ml_service is not None and hasattr(ml_service, "registry"):
             try:
                 model_dir = ml_service.registry.model_dir
             except Exception:
@@ -122,19 +123,19 @@ async def _lifespan(app: FastAPI):
         if model_dir:
             # load all .pkl models found in the dir
             for fname in sorted(os.listdir(model_dir)):
-                if not fname.endswith('.pkl') or fname.endswith('_calibrator.pkl'):
+                if not fname.endswith(".pkl") or fname.endswith("_calibrator.pkl"):
                     continue
-                player = fname[:-4].replace('_', ' ')
+                player = fname[:-4].replace("_", " ")
                 try:
                     # prefer loading into the ml_service registry if available
-                    if ml_service is not None and hasattr(ml_service, 'registry'):
+                    if ml_service is not None and hasattr(ml_service, "registry"):
                         ml_service.registry.load_model(player)
                     elif registry is not None:
                         registry.load_model(player)
                 except Exception:
-                    logger.exception('Failed to preload model %s', fname)
+                    logger.exception("Failed to preload model %s", fname)
     except Exception:
-        logger.exception('Error during startup model preload')
+        logger.exception("Error during startup model preload")
 
     yield
 
@@ -142,7 +143,7 @@ async def _lifespan(app: FastAPI):
     try:
         pass
     except Exception:
-        logger.exception('Error during lifespan shutdown')
+        logger.exception("Error during lifespan shutdown")
 
 
 # Create the FastAPI app with the lifespan handler and configure CORS
@@ -170,15 +171,18 @@ async def _global_exception_handler(request, exc):
     """Catch-all exception handler to return 500 JSON and log the error
     without bringing down the server process.
     """
-    logger.exception('Unhandled exception: %s', exc)
+    logger.exception("Unhandled exception: %s", exc)
     from fastapi.responses import JSONResponse
+
     return JSONResponse(status_code=500, content={"error": "internal_server_error"})
+
 
 class GameItem(BaseModel):
     gameDate: str
     matchup: Optional[str]
     statValue: Optional[float]
     raw: dict
+
 
 class PlayerSummary(BaseModel):
     player: str
@@ -199,33 +203,41 @@ except Exception:
     ConfigDict = None
 
 if ConfigDict is not None:
-    PlayerSummary.model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "player": "LeBron James",
-            "stat": "points",
-            "league": "nba",
-            "recentGames": [],
-            "seasonAvg": 27.5,
-            "fetchedAt": "2025-01-01T00:00:00Z",
+    PlayerSummary.model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "player": "LeBron James",
+                "stat": "points",
+                "league": "nba",
+                "recentGames": [],
+                "seasonAvg": 27.5,
+                "fetchedAt": "2025-01-01T00:00:00Z",
+            }
         }
-    })
+    )
 
 # in-memory TTL cache
 cache = TTLCache(maxsize=1000, ttl=60 * 10)
 
 STAT_MAP = {
-    'points': 'PTS', 'pts': 'PTS',
-    'assists': 'AST', 'ast': 'AST',
-    'rebounds': 'REB', 'reb': 'REB',
-    'stl': 'STL', 'steals': 'STL',
-    'blk': 'BLK', 'blocks': 'BLK',
+    "points": "PTS",
+    "pts": "PTS",
+    "assists": "AST",
+    "ast": "AST",
+    "rebounds": "REB",
+    "reb": "REB",
+    "stl": "STL",
+    "steals": "STL",
+    "blk": "BLK",
+    "blocks": "BLK",
 }
 
 # Simple in-memory token-bucket rate limiter per client IP for batch endpoints.
 # Keyed by client host. This is a best-effort limiter intended for dev/low-traffic
 # use; in production prefer Redis-based or proxy-level rate limiting.
 _rate_buckets: Dict[str, Dict[str, float]] = {}
-RATE_LIMIT_RPM = int(os.environ.get('BATCH_MAX_RPM', '120'))  # requests per minute
+RATE_LIMIT_RPM = int(os.environ.get("BATCH_MAX_RPM", "120"))  # requests per minute
+
 
 def _consume_tokens(key: str, amount: int) -> bool:
     """Attempt to consume `amount` tokens for `key`. Returns True if allowed.
@@ -269,7 +281,9 @@ end
 """
             now = time.time()
             # Some Redis clients expect bytes/str; use eval
-            allowed = redis_client.eval(lua, 1, f"rate_bucket:{key}", now, RATE_LIMIT_RPM, amount)
+            allowed = redis_client.eval(
+                lua, 1, f"rate_bucket:{key}", now, RATE_LIMIT_RPM, amount
+            )
             return bool(int(allowed))
         except Exception:
             # If Redis fails, gracefully fall back to in-process limiter below
@@ -279,17 +293,17 @@ end
     now = time.time()
     bucket = _rate_buckets.get(key)
     if bucket is None:
-        bucket = {'tokens': float(RATE_LIMIT_RPM), 'last': now}
+        bucket = {"tokens": float(RATE_LIMIT_RPM), "last": now}
         _rate_buckets[key] = bucket
 
-    elapsed = now - bucket['last']
+    elapsed = now - bucket["last"]
     # refill
     refill = elapsed * (RATE_LIMIT_RPM / 60.0)
-    bucket['tokens'] = min(float(RATE_LIMIT_RPM), bucket['tokens'] + refill)
-    bucket['last'] = now
+    bucket["tokens"] = min(float(RATE_LIMIT_RPM), bucket["tokens"] + refill)
+    bucket["last"] = now
 
-    if bucket['tokens'] >= amount:
-        bucket['tokens'] -= amount
+    if bucket["tokens"] >= amount:
+        bucket["tokens"] -= amount
         return True
 
     return False
@@ -310,7 +324,7 @@ def find_player_id_by_name(name: str):
     try:
         matches = players.find_players_by_full_name(name)
         if matches:
-            return matches[0]['id']
+            return matches[0]["id"]
     except Exception:
         pass
 
@@ -330,13 +344,13 @@ def find_player_id_by_name(name: str):
 
     # First look for exact normalized full name
     for p in allp:
-        if normalize(p.get('full_name', '')) == target:
-            return p['id']
+        if normalize(p.get("full_name", "")) == target:
+            return p["id"]
 
     # Then partial contains
     for p in allp:
-        if target in normalize(p.get('full_name', '')):
-            return p['id']
+        if target in normalize(p.get("full_name", "")):
+            return p["id"]
 
     return None
 
@@ -383,15 +397,15 @@ def fetch_recent_games(player_id: int, limit: int = 8):
     gl = playergamelog.PlayerGameLog(player_id=player_id)
     df = gl.get_data_frames()[0]
     recent = df.head(limit)
-    return recent.to_dict(orient='records')
+    return recent.to_dict(orient="records")
 
 
-@app.get('/health')
+@app.get("/health")
 def health():
-    return {'ok': True}
+    return {"ok": True}
 
 
-@app.get('/api/proxy/prizepicks')
+@app.get("/api/proxy/prizepicks")
 def proxy_prizepicks():
     """Server-side proxy for PrizePicks projections.
 
@@ -400,32 +414,35 @@ def proxy_prizepicks():
     simple for dev use; in production consider adding caching, rate
     limiting, and auth as required.
     """
-    target = 'https://partner-api.prizepicks.com/projections'
+    target = "https://partner-api.prizepicks.com/projections"
     try:
         import requests
+
         resp = requests.get(target, timeout=15)
         resp.raise_for_status()
-        content_type = resp.headers.get('content-type', 'application/json')
+        content_type = resp.headers.get("content-type", "application/json")
         headers = {}
         # pass through ETag/Last-Modified if present for client caching
-        if resp.headers.get('etag'):
-            headers['etag'] = resp.headers.get('etag')
-        if resp.headers.get('last-modified'):
-            headers['last-modified'] = resp.headers.get('last-modified')
+        if resp.headers.get("etag"):
+            headers["etag"] = resp.headers.get("etag")
+        if resp.headers.get("last-modified"):
+            headers["last-modified"] = resp.headers.get("last-modified")
         return Response(content=resp.content, media_type=content_type, headers=headers)
     except Exception as e:
-        logger.exception('proxy_prizepicks error: %s', e)
+        logger.exception("proxy_prizepicks error: %s", e)
         raise HTTPException(status_code=502, detail=str(e))
 
 
-@app.get('/health/embeddings')
+@app.get("/health/embeddings")
 async def health_embeddings():
     """Run a quick embedding generation check and return status.
 
     This endpoint attempts to generate a single embedding using the default
     LLMFeatureService. It is intended for CI and runtime health checks.
     """
-    import asyncio, time
+    import asyncio
+    import time
+
     from backend.services.llm_feature_service import create_default_service
 
     svc = create_default_service()
@@ -433,17 +450,23 @@ async def health_embeddings():
     start = time.time()
     try:
         # run in thread to avoid blocking event loop; timeout quickly
-        vec = await asyncio.wait_for(asyncio.to_thread(svc.generate_embedding, sample), timeout=6.0)
+        vec = await asyncio.wait_for(
+            asyncio.to_thread(svc.generate_embedding, sample), timeout=6.0
+        )
         dur = time.time() - start
         ok = vec is not None and isinstance(vec, (list, tuple)) and len(vec) > 0
-        return {"ok": bool(ok), "source": svc._last_embedding_source, "latency_ms": int(dur * 1000)}
+        return {
+            "ok": bool(ok),
+            "source": svc._last_embedding_source,
+            "latency_ms": int(dur * 1000),
+        }
     except asyncio.TimeoutError:
         return {"ok": False, "error": "timeout", "source": svc._last_embedding_source}
     except Exception as e:
         return {"ok": False, "error": str(e), "source": svc._last_embedding_source}
 
 
-@app.get('/metrics')
+@app.get("/metrics")
 def metrics_endpoint():
     """Prometheus metrics endpoint.
 
@@ -451,7 +474,8 @@ def metrics_endpoint():
     scraper can collect embedding and indexer metrics.
     """
     try:
-        from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+        from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+
         data = generate_latest()
         return Response(content=data, media_type=CONTENT_TYPE_LATEST)
     except Exception:
@@ -459,7 +483,7 @@ def metrics_endpoint():
         return Response(content=b"", media_type="text/plain")
 
 
-@app.get('/api/nba_status')
+@app.get("/api/nba_status")
 def api_nba_status():
     """Return diagnostic info about nba_api wiring and local cached game logs.
 
@@ -467,49 +491,63 @@ def api_nba_status():
     gracefully fall back to cached logs). This endpoint is safe to call in
     CI and local dev; it never raises on missing optional deps.
     """
-    info = {'nba_api_installed': False, 'can_fetch_players': False, 'sample_player': None, 'cached_logs_exist': False}
+    info = {
+        "nba_api_installed": False,
+        "can_fetch_players": False,
+        "sample_player": None,
+        "cached_logs_exist": False,
+    }
     try:
         # Try centralized client first
         from .services import nba_stats_client as client
-        info['nba_api_installed'] = True
+
+        info["nba_api_installed"] = True
         try:
             allp = client.fetch_all_players()
-            info['can_fetch_players'] = bool(allp)
+            info["can_fetch_players"] = bool(allp)
             # sample lookup for LeBron James (best-effort)
             try:
-                pid = client.find_player_id_by_name('LeBron James')
-                info['sample_player'] = {'name': 'LeBron James', 'player_id': pid}
+                pid = client.find_player_id_by_name("LeBron James")
+                info["sample_player"] = {"name": "LeBron James", "player_id": pid}
                 if pid:
                     recent = client.fetch_recent_games(pid, limit=3)
-                    info['sample_player']['recent_count'] = len(recent) if recent is not None else 0
+                    info["sample_player"]["recent_count"] = (
+                        len(recent) if recent is not None else 0
+                    )
             except Exception:
                 pass
         except Exception:
             # client available but remote calls may fail (timeouts, rate limits)
-            info['can_fetch_players'] = False
+            info["can_fetch_players"] = False
     except Exception:
         # try direct import fallback
         try:
             import importlib
-            _ = importlib.import_module('nba_api')
-            info['nba_api_installed'] = True
+
+            _ = importlib.import_module("nba_api")
+            info["nba_api_installed"] = True
         except Exception:
-            info['nba_api_installed'] = False
+            info["nba_api_installed"] = False
 
     # Check for deterministic cached logs in repo for CI/tests
     try:
         import os
+
         repo_root = os.path.dirname(__file__)
-        cached_dir = os.path.join(repo_root, 'data', 'cached_game_logs')
-        info['cached_logs_exist'] = os.path.isdir(cached_dir) and len(os.listdir(cached_dir)) > 0
+        cached_dir = os.path.join(repo_root, "data", "cached_game_logs")
+        info["cached_logs_exist"] = (
+            os.path.isdir(cached_dir) and len(os.listdir(cached_dir)) > 0
+        )
     except Exception:
-        info['cached_logs_exist'] = False
+        info["cached_logs_exist"] = False
 
     return info
 
 
-@app.get('/player_summary', response_model=PlayerSummary)
-def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Optional[int] = Query(0)):
+@app.get("/player_summary", response_model=PlayerSummary)
+def player_summary(
+    player: str, stat: str = "points", limit: int = 8, debug: Optional[int] = Query(0)
+):
     cache_key = f"player_summary:{player}:{stat}:{limit}"
 
     # Check Redis cache first
@@ -517,8 +555,12 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
         try:
             raw = redis_client.get(cache_key)
             if raw:
-                data = json.loads(raw.decode('utf-8')) if isinstance(raw, (bytes, bytearray)) else json.loads(raw)
-                data['cached'] = True
+                data = (
+                    json.loads(raw.decode("utf-8"))
+                    if isinstance(raw, (bytes, bytearray))
+                    else json.loads(raw)
+                )
+                data["cached"] = True
                 return data
         except Exception:
             pass
@@ -526,16 +568,16 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
     # Check in-memory cache
     if cache_key in cache:
         out = cache[cache_key]
-        out['cached'] = True
+        out["cached"] = True
         return out
 
     pid = find_player_id_by_name(player)
-    debug_info = { 'player_query': player, 'found_player_id': pid }
+    debug_info = {"player_query": player, "found_player_id": pid}
     if not pid:
-        raise HTTPException(status_code=404, detail='player not found')
+        raise HTTPException(status_code=404, detail="player not found")
 
     recent = fetch_recent_games(pid, limit)
-    debug_info['recent_count'] = len(recent)
+    debug_info["recent_count"] = len(recent)
 
     # Build structured games
     recent_games = []
@@ -543,12 +585,14 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
     vals = []
     for g in recent:
         val = g.get(stat_field) if stat_field and stat_field in g else None
-        recent_games.append({
-            'gameDate': g.get('GAME_DATE'),
-            'matchup': g.get('MATCHUP'),
-            'statValue': val,
-            'raw': g,
-        })
+        recent_games.append(
+            {
+                "gameDate": g.get("GAME_DATE"),
+                "matchup": g.get("MATCHUP"),
+                "statValue": val,
+                "raw": g,
+            }
+        )
         try:
             if val is not None:
                 vals.append(float(val))
@@ -558,7 +602,10 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
     season_avg = (sum(vals) / len(vals)) if vals else None
     recent_text = None
     if recent_games:
-        sample_vals = [str(g['statValue']) if g['statValue'] is not None else 'null' for g in recent_games]
+        sample_vals = [
+            str(g["statValue"]) if g["statValue"] is not None else "null"
+            for g in recent_games
+        ]
         recent_text = f"Last {len(recent_games)} games {stat}: {', '.join(sample_vals)}"
 
     # Attempt to determine last game date and last season (factual only)
@@ -567,7 +614,7 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
     if recent_games:
         try:
             # assume recent_games is ordered most-recent-first
-            last_game_date = recent_games[0].get('gameDate')
+            last_game_date = recent_games[0].get("gameDate")
         except Exception:
             last_game_date = None
     else:
@@ -576,10 +623,10 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
             try:
                 pcs = playercareerstats.PlayerCareerStats(player_id=pid)
                 dfpcs = pcs.get_data_frames()[0]
-                if not dfpcs.empty and 'SEASON_ID' in dfpcs.columns:
+                if not dfpcs.empty and "SEASON_ID" in dfpcs.columns:
                     # pick the latest season id (sort descending)
                     try:
-                        s = dfpcs['SEASON_ID'].tolist()
+                        s = dfpcs["SEASON_ID"].tolist()
                         # take the most recent-looking value
                         last_season = s[0] if s else None
                     except Exception:
@@ -588,21 +635,21 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
                 last_season = None
 
     out = {
-        'player': player,
-        'stat': stat,
-        'league': 'nba',
-        'recent': recent_text,
-        'recentGames': recent_games,
-        'seasonAvg': round(season_avg, 2) if season_avg is not None else None,
-        'lastGameDate': last_game_date,
-        'lastSeason': last_season,
-        'fetchedAt': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+        "player": player,
+        "stat": stat,
+        "league": "nba",
+        "recent": recent_text,
+        "recentGames": recent_games,
+        "seasonAvg": round(season_avg, 2) if season_avg is not None else None,
+        "lastGameDate": last_game_date,
+        "lastSeason": last_season,
+        "fetchedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
     # If there are no recent games this season, explicitly mark it (no fallbacks/mocks).
     if not recent_games:
-        out['noGamesThisSeason'] = True
-        out['note'] = 'No recent games available for this player this season.'
+        out["noGamesThisSeason"] = True
+        out["note"] = "No recent games available for this player this season."
 
     # Derive simple contextual factors used by feature engineering and frontend:
     # - daysRest: integer days since the previous game (None if insufficient data)
@@ -614,8 +661,8 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
             from datetime import datetime
 
             # recent_games assumed ordered most-recent-first
-            d0 = recent_games[0].get('gameDate')
-            d1 = recent_games[1].get('gameDate')
+            d0 = recent_games[0].get("gameDate")
+            d1 = recent_games[1].get("gameDate")
             if d0 and d1:
                 try:
                     fmt = None
@@ -630,24 +677,24 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
                             continue
                     if fmt is None:
                         # Fallback: try parsing only the date portion
-                        dt0 = datetime.fromisoformat(d0.split('T')[0])
-                        dt1 = datetime.fromisoformat(d1.split('T')[0])
+                        dt0 = datetime.fromisoformat(d0.split("T")[0])
+                        dt1 = datetime.fromisoformat(d1.split("T")[0])
 
                     # days between games minus 1 equals days_rest
                     delta_days = (dt0.date() - dt1.date()).days
                     days_rest = max(0, delta_days - 1)
-                    is_b2b = (days_rest == 0)
+                    is_b2b = days_rest == 0
                 except Exception:
                     days_rest = None
                     is_b2b = False
 
-        out['contextualFactors'] = {'daysRest': days_rest, 'isBackToBack': is_b2b}
+        out["contextualFactors"] = {"daysRest": days_rest, "isBackToBack": is_b2b}
     except Exception:
-        out['contextualFactors'] = {'daysRest': None, 'isBackToBack': False}
+        out["contextualFactors"] = {"daysRest": None, "isBackToBack": False}
 
     # Attach debug info when requested (non-breaking)
     if debug:
-        out['debug'] = debug_info
+        out["debug"] = debug_info
 
     # store in caches
     cache[cache_key] = out
@@ -663,7 +710,7 @@ def player_summary(player: str, stat: str = 'points', limit: int = 8, debug: Opt
 
 class PlayerContextRequest(BaseModel):
     player: str
-    stat: Optional[str] = 'points'
+    stat: Optional[str] = "points"
     limit: Optional[int] = 8
     season: Optional[str] = None
     game_date: Optional[str] = None
@@ -671,7 +718,7 @@ class PlayerContextRequest(BaseModel):
 
 class BatchPlayerRequest(BaseModel):
     player: str
-    stat: Optional[str] = 'points'
+    stat: Optional[str] = "points"
     limit: Optional[int] = 8
 
     class Config:
@@ -685,14 +732,16 @@ try:
     # pydantic v2
     from pydantic import ConfigDict
 
-    BatchPlayerRequest.model_config = ConfigDict(json_schema_extra={
-        "example": {"player": "LeBron James", "stat": "points", "limit": 8}
-    })
+    BatchPlayerRequest.model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"player": "LeBron James", "stat": "points", "limit": 8}
+        }
+    )
 except Exception:
     pass
 
 
-@app.post('/api/player_context')
+@app.post("/api/player_context")
 def api_player_context(req: PlayerContextRequest):
     """POST wrapper for client usage. Accepts JSON body and returns either
     a brief `player_summary` or a richer training-scoped `player_context` when
@@ -707,8 +756,10 @@ def api_player_context(req: PlayerContextRequest):
         if redis_client:
             raw = redis_client.get(cache_key)
             if raw:
-                data = json.loads(raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw)
-                data['cached'] = True
+                data = json.loads(
+                    raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
+                )
+                data["cached"] = True
                 return data
     except Exception:
         pass
@@ -716,14 +767,20 @@ def api_player_context(req: PlayerContextRequest):
     # Check in-memory cache
     if cache_key in cache:
         out = cache[cache_key]
-        out['cached'] = True
+        out["cached"] = True
         return out
 
     # If both season and game_date provided, return the richer training context
     if req.season and req.game_date:
         try:
             from .services import nba_service
-            ctx = nba_service.get_player_context_for_training(player=req.player, stat=req.stat or 'points', game_date=req.game_date, season=req.season)
+
+            ctx = nba_service.get_player_context_for_training(
+                player=req.player,
+                stat=req.stat or "points",
+                game_date=req.game_date,
+                season=req.season,
+            )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
         # persist to caches
@@ -737,7 +794,9 @@ def api_player_context(req: PlayerContextRequest):
 
     # Otherwise return the regular player summary
     try:
-        data = player_summary(player=req.player, stat=req.stat or 'points', limit=req.limit or 8)
+        data = player_summary(
+            player=req.player, stat=req.stat or "points", limit=req.limit or 8
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -753,10 +812,25 @@ def api_player_context(req: PlayerContextRequest):
     return data
 
 
-MAX_BATCH_SIZE = int(os.environ.get('MAX_BATCH_SIZE', '50'))
+MAX_BATCH_SIZE = int(os.environ.get("MAX_BATCH_SIZE", "50"))
 
 
-@app.post('/api/batch_player_context', responses={200: {"description": "Array of player summaries or error objects", "content": {"application/json": {"example": [{"player": "LeBron James", "stat": "points", "recentGames": []}, {"player": "Unknown Player", "error": "player not found"}]}}}})
+@app.post(
+    "/api/batch_player_context",
+    responses={
+        200: {
+            "description": "Array of player summaries or error objects",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {"player": "LeBron James", "stat": "points", "recentGames": []},
+                        {"player": "Unknown Player", "error": "player not found"},
+                    ]
+                }
+            },
+        }
+    },
+)
 async def api_batch_player_context(
     requests: List[BatchPlayerRequest] = Body(
         ...,
@@ -785,36 +859,48 @@ async def api_batch_player_context(
 
     # Audit/log the incoming batch size and client for observability
     try:
-        client_ip = request_obj.client.host if request_obj and request_obj.client is not None else 'local'
+        client_ip = (
+            request_obj.client.host
+            if request_obj and request_obj.client is not None
+            else "local"
+        )
     except Exception:
-        client_ip = 'local'
-    logger.info('batch_player_context request: client=%s items=%d', client_ip, len(data))
+        client_ip = "local"
+    logger.info(
+        "batch_player_context request: client=%s items=%d", client_ip, len(data)
+    )
 
     if len(data) > MAX_BATCH_SIZE:
-        raise HTTPException(status_code=400, detail=f'max batch size exceeded (max {MAX_BATCH_SIZE})')
+        raise HTTPException(
+            status_code=400, detail=f"max batch size exceeded (max {MAX_BATCH_SIZE})"
+        )
 
     # Rate limit: count requests as number of player items. Use client IP when available.
     client_host = None
     try:
-        client_host = request_obj.client.host if request_obj and request_obj.client is not None else 'local'
+        client_host = (
+            request_obj.client.host
+            if request_obj and request_obj.client is not None
+            else "local"
+        )
     except Exception:
-        client_host = 'local'
+        client_host = "local"
 
     needed = max(1, len(data))
     allowed = _consume_tokens(client_host, needed)
     if not allowed:
         # Ask client to retry later; include simple hint
-        raise HTTPException(status_code=429, detail=f'rate limit exceeded, try later')
+        raise HTTPException(status_code=429, detail=f"rate limit exceeded, try later")
 
     semaphore = asyncio.Semaphore(max_concurrency)
 
     async def _call_summary(item: dict):
-        player = item.get('player') or item.get('player_name')
-        stat = item.get('stat') or 'points'
-        limit = item.get('limit') or 8
+        player = item.get("player") or item.get("player_name")
+        stat = item.get("stat") or "points"
+        limit = item.get("limit") or 8
 
         if not player:
-            return {'player': player, 'error': 'player name required'}
+            return {"player": player, "error": "player name required"}
 
         try:
             async with semaphore:
@@ -822,9 +908,9 @@ async def api_batch_player_context(
                 res = await asyncio.to_thread(player_summary, player, stat, limit)
                 return res
         except HTTPException as he:
-            return {'player': player, 'error': he.detail}
+            return {"player": player, "error": he.detail}
         except Exception as e:
-            return {'player': player, 'error': str(e)}
+            return {"player": player, "error": str(e)}
 
     tasks = [asyncio.create_task(_call_summary(item)) for item in data]
     gathered = await asyncio.gather(*tasks)
@@ -836,8 +922,14 @@ class AdvancedPlayerRequest(BaseModel):
     seasons: Optional[List[str]] = None
 
 
-@app.post('/api/player_advanced')
-def api_player_advanced(req: AdvancedPlayerRequest, use_fallback: bool = Query(True, description="Allow fallback computation from game logs when league-dash is unavailable")):
+@app.post("/api/player_advanced")
+def api_player_advanced(
+    req: AdvancedPlayerRequest,
+    use_fallback: bool = Query(
+        True,
+        description="Allow fallback computation from game logs when league-dash is unavailable",
+    ),
+):
     """Return aggregated advanced player stats across requested seasons.
 
     Body: { "player": "Name", "seasons": ["2022-23", "2023-24"] }
@@ -850,18 +942,31 @@ def api_player_advanced(req: AdvancedPlayerRequest, use_fallback: bool = Query(T
     pid = find_player_id_by_name(req.player)
     if not pid:
         # If player id can't be resolved, return empty advanced shape
-        return {"player": req.player, "player_id": None, "seasons": seasons, "advanced": {"per_season": {}, "aggregated": {}}}
+        return {
+            "player": req.player,
+            "player_id": None,
+            "seasons": seasons,
+            "advanced": {"per_season": {}, "aggregated": {}},
+        }
 
     try:
         # try importing the helper function directly
         from .services.nba_stats_client import get_advanced_player_stats_multi
+
         out = get_advanced_player_stats_multi(pid, seasons, use_fallback=use_fallback)
-        return {"player": req.player, "player_id": pid, "seasons": seasons, "advanced": out}
+        return {
+            "player": req.player,
+            "player_id": pid,
+            "seasons": seasons,
+            "advanced": out,
+        }
     except Exception:
         # client not available; compute via fallbacks if allowed
         if use_fallback:
             try:
-                from .services.nba_stats_client import get_advanced_player_stats_fallback
+                from .services.nba_stats_client import (
+                    get_advanced_player_stats_fallback,
+                )
             except Exception:
                 get_advanced_player_stats_fallback = None
 
@@ -895,9 +1000,19 @@ def api_player_advanced(req: AdvancedPlayerRequest, use_fallback: bool = Query(T
                 except Exception:
                     agg[k] = total
 
-            return {"player": req.player, "player_id": pid, "seasons": seasons, "advanced": {"per_season": per_season, "aggregated": agg}}
+            return {
+                "player": req.player,
+                "player_id": pid,
+                "seasons": seasons,
+                "advanced": {"per_season": per_season, "aggregated": agg},
+            }
         # Not allowed to fallback — return an empty shape instead of 503
-        return {"player": req.player, "player_id": pid, "seasons": seasons, "advanced": {"per_season": {}, "aggregated": {}}}
+        return {
+            "player": req.player,
+            "player_id": pid,
+            "seasons": seasons,
+            "advanced": {"per_season": {}, "aggregated": {}},
+        }
 
 
 class AdvancedTeamRequest(BaseModel):
@@ -905,8 +1020,14 @@ class AdvancedTeamRequest(BaseModel):
     seasons: Optional[List[str]] = None
 
 
-@app.post('/api/team_advanced')
-def api_team_advanced(req: AdvancedTeamRequest, use_fallback: bool = Query(True, description="Allow fallback computation from game logs when league data is unavailable")):
+@app.post("/api/team_advanced")
+def api_team_advanced(
+    req: AdvancedTeamRequest,
+    use_fallback: bool = Query(
+        True,
+        description="Allow fallback computation from game logs when league data is unavailable",
+    ),
+):
     """Return aggregated advanced team stats across requested seasons.
 
     Body: { "team_id": 1610612744, "seasons": ["2022-23", "2023-24"] }
@@ -914,10 +1035,12 @@ def api_team_advanced(req: AdvancedTeamRequest, use_fallback: bool = Query(True,
     try:
         from .services.nba_stats_client import get_advanced_team_stats_multi
     except Exception:
-        raise HTTPException(status_code=503, detail='advanced team stats client unavailable')
+        raise HTTPException(
+            status_code=503, detail="advanced team stats client unavailable"
+        )
 
     if not req.team_id:
-        raise HTTPException(status_code=400, detail='team_id is required')
+        raise HTTPException(status_code=400, detail="team_id is required")
 
     seasons = req.seasons or []
     out = get_advanced_team_stats_multi(req.team_id, seasons, use_fallback=use_fallback)
@@ -948,10 +1071,11 @@ registry = ModelRegistry() if ModelRegistry is not None else None
 
 class PredictionRequest(BaseModel):
     player: str
-    stat: str = 'points'
+    stat: str = "points"
     line: float
     player_data: Optional[dict] = None
     opponent_data: Optional[dict] = None
+
     class Config:
         schema_extra = {
             "example": {
@@ -959,7 +1083,7 @@ class PredictionRequest(BaseModel):
                 "stat": "points",
                 "line": 25.5,
                 "player_data": {},
-                "opponent_data": {}
+                "opponent_data": {},
             }
         }
 
@@ -967,15 +1091,17 @@ class PredictionRequest(BaseModel):
 try:
     from pydantic import ConfigDict
 
-    PredictionRequest.model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "player": "LeBron James",
-            "stat": "points",
-            "line": 25.5,
-            "player_data": {},
-            "opponent_data": {}
+    PredictionRequest.model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "player": "LeBron James",
+                "stat": "points",
+                "line": 25.5,
+                "player_data": {},
+                "opponent_data": {},
+            }
         }
-    })
+    )
 except Exception:
     pass
 
@@ -1000,27 +1126,33 @@ except Exception:
     ConfigDict = None
 
 if ConfigDict is not None:
-    PredictionResponse.model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "player": "LeBron James",
-            "stat": "points",
-            "line": 25.5,
-            "predicted_value": 26.2,
-            "over_probability": 0.56,
-            "recommendation": "over",
-            "confidence": 0.8,
+    PredictionResponse.model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "player": "LeBron James",
+                "stat": "points",
+                "line": 25.5,
+                "predicted_value": 26.2,
+                "over_probability": 0.56,
+                "recommendation": "over",
+                "confidence": 0.8,
+            }
         }
-    })
+    )
 
 
 class BatchPredictResponse(BaseModel):
     predictions: List[PredictionResponse]
 
 
-@app.post('/api/predict', response_model=PredictionResponse, responses={503: {"description": "ML service unavailable"}})
+@app.post(
+    "/api/predict",
+    response_model=PredictionResponse,
+    responses={503: {"description": "ML service unavailable"}},
+)
 async def api_predict(req: PredictionRequest):
     if ml_service is None:
-        raise HTTPException(status_code=503, detail='ML service unavailable')
+        raise HTTPException(status_code=503, detail="ML service unavailable")
     # Simple caching by player|stat|line when Redis is available.
     cache_key = f"predict:{req.player}:{req.stat}:{req.line}"
     if redis_client:
@@ -1029,7 +1161,10 @@ async def api_predict(req: PredictionRequest):
             if raw:
                 # stored as JSON string
                 import json
-                return json.loads(raw.decode('utf-8') if isinstance(raw, (bytes, bytearray)) else raw)
+
+                return json.loads(
+                    raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw
+                )
         except Exception:
             pass
 
@@ -1038,13 +1173,14 @@ async def api_predict(req: PredictionRequest):
         stat_type=req.stat,
         line=req.line,
         player_data=req.player_data or {},
-        opponent_data=req.opponent_data or {}
+        opponent_data=req.opponent_data or {},
     )
 
     # store in redis for 1 hour
     if redis_client:
         try:
             import json
+
             redis_client.setex(cache_key, 60 * 60, json.dumps(result))
         except Exception:
             pass
@@ -1052,19 +1188,28 @@ async def api_predict(req: PredictionRequest):
     return result
 
 
-@app.post('/api/batch_predict', response_model=BatchPredictResponse, responses={503: {"description": "ML service unavailable"}})
+@app.post(
+    "/api/batch_predict",
+    response_model=BatchPredictResponse,
+    responses={503: {"description": "ML service unavailable"}},
+)
 async def api_batch_predict(requests: List[PredictionRequest]):
     import asyncio
 
     # concurrency and timeout controls
-    max_concurrency = int(os.environ.get('BATCH_PREDICT_MAX_CONCURRENCY', '8'))
-    per_item_timeout = float(os.environ.get('BATCH_PREDICT_ITEM_TIMEOUT', '10.0'))
+    max_concurrency = int(os.environ.get("BATCH_PREDICT_MAX_CONCURRENCY", "8"))
+    per_item_timeout = float(os.environ.get("BATCH_PREDICT_ITEM_TIMEOUT", "10.0"))
 
     semaphore = asyncio.Semaphore(max_concurrency)
 
     async def _predict_item(r: PredictionRequest):
         if ml_service is None:
-            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='ML service unavailable')
+            return PredictionResponse(
+                player=r.player,
+                stat=r.stat,
+                line=r.line,
+                error="ML service unavailable",
+            )
         try:
             async with semaphore:
                 # enforce per-item timeout
@@ -1074,18 +1219,27 @@ async def api_batch_predict(requests: List[PredictionRequest]):
                         stat_type=r.stat,
                         line=r.line,
                         player_data=r.player_data or {},
-                        opponent_data=r.opponent_data or {}
+                        opponent_data=r.opponent_data or {},
                     ),
                     timeout=per_item_timeout,
                 )
                 if isinstance(res, dict):
                     return PredictionResponse(**res)
                 else:
-                    return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='unexpected result format')
+                    return PredictionResponse(
+                        player=r.player,
+                        stat=r.stat,
+                        line=r.line,
+                        error="unexpected result format",
+                    )
         except asyncio.TimeoutError:
-            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error='prediction timeout')
+            return PredictionResponse(
+                player=r.player, stat=r.stat, line=r.line, error="prediction timeout"
+            )
         except Exception as e:
-            return PredictionResponse(player=r.player, stat=r.stat, line=r.line, error=str(e))
+            return PredictionResponse(
+                player=r.player, stat=r.stat, line=r.line, error=str(e)
+            )
 
     tasks = [asyncio.create_task(_predict_item(r)) for r in requests]
     gathered = await asyncio.gather(*tasks)
@@ -1093,36 +1247,36 @@ async def api_batch_predict(requests: List[PredictionRequest]):
 
 
 # Model management API
-@app.get('/api/models')
+@app.get("/api/models")
 def api_list_models():
     """List available model files in the model registry directory."""
     if registry is None:
-        raise HTTPException(status_code=503, detail='Model registry unavailable')
+        raise HTTPException(status_code=503, detail="Model registry unavailable")
 
     try:
         files = []
         for fname in sorted(os.listdir(registry.model_dir)):
-            if fname.endswith('.pkl'):
+            if fname.endswith(".pkl"):
                 files.append(fname)
-        return {'models': files, 'model_dir': registry.model_dir}
+        return {"models": files, "model_dir": registry.model_dir}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post('/api/models/load')
+@app.post("/api/models/load")
 def api_load_model(player: str):
     """Attempt to load a model for a player into the registry (no-op if missing)."""
     if registry is None:
-        raise HTTPException(status_code=503, detail='Model registry unavailable')
+        raise HTTPException(status_code=503, detail="Model registry unavailable")
 
     try:
         loaded = registry.load_model(player)
-        return {'player': player, 'loaded': bool(loaded)}
+        return {"player": player, "loaded": bool(loaded)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post('/api/ollama_stream')
+@app.post("/api/ollama_stream")
 async def ollama_stream(request: Request):
     """Stream Ollama `generate(..., stream=True)` output as Server-Sent Events (SSE).
 
@@ -1132,17 +1286,18 @@ async def ollama_stream(request: Request):
     try:
         body = await request.json()
     except Exception:
-        raise HTTPException(status_code=400, detail='invalid json body')
+        raise HTTPException(status_code=400, detail="invalid json body")
 
-    model = body.get('model')
-    prompt = body.get('prompt') or body.get('input') or ''
+    model = body.get("model")
+    prompt = body.get("prompt") or body.get("input") or ""
 
     if not prompt:
-        raise HTTPException(status_code=400, detail='prompt is required')
+        raise HTTPException(status_code=400, detail="prompt is required")
 
     # Attempt to use the internal Ollama client when present for streaming support
     try:
         from backend.services.ollama_client import get_default_client
+
         client = get_default_client()
     except Exception:
         client = None
@@ -1157,26 +1312,37 @@ async def ollama_stream(request: Request):
             # switch allows enabling the mock for detached processes that may
             # not inherit transient environment variables.
             repo_root = os.path.dirname(os.path.dirname(__file__))
-            mock_file = os.path.join(repo_root, 'DEV_OLLAMA_MOCK')
-            mock_enabled = os.environ.get('DEV_OLLAMA_MOCK') in ('1', 'true', 'True') or os.path.exists(mock_file)
+            mock_file = os.path.join(repo_root, "DEV_OLLAMA_MOCK")
+            mock_enabled = os.environ.get("DEV_OLLAMA_MOCK") in (
+                "1",
+                "true",
+                "True",
+            ) or os.path.exists(mock_file)
             if mock_enabled:
                 import asyncio
+
                 for token in ("Hello", "from", "mock", "ollama", "stream."):
-                    for line in str(token).split('\n'):
+                    for line in str(token).split("\n"):
                         yield f"data: {line}\n\n"
                     await asyncio.sleep(0.06)
-                yield 'data: [DONE]\n\n'
+                yield "data: [DONE]\n\n"
                 return
         except Exception:
             # non-fatal: fall through to normal behavior
             pass
         # Use official client streaming API when possible
-        if client is not None and getattr(client, '_has_ollama', False) and getattr(client, '_client', None) is not None:
+        if (
+            client is not None
+            and getattr(client, "_has_ollama", False)
+            and getattr(client, "_client", None) is not None
+        ):
             try:
                 # Try to call the underlying client's generate with stream=True
                 gen = None
                 try:
-                    gen = client._client.generate(model=model, input=prompt, stream=True)
+                    gen = client._client.generate(
+                        model=model, input=prompt, stream=True
+                    )
                 except TypeError:
                     try:
                         gen = client._client.generate(model, prompt, stream=True)
@@ -1192,29 +1358,37 @@ async def ollama_stream(request: Request):
                             try:
                                 if isinstance(part, dict):
                                     # extract common fields
-                                    text = part.get('content') or part.get('text') or part.get('message')
+                                    text = (
+                                        part.get("content")
+                                        or part.get("text")
+                                        or part.get("message")
+                                    )
                                 else:
                                     text = str(part)
                             except Exception:
                                 text = str(part)
                             # Filter out noisy model-id-only fragments (some Ollama
                             # HTTP/stream formats emit the model id repeatedly).
-                            model_name = model or os.environ.get('OLLAMA_DEFAULT_MODEL')
+                            model_name = model or os.environ.get("OLLAMA_DEFAULT_MODEL")
                             if isinstance(text, str) and model_name:
                                 tclean = text.strip()
                                 # Skip exact model-name fragments
                                 if tclean == model_name:
                                     continue
                                 # Skip single-token fragments that look like model ids
-                                if ' ' not in tclean and ':' in tclean and len(tclean) < 80:
+                                if (
+                                    " " not in tclean
+                                    and ":" in tclean
+                                    and len(tclean) < 80
+                                ):
                                     continue
                             if text is None:
                                 continue
                             # SSE data lines must prefix each line with 'data:'
-                            for line in str(text).split('\n'):
+                            for line in str(text).split("\n"):
                                 yield f"data: {line}\n\n"
                         # signal done
-                        yield 'data: [DONE]\n\n'
+                        yield "data: [DONE]\n\n"
                         return
                     except TypeError:
                         # not an async iterator, try sync iteration
@@ -1222,14 +1396,18 @@ async def ollama_stream(request: Request):
                             for part in gen:  # type: ignore
                                 text = None
                                 if isinstance(part, dict):
-                                    text = part.get('content') or part.get('text') or part.get('message')
+                                    text = (
+                                        part.get("content")
+                                        or part.get("text")
+                                        or part.get("message")
+                                    )
                                 else:
                                     text = str(part)
                                 if text is None:
                                     continue
-                                for line in str(text).split('\n'):
+                                for line in str(text).split("\n"):
                                     yield f"data: {line}\n\n"
-                            yield 'data: [DONE]\n\n'
+                            yield "data: [DONE]\n\n"
                             return
                         except Exception:
                             # Fall through to HTTP fallback
@@ -1243,39 +1421,61 @@ async def ollama_stream(request: Request):
             import requests
 
             # Resolve base URL with local preference helper
-            base = _resolve_base_url(client) or 'http://localhost:11434'
-            if 'ollama.com' in base:
-                api_path = base + '/api/chat'
-                payload = {"model": model or os.environ.get('OLLAMA_DEFAULT_MODEL'), "messages": [{"role": "user", "content": prompt}], "stream": True}
+            base = _resolve_base_url(client) or "http://localhost:11434"
+            if "ollama.com" in base:
+                api_path = base + "/api/chat"
+                payload = {
+                    "model": model or os.environ.get("OLLAMA_DEFAULT_MODEL"),
+                    "messages": [{"role": "user", "content": prompt}],
+                    "stream": True,
+                }
             else:
                 # Local Ollama HTTP API uses /api/generate and supports a
                 # `model` and `stream` flag. Use that path for local hosts.
-                api_path = base + '/api/generate'
-                payload = {"model": model or os.environ.get('OLLAMA_DEFAULT_MODEL'), "input": prompt, "prompt": prompt, "stream": True}
+                api_path = base + "/api/generate"
+                payload = {
+                    "model": model or os.environ.get("OLLAMA_DEFAULT_MODEL"),
+                    "input": prompt,
+                    "prompt": prompt,
+                    "stream": True,
+                }
 
             headers = {}
-            api_key = getattr(client, '_api_key', None) if client is not None else (os.environ.get('OLLAMA_CLOUD_API_KEY') or os.environ.get('OLLAMA_API_KEY'))
+            api_key = (
+                getattr(client, "_api_key", None)
+                if client is not None
+                else (
+                    os.environ.get("OLLAMA_CLOUD_API_KEY")
+                    or os.environ.get("OLLAMA_API_KEY")
+                )
+            )
             if api_key:
-                headers['Authorization'] = f"Bearer {api_key}"
+                headers["Authorization"] = f"Bearer {api_key}"
 
-            resp = requests.post(api_path, json=payload, headers=headers or None, timeout=float(os.environ.get('OLLAMA_TIMEOUT', '60')), stream=True)
+            resp = requests.post(
+                api_path,
+                json=payload,
+                headers=headers or None,
+                timeout=float(os.environ.get("OLLAMA_TIMEOUT", "60")),
+                stream=True,
+            )
             resp.raise_for_status()
             for raw in resp.iter_lines(decode_unicode=True):
                 logger.debug("ollama_stream: http raw line=%r", raw)
                 if not raw:
                     continue
                 line = raw.strip()
-                if line.startswith('data:'):
-                    line = line[len('data:'):].strip()
-                if line == '[DONE]':
-                    yield 'data: [DONE]\n\n'
+                if line.startswith("data:"):
+                    line = line[len("data:") :].strip()
+                if line == "[DONE]":
+                    yield "data: [DONE]\n\n"
                     break
                 # Attempt to parse JSON fragments and extract text/content
                 text = None
                 try:
                     j = json.loads(line)
                     if isinstance(j, dict):
-                        text = j.get('content') or j.get('text') or j.get('message')
+                        text = j.get("content") or j.get("text") or j.get("message")
                         if text is None:
                             # deep search
                             def _find_text(obj):
@@ -1292,6 +1492,7 @@ async def ollama_stream(request: Request):
                                         if r:
                                             return r
                                 return None
+
                             text = _find_text(j)
                     else:
                         text = str(j)
@@ -1301,14 +1502,14 @@ async def ollama_stream(request: Request):
                 if text is None:
                     continue
                 # Filter out noisy model-id-only fragments
-                model_name = model or os.environ.get('OLLAMA_DEFAULT_MODEL')
+                model_name = model or os.environ.get("OLLAMA_DEFAULT_MODEL")
                 if isinstance(text, str) and model_name:
                     tclean = text.strip()
                     if tclean == model_name:
                         continue
-                    if ' ' not in tclean and ':' in tclean and len(tclean) < 80:
+                    if " " not in tclean and ":" in tclean and len(tclean) < 80:
                         continue
-                for l in str(text).split('\n'):
+                for l in str(text).split("\n"):
                     yield f"data: {l}\n\n"
         except Exception as e:
             # Stream a friendlier error event then close. Detect common
@@ -1318,15 +1519,23 @@ async def ollama_stream(request: Request):
                 friendly = msg
                 try:
                     import requests as _req
-                    conn_err_types = (_req.exceptions.ConnectionError, _req.exceptions.RequestException)
+
+                    conn_err_types = (
+                        _req.exceptions.ConnectionError,
+                        _req.exceptions.RequestException,
+                    )
                 except Exception:
                     conn_err_types = ()
 
                 # If the base appears to target Ollama Cloud or the exception
                 # message references api.ollama.com, show a suggestion to check
                 # cloud API key and network/DNS.
-                base = _resolve_base_url(client) or 'http://localhost:11434'
-                if ('ollama.com' in base) or ('api.ollama.com' in msg) or any(t.__name__ in msg for t in conn_err_types):
+                base = _resolve_base_url(client) or "http://localhost:11434"
+                if (
+                    ("ollama.com" in base)
+                    or ("api.ollama.com" in msg)
+                    or any(t.__name__ in msg for t in conn_err_types)
+                ):
                     friendly = (
                         "Could not connect to Ollama Cloud at api.ollama.com. "
                         "Check that `OLLAMA_CLOUD_API_KEY` is set and valid, and that "
@@ -1339,16 +1548,18 @@ async def ollama_stream(request: Request):
                 pass
 
     try:
-        return StreamingResponse(_event_generator(), media_type='text/event-stream')
+        return StreamingResponse(_event_generator(), media_type="text/event-stream")
     except Exception as e:
-        logger.exception('Error while creating streaming response: %s', e)
+        logger.exception("Error while creating streaming response: %s", e)
         # Return a simple JSON error response if streaming fails at creation time
         from fastapi.responses import JSONResponse
 
-        return JSONResponse(status_code=500, content={"error": "streaming_error", "detail": str(e)})
+        return JSONResponse(
+            status_code=500, content={"error": "streaming_error", "detail": str(e)}
+        )
 
 
-@app.get('/api/ollama_health')
+@app.get("/api/ollama_health")
 def ollama_health():
     """Basic health check for the configured Ollama host.
 
@@ -1357,34 +1568,55 @@ def ollama_health():
     """
     try:
         from backend.services.ollama_client import get_default_client
+
         client = get_default_client()
     except Exception:
         client = None
 
     # Resolve base URL with local preference helper
     base = _resolve_base_url(client)
-    api_key = getattr(client, '_api_key', None) if client is not None else (os.environ.get('OLLAMA_CLOUD_API_KEY') or os.environ.get('OLLAMA_API_KEY'))
+    api_key = (
+        getattr(client, "_api_key", None)
+        if client is not None
+        else (
+            os.environ.get("OLLAMA_CLOUD_API_KEY") or os.environ.get("OLLAMA_API_KEY")
+        )
+    )
 
     # Provide a helpful default when nothing is configured
     if not base:
-        return {"ok": False, "base": base, "error": "No Ollama URL configured", "suggestion": "Set OLLAMA_URL or OLLAMA_CLOUD_API_KEY depending on deployment"}
+        return {
+            "ok": False,
+            "base": base,
+            "error": "No Ollama URL configured",
+            "suggestion": "Set OLLAMA_URL or OLLAMA_CLOUD_API_KEY depending on deployment",
+        }
 
     headers = {}
     if api_key:
-        headers['Authorization'] = f"Bearer {api_key}"
+        headers["Authorization"] = f"Bearer {api_key}"
 
     try:
         import requests
+
         # choose a lightweight listing endpoint to test connectivity
         # prefer the newer /api/models (used by local Ollama and cloud),
         # fall back to /v1/models for older local installs.
-        test_url = base + '/api/models'
+        test_url = base + "/api/models"
 
-        resp = requests.get(test_url, headers=(headers or None), timeout=float(os.environ.get('OLLAMA_TIMEOUT', '10')))
+        resp = requests.get(
+            test_url,
+            headers=(headers or None),
+            timeout=float(os.environ.get("OLLAMA_TIMEOUT", "10")),
+        )
         # If we got a non-200 from /api/models on a local host, try the older v1 path
-        if resp is not None and resp.status_code >= 400 and not ('ollama.com' in base):
+        if resp is not None and resp.status_code >= 400 and not ("ollama.com" in base):
             try:
-                resp2 = requests.get(base + '/v1/models', headers=(headers or None), timeout=float(os.environ.get('OLLAMA_TIMEOUT', '10')))
+                resp2 = requests.get(
+                    base + "/v1/models",
+                    headers=(headers or None),
+                    timeout=float(os.environ.get("OLLAMA_TIMEOUT", "10")),
+                )
                 resp = resp2
             except Exception:
                 pass
@@ -1398,16 +1630,23 @@ def ollama_health():
     except Exception as e:
         msg = str(e)
         suggestion = ""
-        if 'getaddrinfo' in msg or 'Name or service not known' in msg or 'Failed to establish a new connection' in msg:
+        if (
+            "getaddrinfo" in msg
+            or "Name or service not known" in msg
+            or "Failed to establish a new connection" in msg
+        ):
             suggestion = "DNS resolution or network connectivity failed. Try resolving api.ollama.com from this host or set OLLAMA_URL to a reachable host (e.g. http://localhost:11434)."
-        elif '401' in msg or '401 Client Error' in msg:
+        elif "401" in msg or "401 Client Error" in msg:
             suggestion = "Authentication failed. Verify OLLAMA_CLOUD_API_KEY / OLLAMA_API_KEY is set and correct."
         else:
             suggestion = "See 'detail' for the exception message."
 
         from fastapi.responses import JSONResponse
 
-        return JSONResponse(status_code=502, content={"ok": False, "base": base, "error": msg, "suggestion": suggestion})
+        return JSONResponse(
+            status_code=502,
+            content={"ok": False, "base": base, "error": msg, "suggestion": suggestion},
+        )
 
 
 class OllamaFeaturesRequest(BaseModel):
@@ -1416,7 +1655,7 @@ class OllamaFeaturesRequest(BaseModel):
     model: Optional[str] = None
 
 
-@app.post('/api/ollama_features')
+@app.post("/api/ollama_features")
 def api_ollama_features(req: OllamaFeaturesRequest):
     """Return LLM-derived qualitative features for a player given text/context.
 
@@ -1425,15 +1664,13 @@ def api_ollama_features(req: OllamaFeaturesRequest):
     try:
         from backend.services.llm_feature_service import create_default_service
     except Exception:
-        raise HTTPException(status_code=503, detail='LLM feature service unavailable')
+        raise HTTPException(status_code=503, detail="LLM feature service unavailable")
 
     svc = create_default_service()
-    text = req.text or ''
+    text = req.text or ""
     try:
         out = svc.extract_from_text(req.player, text, model=req.model)
         return out
     except Exception as e:
-        logger.exception('api_ollama_features failed')
+        logger.exception("api_ollama_features failed")
         raise HTTPException(status_code=500, detail=str(e))
-
-

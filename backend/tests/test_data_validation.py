@@ -1,5 +1,3 @@
-import datetime
-
 from backend.services import data_ingestion_service as dis
 
 
@@ -18,7 +16,15 @@ def test_validate_record_types_ok():
 def test_validate_record_types_bad_date_and_score():
     rec = {"game_date": "not-a-date", "home_score": "one-hundred"}
     errs = dis.validate_record_types(rec)
-    assert any("game_date not parseable" in e or "game_date missing" in e or "game_date not parseable" in e for e in errs) or errs
+    assert (
+        any(
+            "game_date not parseable" in e
+            or "game_date missing" in e
+            or "game_date not parseable" in e
+            for e in errs
+        )
+        or errs
+    )
 
 
 def test_detect_outlier_values():
@@ -37,10 +43,25 @@ def test_detect_outlier_values():
 
 def test_validate_batch():
     records = [
-        {"game_date": "2025-11-12T00:00:00", "home_team": "LAL", "away_team": "BOS", "value": 10},
-        {"game_date": "2025-11-12T00:00:00", "home_team": "LAL", "away_team": "BOS", "value": 11},
+        {
+            "game_date": "2025-11-12T00:00:00",
+            "home_team": "LAL",
+            "away_team": "BOS",
+            "value": 10,
+        },
+        {
+            "game_date": "2025-11-12T00:00:00",
+            "home_team": "LAL",
+            "away_team": "BOS",
+            "value": 11,
+        },
         {"game_date": None, "home_team": "LAL", "away_team": "BOS", "value": 12},
-        {"game_date": "2025-11-12T00:00:00", "home_team": "LAL", "away_team": "BOS", "value": 1000},
+        {
+            "game_date": "2025-11-12T00:00:00",
+            "home_team": "LAL",
+            "away_team": "BOS",
+            "value": 1000,
+        },
     ]
     res = dis.validate_batch(records)
     assert isinstance(res, dict)

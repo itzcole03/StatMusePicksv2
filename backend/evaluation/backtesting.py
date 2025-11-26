@@ -2,9 +2,10 @@
 
 Includes: loading historical predictions + actuals, simple EV-based stake sizing (Kelly placeholder), and CSV report export.
 """
-from typing import List, Dict, Optional
+
 import csv
 from pathlib import Path
+from typing import Dict, List, Optional
 
 
 class BacktestEngine:
@@ -26,7 +27,12 @@ class BacktestEngine:
     def stake(self, bankroll: float, fraction: float) -> float:
         return float(bankroll * max(0.0, min(1.0, fraction)))
 
-    def run(self, predictions: List[Dict], odds_decimal: float = 1.909, kelly_cap: float = 0.1):
+    def run(
+        self,
+        predictions: List[Dict],
+        odds_decimal: float = 1.909,
+        kelly_cap: float = 0.1,
+    ):
         """Run backtest over a list of prediction dicts.
 
         Each prediction dict should contain: 'predicted_prob' (float), 'actual_outcome' (0/1), and optionally 'predicted_value' and 'line'.
@@ -34,14 +40,16 @@ class BacktestEngine:
         self.bankroll = float(self.starting_bankroll)
         self.trades = []
         for rec in predictions:
-            p = float(rec.get('predicted_prob') or rec.get('over_probability') or 0.5)
-            actual = int(rec.get('actual_outcome') or rec.get('actual') or 0)
+            p = float(rec.get("predicted_prob") or rec.get("over_probability") or 0.5)
+            actual = int(rec.get("actual_outcome") or rec.get("actual") or 0)
             # Simple stake via Kelly fraction, capped
             f = self.kelly_fraction(p, odds_decimal)
             f = min(f, kelly_cap)
             stake_amt = self.stake(self.bankroll, f)
             if stake_amt <= 0:
-                self.trades.append({'p': p, 'stake': 0.0, 'result': 0.0, 'bankroll': self.bankroll})
+                self.trades.append(
+                    {"p": p, "stake": 0.0, "result": 0.0, "bankroll": self.bankroll}
+                )
                 continue
 
             # payout: if win, bankroll += stake * (odds_decimal - 1); if lose, bankroll -= stake
@@ -51,18 +59,27 @@ class BacktestEngine:
                 profit = -stake_amt
 
             self.bankroll += profit
-            self.trades.append({'p': p, 'stake': stake_amt, 'result': profit, 'bankroll': self.bankroll})
+            self.trades.append(
+                {
+                    "p": p,
+                    "stake": stake_amt,
+                    "result": profit,
+                    "bankroll": self.bankroll,
+                }
+            )
 
-        return {'final_bankroll': self.bankroll, 'trades': self.trades}
+        return {"final_bankroll": self.bankroll, "trades": self.trades}
 
     def write_report(self, path: str):
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        with open(p, 'w', newline='', encoding='utf-8') as f:
-            w = csv.DictWriter(f, fieldnames=['p', 'stake', 'result', 'bankroll'])
+        with open(p, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=["p", "stake", "result", "bankroll"])
             w.writeheader()
             for t in self.trades:
                 w.writerow(t)
+
+
 """Backtesting engine for betting strategies.
 
 This module implements a simple BacktestEngine that simulates betting on
@@ -74,11 +91,11 @@ Key strategy implementations:
 
 The engine returns a summary report and an optional CSV of bet-level results.
 """
-from typing import List, Dict, Optional, Any
-import math
 import csv
+import math
 import os
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -104,7 +121,14 @@ class BacktestEngine:
             return 0.0
         return 1.0 / odds
 
-    def simulate(self, records: List[Dict[str, Any]], strategy: str = 'kelly', fixed_fraction: float = 0.02, max_fraction: float = 0.2, save_csv: Optional[str] = None) -> Dict[str, Any]:
+    def simulate(
+        self,
+        records: List[Dict[str, Any]],
+        strategy: str = "kelly",
+        fixed_fraction: float = 0.02,
+        max_fraction: float = 0.2,
+        save_csv: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Simulate bets.
 
         Each record in `records` must include:
@@ -119,19 +143,19 @@ class BacktestEngine:
         returns = []
 
         for i, r in enumerate(records):
-            p = float(r.get('pred_prob'))
-            odds = float(r.get('market_odds'))
-            actual = int(r.get('actual'))
+            p = float(r.get("pred_prob"))
+            odds = float(r.get("market_odds"))
+            actual = int(r.get("actual"))
 
             b = odds - 1.0
             # expected value per unit stake
             ev = p * b - (1 - p)
 
             stake = 0.0
-            if strategy == 'fixed':
+            if strategy == "fixed":
                 if ev > 0:
                     stake = bankroll * float(fixed_fraction)
-            elif strategy == 'kelly':
+            elif strategy == "kelly":
                 if b <= 0:
                     stake = 0.0
                 else:
@@ -143,7 +167,7 @@ class BacktestEngine:
                         f = min(f, max_fraction)
                         stake = bankroll * f
             else:
-                raise ValueError('unknown strategy')
+                raise ValueError("unknown strategy")
 
             pnl = 0.0
             if stake > 0:
@@ -154,29 +178,35 @@ class BacktestEngine:
 
             bankroll += pnl
             history.append(BetRecord(i, p, odds, actual, stake, pnl))
-            returns.append(pnl / (self.starting_bankroll if self.starting_bankroll > 0 else 1.0))
+            returns.append(
+                pnl / (self.starting_bankroll if self.starting_bankroll > 0 else 1.0)
+            )
 
         # summary
         n_bets = sum(1 for b in history if b.stake > 0)
         net_profit = bankroll - self.starting_bankroll
         roi = net_profit / self.starting_bankroll
-        win_rate = sum(1 for b in history if b.stake > 0 and b.pnl > 0) / (n_bets if n_bets else 1)
+        win_rate = sum(1 for b in history if b.stake > 0 and b.pnl > 0) / (
+            n_bets if n_bets else 1
+        )
 
         # simple Sharpe: mean(PnL per bet) / std(PnL per bet) * sqrt(N)
         pnl_arr = np.array([b.pnl for b in history if b.stake > 0], dtype=float)
         if pnl_arr.size > 1 and pnl_arr.std(ddof=1) > 0:
-            sharpe = float(pnl_arr.mean() / pnl_arr.std(ddof=1) * math.sqrt(len(pnl_arr)))
+            sharpe = float(
+                pnl_arr.mean() / pnl_arr.std(ddof=1) * math.sqrt(len(pnl_arr))
+            )
         else:
             sharpe = 0.0
 
         report = {
-            'starting_bankroll': self.starting_bankroll,
-            'ending_bankroll': bankroll,
-            'net_profit': net_profit,
-            'roi': roi,
-            'n_bets': n_bets,
-            'win_rate': win_rate,
-            'sharpe': sharpe,
+            "starting_bankroll": self.starting_bankroll,
+            "ending_bankroll": bankroll,
+            "net_profit": net_profit,
+            "roi": roi,
+            "n_bets": n_bets,
+            "win_rate": win_rate,
+            "sharpe": sharpe,
         }
 
         if save_csv:
@@ -185,13 +215,17 @@ class BacktestEngine:
                 os.makedirs(os.path.dirname(save_csv), exist_ok=True)
             except Exception:
                 pass
-            with open(save_csv, 'w', newline='', encoding='utf-8') as fh:
+            with open(save_csv, "w", newline="", encoding="utf-8") as fh:
                 writer = csv.writer(fh)
-                writer.writerow(['index', 'pred_prob', 'market_odds', 'actual', 'stake', 'pnl'])
+                writer.writerow(
+                    ["index", "pred_prob", "market_odds", "actual", "stake", "pnl"]
+                )
                 for b in history:
-                    writer.writerow([b.index, b.pred_prob, b.market_odds, b.actual, b.stake, b.pnl])
+                    writer.writerow(
+                        [b.index, b.pred_prob, b.market_odds, b.actual, b.stake, b.pnl]
+                    )
 
-        return {'report': report, 'history': history}
+        return {"report": report, "history": history}
 
 
 def write_report_json(report: dict, path: str) -> None:
@@ -202,10 +236,13 @@ def write_report_json(report: dict, path: str) -> None:
         os.makedirs(os.path.dirname(path), exist_ok=True)
     except Exception:
         pass
-    with open(path, 'w', encoding='utf-8') as fh:
+    with open(path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, default=str)
+
+
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Dict, Optional
+
 import pandas as pd
 
 

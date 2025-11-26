@@ -6,13 +6,13 @@ Usage:
 Prints JSON output per player to stdout and writes a timestamped JSON file to
 `backend/models_store/inspect_advanced_player_stats_<ts>.json`.
 """
+
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import os
-import datetime
-from typing import List
 
 from backend.services import nba_stats_client
 
@@ -20,7 +20,11 @@ from backend.services import nba_stats_client
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument("--players", default="", help="Comma-separated player full names")
-    p.add_argument("--seasons", default="2024-25", help="Comma-separated seasons e.g. 2024-25,2023-24")
+    p.add_argument(
+        "--seasons",
+        default="2024-25",
+        help="Comma-separated seasons e.g. 2024-25,2023-24",
+    )
     return p.parse_args()
 
 
@@ -41,26 +45,28 @@ def main():
             continue
 
         try:
-            stats = nba_stats_client.get_advanced_player_stats_multi(pid, seasons, use_fallback=True)
+            stats = nba_stats_client.get_advanced_player_stats_multi(
+                pid, seasons, use_fallback=True
+            )
             out[name] = {"player_id": pid, "seasons": seasons, "stats": stats}
         except Exception as e:
             out[name] = {"player_id": pid, "error": str(e)}
 
     ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     repo_root = os.path.dirname(os.path.dirname(__file__))
-    store_dir = os.path.join(repo_root, 'models_store')
+    store_dir = os.path.join(repo_root, "models_store")
     try:
         os.makedirs(store_dir, exist_ok=True)
     except Exception:
         pass
 
     out_path = os.path.join(store_dir, f"inspect_advanced_player_stats_{ts}.json")
-    with open(out_path, 'w', encoding='utf-8') as fh:
+    with open(out_path, "w", encoding="utf-8") as fh:
         json.dump(out, fh, indent=2)
 
     print(json.dumps(out, indent=2))
     print(f"Wrote results to: {out_path}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

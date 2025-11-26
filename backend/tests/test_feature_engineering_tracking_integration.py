@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 from backend.services.feature_engineering import engineer_features
 
@@ -10,7 +9,14 @@ def test_engineer_includes_tracking_features(tmp_path):
     data_dir.mkdir()
 
     sample = [
-        {"game_date": "2025-11-01", "avg_speed_mph": 6.2, "distance_m": 4800, "touches": 11, "time_of_possession_sec": 40, "exp_fg_pct": 0.5}
+        {
+            "game_date": "2025-11-01",
+            "avg_speed_mph": 6.2,
+            "distance_m": 4800,
+            "touches": 11,
+            "time_of_possession_sec": 40,
+            "exp_fg_pct": 0.5,
+        }
     ]
 
     player_name = "Integration Player"
@@ -39,4 +45,4 @@ def test_engineer_includes_tracking_features(tmp_path):
     cols = list(df.columns)
 
     # expect tracking-derived prefixed features to be present
-    assert any(c.startswith('trk_') for c in cols), f"No trk_ features found in {cols}"
+    assert any(c.startswith("trk_") for c in cols), f"No trk_ features found in {cols}"

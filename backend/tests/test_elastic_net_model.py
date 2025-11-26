@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import tempfile
+
 from backend.models.elastic_net_model import ElasticNetModel
 
 
