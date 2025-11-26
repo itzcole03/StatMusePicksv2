@@ -317,6 +317,15 @@ async def _startup():
     except Exception as e:
         logger.debug("No backend.db available on startup: %s", e)
 
+    # Start fallback cleanup for in-memory cache to avoid unbounded growth
+    try:
+        from backend.services import cache as cache_mod
+        try:
+            cache_mod.start_fallback_cleanup_task()
+        except Exception:
+            logger.debug("Failed to start fallback cleanup task", exc_info=True)
+    except Exception:
+        pass
     return None
 
 

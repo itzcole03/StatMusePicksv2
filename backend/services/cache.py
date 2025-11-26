@@ -39,6 +39,14 @@ _metrics = {
 # module logger
 _logger = logging.getLogger(__name__)
 
+# Background cleanup task for the in-memory fallback store to prevent
+# unbounded growth when Redis is unavailable.
+_fallback_cleanup_task: "asyncio.Task|None" = None
+
+# Configurable limits
+_FALLBACK_MAX_ENTRIES = int(os.environ.get("FALLBACK_MAX_ENTRIES", "5000"))
+_FALLBACK_CLEANUP_INTERVAL = int(os.environ.get("FALLBACK_CLEANUP_INTERVAL", "60"))
+
 
 def _inc_metric(name: str, amount: int = 1) -> None:
     if name in _metrics:
@@ -75,6 +83,36 @@ def get_redis() -> Optional["aioredis.Redis"]:
 
     _redis_client = aioredis.from_url(url, decode_responses=True)
     return _redis_client
+
+
+def get_async_redis() -> Optional["aioredis.Redis"]:
+    """Explicit accessor for an async `redis.asyncio` client.
+
+    This mirrors historical `get_redis()` behavior but is explicit for
+    callers that expect an async client.
+    """
+    return get_redis()
+
+
+def get_sync_redis() -> Optional[object]:
+    """Return a sync redis client (from `redis` package) or None.
+
+    Use this from synchronous modules that call `.get()`/`.set()`.
+    """
+    try:
+        import redis as sync_redis  # type: ignore
+    except Exception:
+        return None
+
+    url = os.environ.get("REDIS_URL")
+    if not url:
+        return None
+
+    try:
+        client = sync_redis.from_url(url, decode_responses=True)
+        return client
+    except Exception:
+        return None
 
 
 async def redis_set_json(key: str, obj: Any, ex: Optional[int] = None) -> bool:
@@ -146,6 +184,73 @@ async def redis_get_json(key: str) -> Optional[Any]:
             return None
         _inc_metric("hits")
         return val
+
+
+async def _fallback_cleanup_loop(interval_seconds: int = 60):
+    """Background loop that prunes expired entries and trims store size."""
+    global _fallback_store
+    try:
+        while True:
+            await asyncio.sleep(interval_seconds)
+            try:
+                now = asyncio.get_event_loop().time()
+                async with _fallback_lock:
+                    # Remove expired keys
+                    keys = list(_fallback_store.keys())
+                    for k in keys:
+                        item = _fallback_store.get(k)
+                        if not item:
+                            continue
+                        e = item.get("e")
+                        if e is not None and now > e:
+                            try:
+                                del _fallback_store[k]
+                                _inc_metric("expirations")
+                            except Exception:
+                                pass
+
+                    # Trim if store larger than allowed: remove oldest by insertion order
+                    if len(_fallback_store) > _FALLBACK_MAX_ENTRIES:
+                        excess = len(_fallback_store) - _FALLBACK_MAX_ENTRIES
+                        # _fallback_store preserves insertion order on CPython
+                        for k in list(_fallback_store.keys())[:excess]:
+                            try:
+                                del _fallback_store[k]
+                            except Exception:
+                                pass
+            except Exception:
+                # guard the loop from crashing
+                _logger.exception("fallback cleanup iteration failed")
+    except asyncio.CancelledError:
+        return
+
+
+def start_fallback_cleanup_task(interval_seconds: Optional[int] = None) -> None:
+    """Start background cleanup task for the fallback store.
+
+    Safe to call multiple times; only one task is active.
+    """
+    global _fallback_cleanup_task
+    if _fallback_cleanup_task is not None and not _fallback_cleanup_task.done():
+        return
+    loop = None
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        # no running loop in caller; caller should schedule task later
+        return
+    interval = interval_seconds or _FALLBACK_CLEANUP_INTERVAL
+    _fallback_cleanup_task = loop.create_task(_fallback_cleanup_loop(interval))
+
+
+def stop_fallback_cleanup_task() -> None:
+    global _fallback_cleanup_task
+    if _fallback_cleanup_task is not None:
+        try:
+            _fallback_cleanup_task.cancel()
+        except Exception:
+            pass
+        _fallback_cleanup_task = None
 
 
 async def redis_delete(key: str) -> bool:

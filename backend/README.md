@@ -214,6 +214,46 @@ Notes:
 - The migrations use `DATABASE_URL` env var; if unset the helper defaults to `sqlite:///./dev.db`.
 - The training script writes a small model to `backend/models_store/` for local dev; it is not production-grade.
 
+DB Migration: applying feature_list + uniqueness changes
+----------------------------------------------------
+
+When rolling out the recent schema changes (adds `feature_list` JSON column and a
+unique constraint/index on `(name, version)` in `model_metadata`) follow these
+safe steps in your dev/staging environment before applying to production:
+
+1. Inspect duplicates (dry-run):
+
+```pwsh
+. .\.venv\Scripts\Activate.ps1
+python backend/scripts/dedupe_model_metadata.py --dry-run
+```
+
+2. (Optional) Backup metadata table before changes:
+
+```pwsh
+. .\.venv\Scripts\Activate.ps1
+python -c "from backend.db import get_engine; import pandas as pd; print('Backing up...'); pd.read_sql_table('model_metadata', get_engine()).to_csv('model_metadata_backup.csv', index=False)"
+```
+
+3. Apply dedupe fixes (if duplicates exist):
+
+```pwsh
+. .\.venv\Scripts\Activate.ps1
+python backend/scripts/dedupe_model_metadata.py --apply --backup
+```
+
+4. Run Alembic migrations:
+
+```pwsh
+. .\.venv\Scripts\Activate.ps1
+./backend/scripts/run_migrations.ps1
+```
+
+Notes:
+- `run_migrations.ps1` honors `DATABASE_URL`; for local testing you can set `DATABASE_URL=sqlite:///./dev.db`.
+- The dedupe script is dry-run by default; only use `--apply` after you have reviewed the candidate duplicates and taken a backup.
+- If you operate a managed DB, run these steps in a maintenance window and ensure automated jobs writing metadata are paused or quiesced during migration.
+
 Quick verification script (starts backend and runs prompt builder):
 
 ```pwsh

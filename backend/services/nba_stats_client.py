@@ -20,7 +20,7 @@ from typing import Optional, List, Dict
 
 from cachetools import TTLCache
 
-from backend.services.cache import get_redis
+from backend.services.cache import get_sync_redis
 from .token_bucket import TokenBucket
 
 logger = logging.getLogger(__name__)
@@ -168,7 +168,8 @@ def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff
 
 
 def _redis_client():
-    return get_redis()
+    # Return a synchronous redis client for this sync module.
+    return get_sync_redis()
 
 
 def find_player_id_by_name(name: str) -> Optional[int]:

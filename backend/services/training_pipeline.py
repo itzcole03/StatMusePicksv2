@@ -265,6 +265,11 @@ def train_player_model(df: pd.DataFrame, target_col: str = "target", use_stackin
             except Exception:
                 pass
             try:
+                # persist canonical feature list so serving/calibration can align
+                setattr(model, '_feature_list', list(X.columns))
+            except Exception:
+                pass
+            try:
                 preds = model.predict(X)
                 rmse = float(np.sqrt(np.mean((preds - y) ** 2)))
                 mlflow.log_metric('train_rmse', rmse)
@@ -286,6 +291,10 @@ def train_player_model(df: pd.DataFrame, target_col: str = "target", use_stackin
         logger.info("Trained model on %d rows, %d features", X.shape[0], X.shape[1])
         try:
             setattr(model, '_kept_contextual_features', kept_ctx or [])
+        except Exception:
+            pass
+        try:
+            setattr(model, '_feature_list', list(X.columns))
         except Exception:
             pass
         return model

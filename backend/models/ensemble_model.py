@@ -1,58 +1,3 @@
-"""Ensemble model builder combining RandomForest, XGBoost (if available) and ElasticNet.
-
-Provides: build_voting_ensemble, predict, save_model, load_model
-"""
-from typing import Optional, List, Tuple
-import joblib
-import os
-
-HAS_XGB = True
-try:
-    import xgboost as xgb  # type: ignore
-    from xgboost import XGBRegressor  # type: ignore
-except Exception:
-    HAS_XGB = False
-
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor, VotingRegressor
-from sklearn.linear_model import ElasticNet
-
-
-def build_voting_ensemble(X, y, use_xgb: bool = True, weights: Optional[List[float]] = None, rf_kwargs: dict = None, xgb_kwargs: dict = None, enet_kwargs: dict = None):
-    rf_kwargs = rf_kwargs or {}
-    xgb_kwargs = xgb_kwargs or {}
-    enet_kwargs = enet_kwargs or {}
-    # base estimators
-    rf = RandomForestRegressor(n_estimators=100, random_state=0, **rf_kwargs)
-    if use_xgb and HAS_XGB:
-        xb = XGBRegressor(n_estimators=100, random_state=0, **xgb_kwargs)
-    else:
-        xb = GradientBoostingRegressor(n_estimators=100, random_state=0, **xgb_kwargs)
-
-    en = ElasticNet(random_state=0, **enet_kwargs)
-
-    estimators = [('rf', rf), ('xg', xb), ('en', en)]
-    # default weights: rf 0.4, xg 0.4, en 0.2
-    if weights is None:
-        weights = [0.4, 0.4, 0.2]
-
-    ensemble = VotingRegressor(estimators=estimators, weights=weights)
-    ensemble.fit(X, y)
-    return ensemble
-
-
-def predict(model, X):
-    return model.predict(X)
-
-
-def save_model(model, path: str):
-    d = os.path.dirname(path)
-    if d and not os.path.exists(d):
-        os.makedirs(d, exist_ok=True)
-    joblib.dump(model, path)
-
-
-def load_model(path: str):
-    return joblib.load(path)
 """Ensemble model combining a RandomForest and ElasticNet baseline.
 
 Provides a simple averaged ensemble that trains each component and returns
@@ -257,4 +202,3 @@ class StackingEnsemble:
         inst = cls(base_models=data.get('base_models'), meta_model=data.get('meta_model'), n_folds=data.get('n_folds', 5))
         inst.fitted = data.get('fitted', False)
         return inst
-

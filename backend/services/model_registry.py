@@ -156,22 +156,36 @@ class ModelRegistry:
                 )
                 if kept_val is not None:
                     ins_kwargs['kept_contextual_features'] = kept_val
-
+                # include explicit feature_list column when available
                 try:
-                    ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
-                    conn.execute(ins)
+                    featlist_val = getattr(model, '_feature_list', None)
+                    if featlist_val is not None:
+                        ins_kwargs['feature_list'] = list(featlist_val)
                 except Exception:
-                    # Fallback: if DB doesn't accept native Python list for JSON,
-                    # serialize to JSON string and try again (best-effort).
+                    pass
+                try:
+                    # Try to update existing row for same (name, version) if it exists
+                    sel = ModelMetadata.__table__.select().where(
+                        (ModelMetadata.__table__.c.name == player_name) & (ModelMetadata.__table__.c.version == version)
+                    )
+                    existing = conn.execute(sel).first()
+                    if existing is not None:
+                            upd = ModelMetadata.__table__.update().where(ModelMetadata.__table__.c.id == existing.id).values(**ins_kwargs)
+                            conn.execute(upd)
+                    else:
+                        ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
+                        conn.execute(ins)
+                except Exception:
+                    # Fallback: try serializing JSON-like fields and retry insert
                     try:
                         import json as _json
                         if 'kept_contextual_features' in ins_kwargs and ins_kwargs['kept_contextual_features'] is not None:
                             ins_kwargs['kept_contextual_features'] = _json.dumps(ins_kwargs['kept_contextual_features'])
+                        # attempt a simple insert as last resort
                         ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
                         conn.execute(ins)
                     except Exception:
-                        # Give up gracefully; DB persistence is best-effort here.
-                        logger.exception("Failed to insert ModelMetadata (with kept_contextual_features) for %s", player_name)
+                        logger.exception("Failed to insert or update ModelMetadata for %s", player_name)
             logger.info("Inserted ModelMetadata row for %s", player_name)
         except Exception:
             logger.exception("Failed to persist ModelMetadata for %s", player_name)
@@ -195,6 +209,34 @@ class ModelRegistry:
                 kept = None
             if kept is not None:
                 meta['kept_contextual_features'] = list(kept)
+            # include canonical feature list when available
+            featlist = None
+            try:
+                featlist = getattr(model, '_feature_list', None)
+            except Exception:
+                featlist = None
+            if featlist is not None:
+                meta['feature_list'] = list(featlist)
+
+            # If feature list present and notes is a string, attempt to merge into notes for DB visibility
+            try:
+                import json as _json
+                if featlist is not None:
+                    if meta.get('notes') is None:
+                        meta['notes'] = {'feature_list': list(featlist)}
+                    else:
+                        # try to parse existing notes if JSON-like, else attach
+                        try:
+                            parsed = _json.loads(meta['notes']) if isinstance(meta['notes'], str) else meta['notes']
+                            if isinstance(parsed, dict):
+                                parsed['feature_list'] = list(featlist)
+                                meta['notes'] = parsed
+                            else:
+                                meta['notes'] = {'orig_notes': meta['notes'], 'feature_list': list(featlist)}
+                        except Exception:
+                            meta['notes'] = {'orig_notes': meta['notes'], 'feature_list': list(featlist)}
+            except Exception:
+                pass
 
             import json
             sidecar = os.path.splitext(path)[0] + "_metadata.json"
