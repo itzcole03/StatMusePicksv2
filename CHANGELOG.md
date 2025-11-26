@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2025-11-26
+
+### Fixed
+- Persist legacy flat model path into `model_metadata.path` for backward compatibility and tests.
+- Align validation features (`X_val`) to `model._feature_list` in the orchestrator worker so calibrator
+  fitting can predict without feature-mismatch errors and be persisted.
+
+### Chores
+- Formatted modified Python files (`backend/services/model_registry.py`, `backend/scripts/train_orchestrator.py`).
+
+
 ## [Unreleased] - 2025-11-12
 
 ### Added
