@@ -13,6 +13,8 @@ class ModelMetadata(Base):
     notes = Column(Text, nullable=True)
     # Keep a JSON list of contextual features retained for this model (nullable)
     kept_contextual_features = Column(JSON, nullable=True)
+    # Canonical feature list used to train/serve this model
+    feature_list = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     def __repr__(self) -> str:  # pragma: no cover - trivial

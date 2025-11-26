@@ -150,7 +150,9 @@ def _train_worker(kwargs: dict) -> dict:
                 X_val = val_df[feat_cols].copy()
                 # attempt to reorder/add missing cols according to model.feature_names_in_
                 try:
-                    if hasattr(model, 'feature_names_in_'):
+                    if hasattr(model, '_feature_list') and getattr(model, '_feature_list', None):
+                        expected = list(getattr(model, '_feature_list'))
+                    elif hasattr(model, 'feature_names_in_'):
                         expected = list(model.feature_names_in_)
                         for c in expected:
                             if c not in X_val.columns:
