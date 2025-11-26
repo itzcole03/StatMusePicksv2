@@ -1,0 +1,21 @@
+{
+  "name": "Dummy Player",
+  "version": "v1",
+  "notes": {
+    "orig_notes": "n",
+    "feature_list": [
+      "feat_a",
+      "feat_b",
+      "feat_c"
+    ]
+  },
+  "kept_contextual_features": [
+    "feat_a",
+    "feat_b"
+  ],
+  "feature_list": [
+    "feat_a",
+    "feat_b",
+    "feat_c"
+  ]
+}

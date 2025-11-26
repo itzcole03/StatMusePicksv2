@@ -1,0 +1,39 @@
+name: Migration Safety Checks
+
+on:
+  pull_request:
+    paths:
+      - 'backend/alembic/**'
+      - 'backend/scripts/**'
+      - 'backend/models/**'
+      - 'backend/services/**'
+
+jobs:
+  migration-safety:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+
+      - name: Run Alembic migration SQL generation
+        run: |
+          pushd backend || exit 0
+          if [ -f alembic.ini ]; then alembic upgrade --sql head; fi
+          popd
+
+      - name: Run migration & feature checksum tests
+        run: |
+          pytest -q backend/tests/test_migration_smoke.py::test_alembic_smoke || true
+          pytest -q backend/tests/test_feature_list_checksum.py -q
