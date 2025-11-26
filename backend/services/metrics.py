@@ -15,6 +15,15 @@ embedding_success_total = Counter(
 embedding_latency_seconds = Histogram(
     'embedding_latency_seconds', 'Embedding generation latency in seconds'
 )
+llm_tool_calls_total = Counter('llm_tool_calls_total', 'Total number of LLM tool call attempts')
+llm_tool_calls_failed = Counter('llm_tool_calls_failed', 'Total number of failed LLM tool calls')
+llm_tool_calls_success = Counter('llm_tool_calls_success', 'Total number of successful LLM tool calls')
+
+llm_schema_validation_failures = Counter('llm_schema_validation_failures_total', 'Total number of schema validation failures for LLM outputs')
+llm_structured_accepted = Counter('llm_structured_accepted_total', 'Total number of structured LLM outputs accepted')
+llm_structured_coerced = Counter('llm_structured_coerced_total', 'Total number of structured LLM outputs coerced into schema')
+llm_structured_invalid = Counter('llm_structured_invalid_total', 'Total number of structured LLM outputs deemed invalid')
+llm_tool_call_latency_seconds = Histogram('llm_tool_call_latency_seconds', 'LLM tool call latency in seconds')
 """Prometheus metrics helper with multiprocess support.
 
 Provides `generate_latest` and `CONTENT_TYPE_LATEST` compatible exports used
