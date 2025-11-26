@@ -1,3 +1,83 @@
+"""
+Simple dedupe utility for `model_metadata` table.
+
+Usage:
+  python dedupe_model_metadata.py --database-url <DATABASE_URL> [--apply] [--backup-file out.csv]
+
+If `--apply` is not provided the script will only print duplicates (dry-run).
+When `--apply` is used, duplicates are removed keeping the latest `id` per (name, version).
+A CSV backup of removed rows can be written with `--backup-file`.
+"""
+import argparse
+import csv
+from sqlalchemy import create_engine, text
+from sqlalchemy import inspect
+import sys
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument('--database-url', required=False, help='DATABASE_URL (falls back to env)')
+    p.add_argument('--apply', action='store_true', help='Apply deletions')
+    p.add_argument('--backup-file', required=False, help='CSV file to write deleted rows')
+    args = p.parse_args()
+
+    db = args.database_url or __import__('os').environ.get('DATABASE_URL')
+    if not db:
+        print('DATABASE_URL required (env or --database-url)')
+        sys.exit(2)
+
+    engine = create_engine(db)
+    insp = inspect(engine)
+    if 'model_metadata' not in insp.get_table_names():
+        print('model_metadata table not found')
+        sys.exit(2)
+
+    with engine.begin() as conn:
+        # find duplicates by name+version
+        q = text("""
+        SELECT name, version, array_agg(id ORDER BY created_at DESC) as ids
+        FROM model_metadata
+        GROUP BY name, version
+        HAVING count(*) > 1
+        """)
+        res = conn.execute(q).mappings().all()
+        to_delete = []
+        for row in res:
+            ids = row['ids']
+            # keep the first (latest), delete the rest
+            keep = ids[0]
+            del_ids = ids[1:]
+            for did in del_ids:
+                to_delete.append({'name': row['name'], 'version': row['version'], 'id': did})
+
+        if not to_delete:
+            print('No duplicates found')
+            return
+
+        print(f'Found {len(to_delete)} duplicate rows to remove (dry-run).')
+        if args.backup_file:
+            with open(args.backup_file, 'w', newline='', encoding='utf8') as fh:
+                writer = csv.DictWriter(fh, fieldnames=['id', 'name', 'version'])
+                writer.writeheader()
+                for d in to_delete:
+                    writer.writerow(d)
+            print('Wrote backup to', args.backup_file)
+
+        if args.apply:
+            ids = [d['id'] for d in to_delete]
+            chunk = 100
+            for i in range(0, len(ids), chunk):
+                ch = ids[i:i+chunk]
+                del_q = text('DELETE FROM model_metadata WHERE id = ANY(:ids)')
+                conn.execute(del_q, {'ids': ch})
+            print('Deleted duplicates:', len(ids))
+        else:
+            print('Run with --apply to delete these rows')
+
+
+if __name__ == '__main__':
+    main()
 """Utility to find and optionally deduplicate `model_metadata` rows by (name, version).
 
 Usage:
