@@ -1,0 +1,37 @@
+{
+  "name": "synthetic_player",
+  "version": "v0.1-synthetic",
+  "notes": {
+    "orig_notes": "Synthetic training run",
+    "feature_list": [
+      "recent_mean",
+      "recent_std",
+      "volatility",
+      "multi_PER",
+      "multi_TS_PCT",
+      "multi_BPM",
+      "multi_USG_PCT",
+      "multi_season_PTS_avg",
+      "multi_season_count",
+      "multi_PIE",
+      "multi_off_rating",
+      "multi_def_rating"
+    ]
+  },
+  "kept_contextual_features": [],
+  "feature_list": [
+    "recent_mean",
+    "recent_std",
+    "volatility",
+    "multi_PER",
+    "multi_TS_PCT",
+    "multi_BPM",
+    "multi_USG_PCT",
+    "multi_season_PTS_avg",
+    "multi_season_count",
+    "multi_PIE",
+    "multi_off_rating",
+    "multi_def_rating"
+  ],
+  "feature_list_checksum": "f6958e1db3a0c20237d510ac49ce3a87b950b097be4d62f598a63016a2ab44d7"
+}

@@ -1,6 +1,3 @@
-import json
-import pytest
-
 from backend.services.llm_feature_service import LLMFeatureService, QualitativeFeatures
 
 
@@ -28,15 +25,15 @@ def test_extract_from_text_valid_json(monkeypatch):
     # into the llm_feature_service module)
     import backend.services.llm_feature_service as lfs
 
-    monkeypatch.setattr(lfs, 'get_default_client', lambda: dummy)
+    monkeypatch.setattr(lfs, "get_default_client", lambda: dummy)
 
     svc = LLMFeatureService()
-    out = svc.extract_from_text('Test Player', 'Some context about the player')
+    out = svc.extract_from_text("Test Player", "Some context about the player")
 
     # Should validate against the Pydantic model and include keys
     assert isinstance(out, dict)
     vf = QualitativeFeatures.parse_obj(out)
-    assert vf.injury_status == 'questionable'
+    assert vf.injury_status == "questionable"
     assert vf.morale_score == 72
 
 
@@ -52,13 +49,14 @@ def test_extract_from_text_invalid_json_then_coerce(monkeypatch):
 
     dummy = DummyClient(return_value=raw)
     import backend.services.llm_feature_service as lfs
-    monkeypatch.setattr(lfs, 'get_default_client', lambda: dummy)
+
+    monkeypatch.setattr(lfs, "get_default_client", lambda: dummy)
 
     svc = LLMFeatureService()
-    out = svc.extract_from_text('Test Player', 'Some context')
+    out = svc.extract_from_text("Test Player", "Some context")
 
     # Coercion path should normalize types/keys into the schema
     assert isinstance(out, dict)
     vf = QualitativeFeatures.parse_obj(out)
-    assert vf.injury_status in ('healthy', 'questionable', 'out')
+    assert vf.injury_status in ("healthy", "questionable", "out")
     assert isinstance(vf.morale_score, int)

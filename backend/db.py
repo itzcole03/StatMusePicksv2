@@ -5,12 +5,12 @@ an `init_db()` helper to create metadata tables. The code will use
 `DATABASE_URL` env var if present; otherwise it falls back to a local
 SQLite file for quick local dev.
 """
+
 import os
 from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import declarative_base
-
 
 _raw_db = os.environ.get("DATABASE_URL")
 # If alembic.ini or other configs left a literal ${DATABASE_URL}, ignore it
@@ -34,14 +34,23 @@ def _ensure_engine_and_session():
         # when a sync-only URL (e.g., 'postgresql://') is provided by mistake.
         url = DATABASE_URL or ""
         # allow sqlite aiosqlite, postgres+asyncpg, mysql+asyncmy or other async drivers
-        allowed_async_prefixes = ("sqlite+aiosqlite://", "postgresql+asyncpg://", "mysql+asyncmy://", "mysql+aiomysql://")
-        if url and not url.startswith("sqlite+") and not any(url.startswith(p) for p in allowed_async_prefixes):
+        allowed_async_prefixes = (
+            "sqlite+aiosqlite://",
+            "postgresql+asyncpg://",
+            "mysql+asyncmy://",
+            "mysql+aiomysql://",
+        )
+        if (
+            url
+            and not url.startswith("sqlite+")
+            and not any(url.startswith(p) for p in allowed_async_prefixes)
+        ):
             # If the URL looks like a sync-only driver, raise a clear error.
             raise RuntimeError(
                 "DATABASE_URL must use an async DB driver for async SQLAlchemy engines. "
                 f"Got: '{url}'. Use an async dialect suffix (e.g. postgresql+asyncpg://) or set a sqlite+aiosqlite URL for local dev."
             )
-        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+        from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
         engine = create_async_engine(DATABASE_URL, echo=False, future=True)
         AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)

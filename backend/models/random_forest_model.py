@@ -3,8 +3,10 @@
 Provides: RandomForestModel class with train/predict/save/load and
 feature importance extraction.
 """
-from typing import Optional, List, Dict
+
 import os
+from typing import Dict, List, Optional
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -47,7 +49,9 @@ class RandomForestModel:
         inst.model = joblib.load(path)
         return inst
 
-    def get_feature_importances(self, feature_names: Optional[List[str]] = None) -> Dict[str, float]:
+    def get_feature_importances(
+        self, feature_names: Optional[List[str]] = None
+    ) -> Dict[str, float]:
         if self.model is None:
             raise RuntimeError("model not trained")
         importances = getattr(self.model, "feature_importances_", None)

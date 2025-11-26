@@ -1,6 +1,6 @@
 import json
-import urllib.request
 import sys
+import urllib.request
 
 url = "http://127.0.0.1:8001/api/predict"
 payload = {
@@ -8,11 +8,13 @@ payload = {
     "stat": "points",
     "line": 25.5,
     "player_data": {},
-    "opponent_data": {}
+    "opponent_data": {},
 }
 
 data = json.dumps(payload).encode("utf-8")
-req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"})
+req = urllib.request.Request(
+    url, data=data, headers={"Content-Type": "application/json"}
+)
 try:
     resp = urllib.request.urlopen(req, timeout=10)
     body = resp.read().decode("utf-8")

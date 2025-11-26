@@ -2,6 +2,7 @@
 
 Usage: python scripts/inspect_model_metadata.py
 """
+
 from __future__ import annotations
 
 import sqlite3

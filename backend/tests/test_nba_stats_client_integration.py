@@ -1,13 +1,15 @@
 import os
+
 import pytest
 
 from backend.services import nba_stats_client as nbc
 
-
 skip_cond = (nbc.players is None) or os.getenv("NBA_INTEGRATION", "") != "1"
 
 
-@pytest.mark.skipif(skip_cond, reason="Requires nba_api installed and NBA_INTEGRATION=1")
+@pytest.mark.skipif(
+    skip_cond, reason="Requires nba_api installed and NBA_INTEGRATION=1"
+)
 def test_integration_fetch_lebron():
     """Basic integration test that uses real `nba_api` to fetch a known player.
 
@@ -19,15 +21,17 @@ def test_integration_fetch_lebron():
     recent = nbc.fetch_recent_games(pid, limit=5)
     assert isinstance(recent, list)
     assert len(recent) <= 5
+
+
 import json
-import threading
 import socket
+import threading
 import types
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
-import requests
 import pytest
+import requests
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -55,7 +59,10 @@ class _Handler(BaseHTTPRequestHandler):
             else:
                 pid = "0"
             # return two simple games
-            games = [{"game_id": 1, "PTS": 12, "player_id": int(pid)}, {"game_id": 2, "PTS": 18, "player_id": int(pid)}]
+            games = [
+                {"game_id": 1, "PTS": 12, "player_id": int(pid)},
+                {"game_id": 2, "PTS": 18, "player_id": int(pid)},
+            ]
             self._send_json(games)
             return
 
@@ -110,8 +117,14 @@ def test_nba_client_against_local_proxy(monkeypatch):
 
     import backend.services.nba_stats_client as ns
 
-    monkeypatch.setattr(ns, "players", types.SimpleNamespace(find_players_by_full_name=find_players_by_full_name))
-    monkeypatch.setattr(ns, "playergamelog", types.SimpleNamespace(PlayerGameLog=FakePGL))
+    monkeypatch.setattr(
+        ns,
+        "players",
+        types.SimpleNamespace(find_players_by_full_name=find_players_by_full_name),
+    )
+    monkeypatch.setattr(
+        ns, "playergamelog", types.SimpleNamespace(PlayerGameLog=FakePGL)
+    )
     monkeypatch.setattr(ns, "_redis_client", lambda: None)
 
     # Run client functions

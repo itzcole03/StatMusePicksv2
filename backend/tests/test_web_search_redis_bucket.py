@@ -1,5 +1,3 @@
-import types
-
 from backend.services import web_search
 
 
@@ -20,13 +18,13 @@ def test_web_search_uses_redis_bucket(monkeypatch):
     # monkeypatch get_sync_redis in cache module used by web_search
     import backend.services.cache as cache
 
-    monkeypatch.setattr(cache, 'get_sync_redis', lambda: fake)
+    monkeypatch.setattr(cache, "get_sync_redis", lambda: fake)
 
     # first call allowed
-    out1 = web_search.web_search('first')
+    out1 = web_search.web_search("first")
     assert isinstance(out1, str)
 
     # second call should be rate-limited by fake.eval returning 0
-    out2 = web_search.web_search('second')
+    out2 = web_search.web_search("second")
     assert isinstance(out2, str)
-    assert 'rate' in out2.lower() or out2.startswith('[')
+    assert "rate" in out2.lower() or out2.startswith("[")

@@ -8,30 +8,28 @@ with at least `min_games` total rows, trains per-player models using
 This is intentionally simple and synchronous; it can be extended to run
 in parallel or scheduled via CI/cron as the roadmap requires.
 """
+
 from __future__ import annotations
 
 import argparse
 import csv
 import json
 import logging
-import math
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
 
 # Ensure repo root is on sys.path so `backend` imports work when run as script
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-import numpy as np
+import multiprocessing
+
 import pandas as pd
 
-from backend.services.training_pipeline import train_player_model
 from backend.services.model_registry import ModelRegistry
-
-import multiprocessing
-from typing import Optional
+from backend.services.training_pipeline import train_player_model
 
 
 def _train_worker(kwargs: dict) -> dict:
@@ -45,9 +43,8 @@ def _train_worker(kwargs: dict) -> dict:
 
     try:
         # local imports inside worker
-        from backend.services.model_registry import ModelRegistry
         from backend.services import calibration_service as calib_mod
-        import joblib
+        from backend.services.model_registry import ModelRegistry
 
         m_path = Path(manifest)
         with open(m_path, "r", encoding="utf8") as fh:
@@ -86,8 +83,8 @@ def _train_worker(kwargs: dict) -> dict:
         if kwargs.get("feature_selection", False):
             try:
                 from backend.services.feature_selection import (
-                    select_by_correlation,
                     rfe_select,
+                    select_by_correlation,
                 )
 
                 # run a lightweight correlation filter first

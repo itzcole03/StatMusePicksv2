@@ -1,8 +1,4 @@
-import os
 import asyncio
-import pathlib
-
-import pytest
 
 
 def test_db_health_sqlite(tmp_path, monkeypatch):
@@ -13,8 +9,8 @@ def test_db_health_sqlite(tmp_path, monkeypatch):
 
     # Ensure backend modules use the test DB URL
     # Add repo root to sys.path so imports work in test runner
-    import sys
     import pathlib
+    import sys
 
     repo_root = pathlib.Path(__file__).resolve().parents[2]
     sys.path.insert(0, str(repo_root))
@@ -26,8 +22,9 @@ def test_db_health_sqlite(tmp_path, monkeypatch):
     asyncio.run(backend_db.init_db())
 
     # import app after env var set
-    from backend.main import app
     from fastapi.testclient import TestClient
+
+    from backend.main import app
 
     with TestClient(app) as client:
         r = client.get("/api/db_health")

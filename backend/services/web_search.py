@@ -6,19 +6,20 @@ Behaviour:
 - Otherwise returns a deterministic stub indicating no live search is
   configured (useful for tests and CI).
 """
+
 from __future__ import annotations
 
-import os
 import logging
-from typing import List
-import time
+import os
 import re
+import time
+from typing import List
 
 logger = logging.getLogger(__name__)
 
 # Simple in-process rate limiter for web_search calls (best-effort)
-_ws_bucket = {'tokens': 0.0, 'last': 0.0}
-_WS_RATE_RPM = int(os.environ.get('WEB_SEARCH_MAX_RPM', '60'))
+_ws_bucket = {"tokens": 0.0, "last": 0.0}
+_WS_RATE_RPM = int(os.environ.get("WEB_SEARCH_MAX_RPM", "60"))
 
 
 def _consume_web_search_token(amount: int = 1) -> bool:
@@ -56,7 +57,7 @@ else
   return 0
 end
 """
-            key = 'web_search_rate_bucket'
+            key = "web_search_rate_bucket"
             try:
                 allowed = r.eval(lua, 1, key, now, _WS_RATE_RPM, amount)
                 return bool(int(allowed))
@@ -69,31 +70,31 @@ end
 
     # Fallback: in-process bucket
     bucket = _ws_bucket
-    if bucket['last'] == 0.0:
-        bucket['tokens'] = float(_WS_RATE_RPM)
-        bucket['last'] = now
+    if bucket["last"] == 0.0:
+        bucket["tokens"] = float(_WS_RATE_RPM)
+        bucket["last"] = now
 
-    elapsed = now - bucket['last']
+    elapsed = now - bucket["last"]
     refill = elapsed * (_WS_RATE_RPM / 60.0)
-    bucket['tokens'] = min(float(_WS_RATE_RPM), bucket['tokens'] + refill)
-    bucket['last'] = now
+    bucket["tokens"] = min(float(_WS_RATE_RPM), bucket["tokens"] + refill)
+    bucket["last"] = now
 
-    if bucket['tokens'] >= amount:
-        bucket['tokens'] -= amount
+    if bucket["tokens"] >= amount:
+        bucket["tokens"] -= amount
         return True
     return False
 
 
 def _sanitize_query(q: str, max_len: int = 300) -> str:
     if not q:
-        return ''
+        return ""
     # remove control chars
-    q = re.sub(r"[\x00-\x1f\x7f]+", ' ', q)
+    q = re.sub(r"[\x00-\x1f\x7f]+", " ", q)
     q = q.strip()
     if len(q) > max_len:
         q = q[:max_len]
     # collapse whitespace
-    q = re.sub(r"\s+", ' ', q)
+    q = re.sub(r"\s+", " ", q)
     return q
 
 
@@ -105,23 +106,28 @@ def _bing_search(query: str, count: int = 3) -> str:
         q = _sanitize_query(query)
         return f"[web_search disabled: requests not installed] {q}"
 
-    key = os.environ.get('BING_API_KEY')
+    key = os.environ.get("BING_API_KEY")
     if not key:
         return f"[web_search not configured] {query}"
 
-    headers = {'Ocp-Apim-Subscription-Key': key}
-    params = {'q': query, 'count': str(count)}
+    headers = {"Ocp-Apim-Subscription-Key": key}
+    params = {"q": query, "count": str(count)}
     try:
-        resp = requests.get('https://api.bing.microsoft.com/v7.0/search', headers=headers, params=params, timeout=5)
+        resp = requests.get(
+            "https://api.bing.microsoft.com/v7.0/search",
+            headers=headers,
+            params=params,
+            timeout=5,
+        )
         resp.raise_for_status()
         j = resp.json()
         snippets: List[str] = []
         # gather top webPages snippets
-        web = j.get('webPages', {}).get('value', [])
+        web = j.get("webPages", {}).get("value", [])
         for item in web[:count]:
-            title = item.get('name') or ''
-            snippet = item.get('snippet') or item.get('snippet') or ''
-            url = item.get('url') or ''
+            title = item.get("name") or ""
+            snippet = item.get("snippet") or item.get("snippet") or ""
+            url = item.get("url") or ""
             snippets.append(f"- {title}: {snippet} ({url})")
         if snippets:
             return "\n".join(snippets)
@@ -136,23 +142,30 @@ def web_search(query: str) -> str:
     # Basic rate limiting and sanitization to protect external APIs and avoid
     # uncontrolled tool usage when called by LLMs.
     try:
-        q = _sanitize_query(str(query or ''))
+        q = _sanitize_query(str(query or ""))
     except Exception:
-        q = ''
+        q = ""
 
     if not q:
         return "[web_search invalid query]"
 
     allowed = _consume_web_search_token(1)
     if not allowed:
-        logger.warning('web_search rate limit exceeded')
+        logger.warning("web_search rate limit exceeded")
         return "[web_search rate_limited]"
 
     # First try DuckDuckGo Instant Answer API (no key required)
     try:
         import requests
+
         ddg_url = "https://api.duckduckgo.com/"
-        params = {"q": q, "format": "json", "no_redirect": 1, "no_html": 1, "skip_disambig": 1}
+        params = {
+            "q": q,
+            "format": "json",
+            "no_redirect": 1,
+            "no_html": 1,
+            "skip_disambig": 1,
+        }
         resp = requests.get(ddg_url, params=params, timeout=5)
         resp.raise_for_status()
         j = resp.json()
@@ -177,10 +190,12 @@ def web_search(query: str) -> str:
         if parts:
             return "\n".join(parts[:5])
     except Exception:
-        logger.debug("DuckDuckGo instant answer failed or unavailable, falling back to Bing or stub")
+        logger.debug(
+            "DuckDuckGo instant answer failed or unavailable, falling back to Bing or stub"
+        )
 
     # Fall back to Bing if API key present, otherwise return deterministic stub
-    key = os.environ.get('BING_API_KEY')
+    key = os.environ.get("BING_API_KEY")
     if key:
         return _bing_search(query)
     q = _sanitize_query(query)

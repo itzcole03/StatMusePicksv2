@@ -1,8 +1,9 @@
-import sqlite3
 import json
+import sqlite3
+
 
 def main():
-    conn = sqlite3.connect('dev.db')
+    conn = sqlite3.connect("dev.db")
     cur = conn.cursor()
     rows = list(cur.execute("SELECT name, sql FROM sqlite_master WHERE type='table'"))
     out = []
@@ -11,5 +12,6 @@ def main():
     print(json.dumps(out, indent=2))
     conn.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

@@ -5,13 +5,13 @@ Run:
   $env:DATABASE_URL='postgresql+asyncpg://postgres:postgres@localhost:5432/statmuse_dev'
   python .\scripts\smoke_db.py
 """
+
 import asyncio
-import os
-import sys
 import datetime
+import sys
 
 from backend import db as backend_db
-from backend.models import Player, Projection, Game, PlayerStat, Prediction
+from backend.models import Game, Player, PlayerStat, Prediction, Projection
 
 
 async def main():
@@ -30,12 +30,18 @@ async def main():
         await session.flush()  # populate player.id
 
         # Insert a sample game (use timezone-aware UTC timestamp)
-        game = Game(game_date=datetime.datetime.now(datetime.timezone.utc), home_team="TST", away_team="OPP")
+        game = Game(
+            game_date=datetime.datetime.now(datetime.timezone.utc),
+            home_team="TST",
+            away_team="OPP",
+        )
         session.add(game)
         await session.flush()
 
         # Insert player stat
-        stat = PlayerStat(player_id=player.id, game_id=game.id, stat_type="points", value=12.5)
+        stat = PlayerStat(
+            player_id=player.id, game_id=game.id, stat_type="points", value=12.5
+        )
         session.add(stat)
 
         # Insert a projection
@@ -43,7 +49,13 @@ async def main():
         session.add(proj)
 
         # Insert a prediction
-        pred = Prediction(player_id=player.id, stat_type="points", predicted_value=12.0, actual_value=None, game_id=game.id)
+        pred = Prediction(
+            player_id=player.id,
+            stat_type="points",
+            predicted_value=12.0,
+            actual_value=None,
+            game_id=game.id,
+        )
         session.add(pred)
 
         await session.commit()
@@ -53,10 +65,16 @@ async def main():
         p_count = (await session.execute("select count(*) from players")).scalar()
         g_count = (await session.execute("select count(*) from games")).scalar()
         ps_count = (await session.execute("select count(*) from player_stats")).scalar()
-        proj_count = (await session.execute("select count(*) from projections")).scalar()
-        pred_count = (await session.execute("select count(*) from predictions")).scalar()
+        proj_count = (
+            await session.execute("select count(*) from projections")
+        ).scalar()
+        pred_count = (
+            await session.execute("select count(*) from predictions")
+        ).scalar()
 
-        print(f"players={p_count}, games={g_count}, player_stats={ps_count}, projections={proj_count}, predictions={pred_count}")
+        print(
+            f"players={p_count}, games={g_count}, player_stats={ps_count}, projections={proj_count}, predictions={pred_count}"
+        )
 
 
 if __name__ == "__main__":

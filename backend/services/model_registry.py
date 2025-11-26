@@ -1,12 +1,13 @@
 from __future__ import annotations
-import os
-import joblib
+
+import hashlib
+import json
 import logging
+import os
 from typing import Optional
 
+import joblib
 from sqlalchemy import create_engine
-import json
-import hashlib
 from sqlalchemy.dialects import postgresql as pg_dialect
 
 logger = logging.getLogger(__name__)
@@ -57,8 +58,8 @@ class ModelRegistry:
         if not key:
             return None
         try:
-            import hmac
             import hashlib as _hashlib
+            import hmac
 
             bkey = key.encode("utf-8")
             with open(file_path, "rb") as fh:
@@ -84,7 +85,8 @@ class ModelRegistry:
         # Write a versioned artifact under per-player directory for better organization
         safe = player_name.replace(" ", "_")
         # generate a version id if not provided
-        import datetime, uuid
+        import datetime
+        import uuid
 
         ver_id = version or datetime.datetime.utcnow().strftime("v%Y%m%dT%H%M%SZ")
         # use uuid to avoid collisions for same-version tradeoffs

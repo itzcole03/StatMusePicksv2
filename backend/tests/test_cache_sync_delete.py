@@ -1,8 +1,6 @@
 import asyncio
 import os
 
-import pytest
-
 from backend.services import cache
 
 
@@ -17,6 +15,7 @@ def test_redis_delete_prefix_sync_no_loop(monkeypatch):
     monkeypatch.setattr(cache, "get_redis", lambda: None)
     # Ensure `import redis` fails so sync redis client path is not used
     import builtins
+
     real_import = builtins.__import__
 
     def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
@@ -44,6 +43,7 @@ def test_redis_delete_prefix_sync_with_loop_running(monkeypatch):
     monkeypatch.setattr(cache, "get_redis", lambda: None)
     # Ensure `import redis` fails so sync redis client path is not used
     import builtins
+
     real_import = builtins.__import__
 
     def fake_import(name, globals=None, locals=None, fromlist=(), level=0):

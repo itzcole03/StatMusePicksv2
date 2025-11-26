@@ -4,18 +4,24 @@ Provides: train(X, y), predict(X), save(path), load(path), get_coefficients(feat
 
 Uses a sklearn Pipeline with `StandardScaler` + `ElasticNet` for stable behaviour.
 """
-from typing import Iterable, List, Optional, Dict
+
+from typing import Dict, Iterable, List, Optional
+
 import joblib
 import numpy as np
 import pandas as pd
-
+from sklearn.linear_model import ElasticNet
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import ElasticNet
 
 
 class ElasticNetModel:
-    def __init__(self, alpha: float = 1.0, l1_ratio: float = 0.5, random_state: Optional[int] = 42):
+    def __init__(
+        self,
+        alpha: float = 1.0,
+        l1_ratio: float = 0.5,
+        random_state: Optional[int] = 42,
+    ):
         self.alpha = float(alpha)
         self.l1_ratio = float(l1_ratio)
         self.random_state = random_state
@@ -29,7 +35,12 @@ class ElasticNetModel:
         if not isinstance(X, pd.DataFrame):
             X = pd.DataFrame(X)
 
-        en = ElasticNet(alpha=self.alpha, l1_ratio=self.l1_ratio, random_state=self.random_state, max_iter=5000)
+        en = ElasticNet(
+            alpha=self.alpha,
+            l1_ratio=self.l1_ratio,
+            random_state=self.random_state,
+            max_iter=5000,
+        )
         self.pipeline = Pipeline([("scaler", StandardScaler()), ("est", en)])
         self.pipeline.fit(X.values, np.asarray(list(y)))
 
@@ -47,21 +58,30 @@ class ElasticNetModel:
     def save(self, path: str) -> None:
         if self.pipeline is None:
             raise RuntimeError("no model to save")
-        joblib.dump({
-            "alpha": self.alpha,
-            "l1_ratio": self.l1_ratio,
-            "random_state": self.random_state,
-            "pipeline": self.pipeline,
-        }, path)
+        joblib.dump(
+            {
+                "alpha": self.alpha,
+                "l1_ratio": self.l1_ratio,
+                "random_state": self.random_state,
+                "pipeline": self.pipeline,
+            },
+            path,
+        )
 
     @classmethod
     def load(cls, path: str) -> "ElasticNetModel":
         data = joblib.load(path)
-        inst = cls(alpha=data.get("alpha", 1.0), l1_ratio=data.get("l1_ratio", 0.5), random_state=data.get("random_state", None))
+        inst = cls(
+            alpha=data.get("alpha", 1.0),
+            l1_ratio=data.get("l1_ratio", 0.5),
+            random_state=data.get("random_state", None),
+        )
         inst.pipeline = data.get("pipeline")
         return inst
 
-    def get_coefficients(self, feature_names: Optional[List[str]] = None) -> Dict[str, float]:
+    def get_coefficients(
+        self, feature_names: Optional[List[str]] = None
+    ) -> Dict[str, float]:
         """Return a mapping feature -> coefficient. If `feature_names` omitted,
         return numeric-index keys as strings.
         """

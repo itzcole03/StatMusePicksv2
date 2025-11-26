@@ -1,5 +1,4 @@
 import ast
-import os
 from collections import Counter
 from pathlib import Path
 
@@ -33,8 +32,16 @@ def parse_list_field(val):
 
 def main(report_path=None, out_path=None):
     repo_root = Path(__file__).resolve().parents[2]
-    report_path = Path(report_path) if report_path else repo_root / "backend/models_store/feature_selection_report.csv"
-    out_path = Path(out_path) if out_path else repo_root / "backend/models_store/feature_selection_summary.csv"
+    report_path = (
+        Path(report_path)
+        if report_path
+        else repo_root / "backend/models_store/feature_selection_report.csv"
+    )
+    out_path = (
+        Path(out_path)
+        if out_path
+        else repo_root / "backend/models_store/feature_selection_summary.csv"
+    )
 
     if not report_path.exists():
         print(f"Input report not found: {report_path}")
@@ -55,14 +62,18 @@ def main(report_path=None, out_path=None):
 
     rows = []
     for f in features:
-        rows.append({
-            "feature": f,
-            "corr_count": int(corr_counter.get(f, 0)),
-            "rfe_count": int(rfe_counter.get(f, 0)),
-            "total_count": int(corr_counter.get(f, 0) + rfe_counter.get(f, 0)),
-        })
+        rows.append(
+            {
+                "feature": f,
+                "corr_count": int(corr_counter.get(f, 0)),
+                "rfe_count": int(rfe_counter.get(f, 0)),
+                "total_count": int(corr_counter.get(f, 0) + rfe_counter.get(f, 0)),
+            }
+        )
 
-    out_df = pd.DataFrame(rows).sort_values(["total_count", "feature"], ascending=[False, True])
+    out_df = pd.DataFrame(rows).sort_values(
+        ["total_count", "feature"], ascending=[False, True]
+    )
     out_df.to_csv(out_path, index=False, encoding="utf-8")
 
     print(f"Wrote feature-frequency summary to {out_path} (features={len(out_df)})")

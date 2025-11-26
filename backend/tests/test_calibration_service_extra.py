@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 import numpy as np
 
 ROOT = Path.cwd()
@@ -15,7 +16,9 @@ def test_fit_calibrator_requires_minimum_rows(tmp_path):
     y_true = np.array([1.0, 2.0])
     y_pred = np.array([1.1, 1.9])
     try:
-        calib_srv.fit_and_save("Short Player", y_true=y_true, y_pred=y_pred, method="isotonic")
+        calib_srv.fit_and_save(
+            "Short Player", y_true=y_true, y_pred=y_pred, method="isotonic"
+        )
         raised = False
     except ValueError:
         raised = True
@@ -33,7 +36,9 @@ def test_calibrator_persist_and_load_roundtrip(tmp_path):
     y_true = np.array([0.0, 1.0, 0.0, 1.0])
     y_pred = np.array([0.1, 0.9, 0.2, 0.8])
 
-    result = calib_srv.fit_and_save("Roundtrip Player", y_true=y_true, y_pred=y_pred, method="isotonic")
+    result = calib_srv.fit_and_save(
+        "Roundtrip Player", y_true=y_true, y_pred=y_pred, method="isotonic"
+    )
     assert result is not None
 
     # load calibrator and apply
@@ -43,4 +48,6 @@ def test_calibrator_persist_and_load_roundtrip(tmp_path):
         out = loaded.predict(y_pred)
     except Exception:
         out = None
-    assert out is not None, "Loaded calibrator should be callable and return predictions"
+    assert (
+        out is not None
+    ), "Loaded calibrator should be callable and return predictions"

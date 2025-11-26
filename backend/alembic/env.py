@@ -1,9 +1,8 @@
-from logging.config import fileConfig
 import os
-
-from sqlalchemy import engine_from_config, pool
+from logging.config import fileConfig
 
 from alembic import context
+from sqlalchemy import pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -15,6 +14,7 @@ if config.config_file_name is not None:
 
 # Ensure the project's modules are importable
 import sys
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 import os
@@ -82,13 +82,17 @@ def run_migrations_online() -> None:
                 # workaround below.
                 try:
                     connection.execute(
-                        text("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64);")
+                        text(
+                            "ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64);"
+                        )
                     )
                 except Exception:
                     try:
                         # Some Postgres setups require USING cast syntax.
                         connection.execute(
-                            text("ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64) USING version_num::VARCHAR;")
+                            text(
+                                "ALTER TABLE alembic_version ALTER COLUMN version_num TYPE VARCHAR(64) USING version_num::VARCHAR;"
+                            )
                         )
                     except Exception:
                         # As a last resort for SQLite, try the safe copy/rename pattern.
@@ -99,7 +103,8 @@ def run_migrations_online() -> None:
                                 # This is best-effort and only runs when alembic_version exists.
                                 connection.execute(
                                     text(
-                                        "CREATE TABLE IF NOT EXISTS alembic_version_new (version_num VARCHAR(64) PRIMARY KEY);")
+                                        "CREATE TABLE IF NOT EXISTS alembic_version_new (version_num VARCHAR(64) PRIMARY KEY);"
+                                    )
                                 )
                                 connection.execute(
                                     text(
@@ -107,7 +112,11 @@ def run_migrations_online() -> None:
                                     )
                                 )
                                 connection.execute(text("DROP TABLE alembic_version;"))
-                                connection.execute(text("ALTER TABLE alembic_version_new RENAME TO alembic_version;"))
+                                connection.execute(
+                                    text(
+                                        "ALTER TABLE alembic_version_new RENAME TO alembic_version;"
+                                    )
+                                )
                         except Exception:
                             # ignore any failure here — migrations will still proceed and
                             # the underlying error will surface if this was insufficient.
