@@ -9,13 +9,22 @@ import {
 
 interface FiltersProps {
   filters: { league: string; stat: string; search: string };
-  onFilterChange: (_filters: { league: string; stat: string; search: string }) => void;
+  onFilterChange: (_filters: {
+    league: string;
+    stat: string;
+    search: string;
+  }) => void;
   // Note: parameter name prefixed with underscore if unused
   onAnalyze: () => void;
   onSearch: () => void;
 }
 
-export default function Filters({ filters: _filters, onFilterChange, onAnalyze, onSearch }: FiltersProps) {
+export default function Filters({
+  filters: _filters,
+  onFilterChange,
+  onAnalyze,
+  onSearch,
+}: FiltersProps) {
   // map incoming prop to local name used throughout the component
   const filters = _filters;
   const [leagues, setLeagues] = useState<string[]>([]);
@@ -57,7 +66,11 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
     setLoading(true);
     debounceRef.current = window.setTimeout(async () => {
       try {
-        const res = await getPlayersWithCounts(filters.league || undefined, filters.stat || undefined, playerQuery || undefined);
+        const res = await getPlayersWithCounts(
+          filters.league || undefined,
+          filters.stat || undefined,
+          playerQuery || undefined
+        );
         setPlayers(res || []);
         setHighlighted(-1);
       } finally {
@@ -96,11 +109,18 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
       try {
         const maps = await getPlayerMappings(filters.search);
         if (!mounted) return;
-        const uniqueLeagues = Array.from(new Set(maps.map((m) => m.league).filter(Boolean)));
-        const uniqueStats = Array.from(new Set(maps.map((m) => m.stat).filter(Boolean)));
+        const uniqueLeagues = Array.from(
+          new Set(maps.map((m) => m.league).filter(Boolean))
+        );
+        const uniqueStats = Array.from(
+          new Set(maps.map((m) => m.stat).filter(Boolean))
+        );
         if (uniqueLeagues.length > 0) {
           setLeagues(uniqueLeagues);
-          if (uniqueLeagues.length === 1 && filters.league !== uniqueLeagues[0]) {
+          if (
+            uniqueLeagues.length === 1 &&
+            filters.league !== uniqueLeagues[0]
+          ) {
             onFilterChange({ ...filters, league: uniqueLeagues[0] });
           }
         } else {
@@ -171,7 +191,8 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
       };
     }, 120) as unknown as number;
     return () => {
-      if (leaguesTimer.current) window.clearTimeout(leaguesTimer.current as any);
+      if (leaguesTimer.current)
+        window.clearTimeout(leaguesTimer.current as any);
     };
   }, [filters.stat]);
 
@@ -212,7 +233,9 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
         <div>
           <select
             value={filters.league}
-            onChange={(e) => onFilterChange({ ...filters, league: e.target.value })}
+            onChange={(e) =>
+              onFilterChange({ ...filters, league: e.target.value })
+            }
             className="w-full h-11 px-4 border dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 appearance-none"
           >
             <option value="">All Leagues</option>
@@ -227,7 +250,9 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
         <div>
           <select
             value={filters.stat}
-            onChange={(e) => onFilterChange({ ...filters, stat: e.target.value })}
+            onChange={(e) =>
+              onFilterChange({ ...filters, stat: e.target.value })
+            }
             className="w-full h-11 px-4 border dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 appearance-none"
           >
             <option value="">All Stats</option>
@@ -249,7 +274,9 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
                 onKeyDown={(e) => {
                   if (e.key === "ArrowDown") {
                     e.preventDefault();
-                    setHighlighted((h) => Math.min(h + 1, Math.max(0, players.length - 1)));
+                    setHighlighted((h) =>
+                      Math.min(h + 1, Math.max(0, players.length - 1))
+                    );
                     setIsOpen(true);
                   } else if (e.key === "ArrowUp") {
                     e.preventDefault();
@@ -289,7 +316,10 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
                 >
                   Analyze
                 </button>
-                <button onClick={clearAll} className="h-11 px-4 bg-transparent border border-gray-700 dark:border-gray-500 text-gray-200 hover:bg-gray-700/30 rounded-lg text-sm">
+                <button
+                  onClick={clearAll}
+                  className="h-11 px-4 bg-transparent border border-gray-700 dark:border-gray-500 text-gray-200 hover:bg-gray-700/30 rounded-lg text-sm"
+                >
                   Clear
                 </button>
               </div>
@@ -298,7 +328,11 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
             {isOpen && (
               <ul className="absolute z-50 mt-2 max-h-56 w-full overflow-auto rounded-lg shadow-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
                 {players
-                  .filter((p) => p.name.toLowerCase().includes((playerQuery || "").toLowerCase()))
+                  .filter((p) =>
+                    p.name
+                      .toLowerCase()
+                      .includes((playerQuery || "").toLowerCase())
+                  )
                   .slice(0, 100)
                   .map((p, idx) => (
                     <li
@@ -308,14 +342,22 @@ export default function Filters({ filters: _filters, onFilterChange, onAnalyze, 
                         choosePlayer(p.name);
                       }}
                       onMouseEnter={() => setHighlighted(idx)}
-                      className={`px-3 py-2 cursor-pointer flex justify-between items-center ${highlighted === idx ? "bg-gray-100 dark:bg-gray-600" : "hover:bg-gray-50 dark:hover:bg-gray-600"}`}
+                      className={`px-3 py-2 cursor-pointer flex justify-between items-center ${
+                        highlighted === idx
+                          ? "bg-gray-100 dark:bg-gray-600"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-600"
+                      }`}
                     >
                       <span className="font-medium">{p.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">{p.count ?? 0}</span>
+                      <span className="text-sm text-gray-500 ml-2">
+                        {p.count ?? 0}
+                      </span>
                     </li>
                   ))}
                 {players.length === 0 && !loading && (
-                  <li className="px-3 py-2 text-sm text-gray-500">No players</li>
+                  <li className="px-3 py-2 text-sm text-gray-500">
+                    No players
+                  </li>
                 )}
               </ul>
             )}

@@ -1,0 +1,17 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    node_modules,
+    dist,
+    build,
+    artifacts,
+    mlruns,
+    tmp*,
+    tmp_debug*,
+    backend/models_store,
+    backend/artifacts

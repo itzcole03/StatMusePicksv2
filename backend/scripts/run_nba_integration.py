@@ -6,8 +6,9 @@ Usage:
 
 This script is intentionally minimal and intended for local developer use.
 """
-import os
+
 import json
+import os
 import sys
 
 from backend.services import nba_stats_client as nbc

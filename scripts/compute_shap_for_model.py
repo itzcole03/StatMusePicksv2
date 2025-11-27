@@ -19,16 +19,19 @@ Outputs (under `artifacts/shap/<modelname>/`):
  - `expected_value.json` (scalar or list)
  - `sample_features.csv` (the X used)
 """
+
 from __future__ import annotations
+
 import argparse
-import joblib
-import json
-import os
+import datetime
 import glob
+import json
+import logging
+import os
+
+import joblib
 import numpy as np
 import pandas as pd
-import logging
-import datetime
 
 logger = logging.getLogger("compute_shap")
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -38,7 +41,10 @@ ARTIFACTS_DIR = "artifacts"
 
 
 def find_latest_model(models_dir: str) -> str | None:
-    patterns = [os.path.join(models_dir, "**", "*.pkl"), os.path.join(models_dir, "**", "*.joblib")]
+    patterns = [
+        os.path.join(models_dir, "**", "*.pkl"),
+        os.path.join(models_dir, "**", "*.joblib"),
+    ]
     files = []
     for p in patterns:
         files.extend(glob.glob(p, recursive=True))
@@ -73,7 +79,11 @@ def infer_feature_matrix_from_model(model, n_samples: int = 50) -> pd.DataFrame:
     except Exception:
         n_features = None
     try:
-        if n_features is None and hasattr(model, "booster") and hasattr(model.booster, "num_features"):
+        if (
+            n_features is None
+            and hasattr(model, "booster")
+            and hasattr(model.booster, "num_features")
+        ):
             n_features = int(model.booster.num_features())
     except Exception:
         pass
@@ -90,7 +100,9 @@ def infer_feature_matrix_from_model(model, n_samples: int = 50) -> pd.DataFrame:
     return X
 
 
-def preprocess_features(X: pd.DataFrame, max_onehot_cardinality: int = 30) -> pd.DataFrame:
+def preprocess_features(
+    X: pd.DataFrame, max_onehot_cardinality: int = 30
+) -> pd.DataFrame:
     """Prepare feature matrix for SHAP:
     - Keep numeric columns
     - One-hot encode categorical columns with cardinality <= max_onehot_cardinality
@@ -122,14 +134,18 @@ def preprocess_features(X: pd.DataFrame, max_onehot_cardinality: int = 30) -> pd
 
         if to_onehot:
             try:
-                oh = pd.get_dummies(cat[to_onehot].astype(str), prefix=to_onehot, drop_first=False)
+                oh = pd.get_dummies(
+                    cat[to_onehot].astype(str), prefix=to_onehot, drop_first=False
+                )
             except Exception:
                 oh = pd.DataFrame()
         else:
             oh = pd.DataFrame()
 
         if to_drop:
-            logger.info("Dropping high-cardinality / empty categorical columns: %s", to_drop)
+            logger.info(
+                "Dropping high-cardinality / empty categorical columns: %s", to_drop
+            )
 
         Xp = pd.concat([numeric, oh], axis=1)
     else:
@@ -140,7 +156,7 @@ def preprocess_features(X: pd.DataFrame, max_onehot_cardinality: int = 30) -> pd
     # ensure numeric dtype
     for col in Xp.columns:
         if not np.issubdtype(Xp[col].dtype, np.number):
-            Xp[col] = pd.to_numeric(Xp[col], errors='coerce').fillna(0)
+            Xp[col] = pd.to_numeric(Xp[col], errors="coerce").fillna(0)
     return Xp
 
 
@@ -165,7 +181,9 @@ def compute_and_save_shap(model, X: pd.DataFrame, outdir: str, model_basename: s
     try:
         import shap
     except Exception:
-        logger.error("`shap` library not installed. Install with `pip install shap` to enable SHAP computation.")
+        logger.error(
+            "`shap` library not installed. Install with `pip install shap` to enable SHAP computation."
+        )
         return False
 
     # If model has compute_shap, prefer it
@@ -200,7 +218,9 @@ def compute_and_save_shap(model, X: pd.DataFrame, outdir: str, model_basename: s
     jsonfile = os.path.join(outdir, "expected_value.json")
     try:
         with open(jsonfile, "w", encoding="utf-8") as fh:
-            json.dump(expected.tolist() if hasattr(expected, 'tolist') else expected, fh)
+            json.dump(
+                expected.tolist() if hasattr(expected, "tolist") else expected, fh
+            )
     except Exception:
         # best-effort
         try:
@@ -221,7 +241,10 @@ def compute_and_save_shap(model, X: pd.DataFrame, outdir: str, model_basename: s
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--model", help="Path to persisted model (joblib/pkl). If omitted, picks latest under backend/models_store/")
+    p.add_argument(
+        "--model",
+        help="Path to persisted model (joblib/pkl). If omitted, picks latest under backend/models_store/",
+    )
     p.add_argument("--out-dir", help="Output artifacts base dir", default=ARTIFACTS_DIR)
     p.add_argument("--sample-csv", help="Optional CSV to use as feature matrix")
     args = p.parse_args()
@@ -240,7 +263,11 @@ def main():
             X = pd.read_csv(sample_csv)
             logger.info("Loaded sample features from %s", sample_csv)
         except Exception as e:
-            logger.warning("Failed to read sample CSV %s: %s; falling back to inferred features", sample_csv, e)
+            logger.warning(
+                "Failed to read sample CSV %s: %s; falling back to inferred features",
+                sample_csv,
+                e,
+            )
             X = infer_feature_matrix_from_model(model)
     else:
         X = infer_feature_matrix_from_model(model)
@@ -251,15 +278,24 @@ def main():
     # Align to model's expected number of features if available
     expected = None
     try:
-        expected = int(getattr(model, 'n_features_in_', None))
+        expected = int(getattr(model, "n_features_in_", None))
     except Exception:
         expected = None
     if expected is not None:
-        logger.info("Model expects %s features; aligning processed sample (had %s)", expected, Xp.shape[1])
+        logger.info(
+            "Model expects %s features; aligning processed sample (had %s)",
+            expected,
+            Xp.shape[1],
+        )
         Xp = align_feature_count(Xp, expected)
 
     model_basename = os.path.splitext(os.path.basename(model_path))[0]
-    outdir = ensure_outdir(args.out_dir, model_basename + "_" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ"))
+    outdir = ensure_outdir(
+        args.out_dir,
+        model_basename
+        + "_"
+        + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
+    )
     # save the processed sample features used for SHAP
     try:
         Xp.to_csv(os.path.join(outdir, "sample_features_processed.csv"), index=False)

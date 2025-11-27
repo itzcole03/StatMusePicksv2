@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { clearDB, countAll, rebuildPlayersIndex } from "../services/indexedDBService";
-import { getSettings as getAutoSettings, startAutoRefresh, refreshNow } from "../services/autoRefreshService";
+import {
+  clearDB,
+  countAll,
+  rebuildPlayersIndex,
+} from "../services/indexedDBService";
+import {
+  getSettings as getAutoSettings,
+  startAutoRefresh,
+  refreshNow,
+} from "../services/autoRefreshService";
 
 export default function DataLoader() {
   const [dataInput, setDataInput] = useState("");
@@ -39,14 +47,17 @@ export default function DataLoader() {
       if (raw) {
         setAutoStatus(`fetched ${raw.length} bytes`);
         setLastRefreshTime(new Date());
-        setLastSource(e?.detail?.viaProxy ? String(e.detail.viaProxy) : "direct");
+        setLastSource(
+          e?.detail?.viaProxy ? String(e.detail.viaProxy) : "direct"
+        );
         setLastError(null);
         setShowManual(false);
         // hand to existing loader path using fastImport mode for auto runs
         handleLoadDataWithString(raw, { fastImport: true });
       }
     };
-    const onStarted = (e: any) => setAutoStatus(`started interval ${e?.detail?.interval}m`);
+    const onStarted = (e: any) =>
+      setAutoStatus(`started interval ${e?.detail?.interval}m`);
     const onStopped = () => setAutoStatus("stopped");
     const onError = (e: any) => {
       const status = e?.detail?.status;
@@ -58,7 +69,9 @@ export default function DataLoader() {
         return false;
       })();
 
-      const msg = isRateLimit ? "Timeout: Try again later" : `error: ${err || status}`;
+      const msg = isRateLimit
+        ? "Timeout: Try again later"
+        : `error: ${err || status}`;
       setAutoStatus(msg);
       setLastError(msg);
       // show manual paste area so user can recover
@@ -71,10 +84,22 @@ export default function DataLoader() {
     window.addEventListener("auto-refresh-error", onError as EventListener);
 
     return () => {
-      window.removeEventListener("auto-refresh-fetched", onFetched as EventListener);
-      window.removeEventListener("auto-refresh-started", onStarted as EventListener);
-      window.removeEventListener("auto-refresh-stopped", onStopped as EventListener);
-      window.removeEventListener("auto-refresh-error", onError as EventListener);
+      window.removeEventListener(
+        "auto-refresh-fetched",
+        onFetched as EventListener
+      );
+      window.removeEventListener(
+        "auto-refresh-started",
+        onStarted as EventListener
+      );
+      window.removeEventListener(
+        "auto-refresh-stopped",
+        onStopped as EventListener
+      );
+      window.removeEventListener(
+        "auto-refresh-error",
+        onError as EventListener
+      );
     };
   }, []);
 
@@ -91,7 +116,10 @@ export default function DataLoader() {
     handleLoadDataWithString(dataInput);
   };
 
-  const handleLoadDataWithString = (raw: string, opts?: { fastImport?: boolean }) => {
+  const handleLoadDataWithString = (
+    raw: string,
+    opts?: { fastImport?: boolean }
+  ) => {
     setStatus({ message: "Parsing and saving data...", type: "info" });
     setProgress(0);
     setParsedCount(0);
@@ -108,7 +136,10 @@ export default function DataLoader() {
     workerRef.current = worker;
 
     // We'll throttle UI updates by accumulating counts in a ref
-    const parsedRef = { count: 0, progress: 0 } as { count: number; progress: number };
+    const parsedRef = { count: 0, progress: 0 } as {
+      count: number;
+      progress: number;
+    };
     const rafRef = { scheduled: false } as { scheduled: boolean };
 
     const flushToState = () => {
@@ -138,30 +169,49 @@ export default function DataLoader() {
           // no pending raf; flush now
           flushToState();
         }
-        setStatus({ message: `Data parsed and saved (${total} items).`, type: "success" });
+        setStatus({
+          message: `Data parsed and saved (${total} items).`,
+          type: "success",
+        });
         setProgress(1);
         worker.terminate();
         workerRef.current = null;
         try {
-          window.dispatchEvent(new CustomEvent("db-updated", { detail: { total } }));
+          window.dispatchEvent(
+            new CustomEvent("db-updated", { detail: { total } })
+          );
         } catch {}
 
         // if worker indicated the player index is dirty (fast import), schedule rebuild in idle time
         if (msg.indexDirty) {
-          setStatus({ message: `Data imported; scheduling index rebuild...`, type: "info" });
+          setStatus({
+            message: `Data imported; scheduling index rebuild...`,
+            type: "info",
+          });
           const doRebuild = async () => {
             try {
               // use requestIdleCallback when available to avoid blocking UI
               const work = async () => {
                 const res = await rebuildPlayersIndex();
-                setStatus({ message: `Rebuilt player index: ${res.players} players, ${res.mappings} mappings.`, type: "success" });
-                try { window.dispatchEvent(new CustomEvent("db-updated", { detail: { total } })); } catch {}
+                setStatus({
+                  message: `Rebuilt player index: ${res.players} players, ${res.mappings} mappings.`,
+                  type: "success",
+                });
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("db-updated", { detail: { total } })
+                  );
+                } catch {}
               };
               if ((window as any).requestIdleCallback) {
-                (window as any).requestIdleCallback(() => { work(); });
+                (window as any).requestIdleCallback(() => {
+                  work();
+                });
               } else {
                 // fallback delay
-                setTimeout(() => { work(); }, 2000);
+                setTimeout(() => {
+                  work();
+                }, 2000);
               }
             } catch (err) {
               console.error("scheduled rebuildPlayersIndex error", err);
@@ -202,9 +252,15 @@ export default function DataLoader() {
           setLastError("refresh failed");
           setShowManual(true);
         } else if (res.ok && res.type === "fetched") {
-          setAutoStatus(`refreshed (${res.detail?.viaProxy ? String(res.detail.viaProxy) : 'direct'})`);
+          setAutoStatus(
+            `refreshed (${
+              res.detail?.viaProxy ? String(res.detail.viaProxy) : "direct"
+            })`
+          );
           setLastRefreshTime(new Date());
-          setLastSource(res.detail?.viaProxy ? String(res.detail.viaProxy) : 'direct');
+          setLastSource(
+            res.detail?.viaProxy ? String(res.detail.viaProxy) : "direct"
+          );
         } else if (res.ok && res.type === "nochange") {
           setAutoStatus("no change");
         } else {
@@ -243,7 +299,10 @@ export default function DataLoader() {
           Clear Stored Data
         </button>
         <div className="ml-4 flex items-center gap-2">
-          <button onClick={handleRefreshNow} className="px-6 py-2 bg-indigo-600 text-white rounded-lg">
+          <button
+            onClick={handleRefreshNow}
+            className="px-6 py-2 bg-indigo-600 text-white rounded-lg"
+          >
             {refreshBusy ? "Refreshing..." : "Refresh Data"}
           </button>
         </div>
@@ -252,15 +311,25 @@ export default function DataLoader() {
       <div className="mt-2 flex items-center justify-between">
         <div className="text-sm text-gray-300">
           {lastRefreshTime ? (
-            <span>Last refresh: {lastRefreshTime.toLocaleString()} ({lastSource || 'direct'})</span>
+            <span>
+              Last refresh: {lastRefreshTime.toLocaleString()} (
+              {lastSource || "direct"})
+            </span>
           ) : (
             <span>No refresh yet</span>
           )}
-          {lastError && <div className="text-xs text-red-400">Last error: {lastError}</div>}
+          {lastError && (
+            <div className="text-xs text-red-400">Last error: {lastError}</div>
+          )}
         </div>
         <div>
           {!showManual && lastError && (
-            <button onClick={() => setShowManual(true)} className="text-sm underline text-gray-300">Paste JSON manually</button>
+            <button
+              onClick={() => setShowManual(true)}
+              className="text-sm underline text-gray-300"
+            >
+              Paste JSON manually
+            </button>
           )}
         </div>
       </div>
@@ -283,7 +352,12 @@ export default function DataLoader() {
             >
               Load Data
             </button>
-            <button onClick={() => setShowManual(false)} className="px-4 py-2 border rounded">Hide</button>
+            <button
+              onClick={() => setShowManual(false)}
+              className="px-4 py-2 border rounded"
+            >
+              Hide
+            </button>
           </div>
         </>
       )}

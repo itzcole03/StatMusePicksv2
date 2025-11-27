@@ -4,7 +4,9 @@ and reliability-diagram data generator.
 Lightweight, dependency-minimal implementations suitable for unit-testing and
 CI. A small plotting helper is provided if `matplotlib` is available.
 """
+
 from typing import Tuple
+
 import numpy as np
 
 
@@ -45,11 +47,13 @@ def expected_calibration_error(y_true, y_prob, n_bins: int = 10) -> float:
             continue
         avg_prob = float(np.mean(y_prob[mask]))
         avg_true = float(np.mean(y_true[mask]))
-        ece += (np.abs(avg_prob - avg_true) * (mask.sum() / n))
+        ece += np.abs(avg_prob - avg_true) * (mask.sum() / n)
     return float(ece)
 
 
-def reliability_diagram_data(y_true, y_prob, n_bins: int = 10) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def reliability_diagram_data(
+    y_true, y_prob, n_bins: int = 10
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Return data for a reliability diagram.
 
     Returns (bin_centers, avg_pred, avg_true, counts) where each is a numpy array
@@ -76,7 +80,9 @@ def reliability_diagram_data(y_true, y_prob, n_bins: int = 10) -> Tuple[np.ndarr
     return bin_centers, avg_pred, avg_true, counts
 
 
-def plot_reliability_diagram(y_true, y_prob, n_bins: int = 10, ax=None, save_path: str = None):
+def plot_reliability_diagram(
+    y_true, y_prob, n_bins: int = 10, ax=None, save_path: str = None
+):
     """Optional convenience wrapper that plots a reliability diagram if
     `matplotlib` is available. Returns the matplotlib Axes if plotted, else None.
     """
@@ -85,7 +91,9 @@ def plot_reliability_diagram(y_true, y_prob, n_bins: int = 10, ax=None, save_pat
     except Exception:
         return None
 
-    bin_centers, avg_pred, avg_true, counts = reliability_diagram_data(y_true, y_prob, n_bins=n_bins)
+    bin_centers, avg_pred, avg_true, counts = reliability_diagram_data(
+        y_true, y_prob, n_bins=n_bins
+    )
     if ax is None:
         fig, ax = plt.subplots(figsize=(6, 4))
     ax.plot(bin_centers, avg_true, marker="o", label="Observed")

@@ -1,6 +1,7 @@
 import os
 import tempfile
 from datetime import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -15,16 +16,24 @@ def test_ingest_duplicate_updates(monkeypatch):
 
         # create tables
         from backend.db import Base
+
         engine = create_engine(url, future=True)
         Base.metadata.create_all(engine)
 
-        game = {"game_date": datetime(2025, 11, 25), "home_team": "LAL", "away_team": "NYK", "home_score": 102, "away_score": 99}
+        game = {
+            "game_date": datetime(2025, 11, 25),
+            "home_team": "LAL",
+            "away_team": "NYK",
+            "home_score": 102,
+            "away_score": 99,
+        }
         # first ingest
-        updated1 = update_team_stats([game])
+        update_team_stats([game])
         # duplicate identical ingest should not create additional rows but may return 0
-        updated2 = update_team_stats([game])
+        update_team_stats([game])
 
         from backend.models import Game
+
         Session = sessionmaker(bind=engine)
         session = Session()
         try:

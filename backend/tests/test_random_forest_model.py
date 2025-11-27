@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import os
 
 from backend.models.random_forest_model import RandomForestModel
 

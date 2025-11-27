@@ -53,10 +53,16 @@ export interface ParsedProjection {
     // Optional multi-season / training-scoped fields
     seasonsConsidered?: string[] | null;
     seasonStatsMulti?: Record<string, Record<string, number>> | null;
-    advancedStatsMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+    advancedStatsMulti?: {
+      per_season?: Record<string, Record<string, number>>;
+      aggregated?: Record<string, number>;
+    } | null;
     teamId?: number | null;
     teamStatsMulti?: Record<string, Record<string, number>> | null;
-    teamAdvancedMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+    teamAdvancedMulti?: {
+      per_season?: Record<string, Record<string, number>>;
+      aggregated?: Record<string, number>;
+    } | null;
   } | null;
 }
 
@@ -91,10 +97,12 @@ export interface BatchPlayerRequest {
   limit?: number;
 }
 
-export type BatchPlayerResult = {
-  player: string;
-  error: string;
-} | any;
+export type BatchPlayerResult =
+  | {
+      player: string;
+      error: string;
+    }
+  | any;
 
 // Enhanced frontend types for backend player context
 export interface RollingAverages {
@@ -111,11 +119,17 @@ export interface OpponentInfo {
 export interface EnhancedPlayerContext {
   player: string;
   stat: string;
-  recentGames?: Array<{ date?: string | null; statValue?: number | null }> | null;
+  recentGames?: Array<{
+    date?: string | null;
+    statValue?: number | null;
+  }> | null;
   seasonAvg?: number | null;
   noGamesThisSeason?: boolean;
   fetchedAt?: string | null;
   rollingAverages?: RollingAverages | null;
   opponentInfo?: OpponentInfo | null;
-  contextualFactors?: { daysRest?: number | null; isBackToBack?: boolean | null } | null;
+  contextualFactors?: {
+    daysRest?: number | null;
+    isBackToBack?: boolean | null;
+  } | null;
 }

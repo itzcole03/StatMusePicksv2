@@ -1,5 +1,5 @@
 import pandas as pd
-import numpy as np
+
 from backend.services.feature_engineering import engineer_features
 
 
@@ -9,9 +9,24 @@ def test_engineer_features_end_to_end_columns_and_types():
         "seasonAvg": 27.5,
         "contextualFactors": {"homeAway": "home", "daysRest": 0},
         "recentGames": [
-            {"date": "2025-11-05", "statValue": 30, "opponentTeamId": "BOS", "opponentDefRating": 105.0},
-            {"date": "2025-11-02", "statValue": 22, "opponentTeamId": "NYK", "opponentDefRating": 110.0},
-            {"date": "2025-10-30", "statValue": 25, "opponentTeamId": "BOS", "opponentDefRating": 105.0},
+            {
+                "date": "2025-11-05",
+                "statValue": 30,
+                "opponentTeamId": "BOS",
+                "opponentDefRating": 105.0,
+            },
+            {
+                "date": "2025-11-02",
+                "statValue": 22,
+                "opponentTeamId": "NYK",
+                "opponentDefRating": 110.0,
+            },
+            {
+                "date": "2025-10-30",
+                "statValue": 25,
+                "opponentTeamId": "BOS",
+                "opponentDefRating": 105.0,
+            },
         ],
     }
 
@@ -55,7 +70,11 @@ def test_engineer_features_end_to_end_columns_and_types():
         assert col in df.columns, f"Missing expected column {col}"
         # dtype kind: f=float, i=int, u=unsigned int
         kind = df[col].dtype.kind
-        assert kind in ("f", "i", "u"), f"Column {col} expected numeric dtype, got {df[col].dtype}"
+        assert kind in (
+            "f",
+            "i",
+            "u",
+        ), f"Column {col} expected numeric dtype, got {df[col].dtype}"
 
     # date column should be present (object/string) or numeric if encoded
     date_col = "last_game_vs_current_opponent_date"

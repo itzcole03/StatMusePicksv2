@@ -1,5 +1,7 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+
 from backend.db import Base
 
 
@@ -8,7 +10,9 @@ class VectorIndex(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     vector_id = Column(String(256), nullable=False, unique=True, index=True)
-    source_type = Column(String(64), nullable=False, index=True)  # e.g., 'news' or 'game'
+    source_type = Column(
+        String(64), nullable=False, index=True
+    )  # e.g., 'news' or 'game'
     source_id = Column(String(256), nullable=False, index=True)
     player_id = Column(Integer, ForeignKey("players.id"), nullable=True, index=True)
     model = Column(String(128), nullable=True)

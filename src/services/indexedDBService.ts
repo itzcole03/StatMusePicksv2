@@ -53,13 +53,11 @@ export function initDB() {
           for (const it of all) {
             if (it.player) playersSet.add(it.player);
             try {
-              tx2
-                .objectStore("player_map")
-                .put({
-                  league: it.league || "",
-                  stat: it.stat || "",
-                  name: it.player,
-                });
+              tx2.objectStore("player_map").put({
+                league: it.league || "",
+                stat: it.stat || "",
+                name: it.player,
+              });
             } catch {
               // ignore individual put errors
             }
@@ -127,16 +125,16 @@ export async function listModelsInSavedDir(): Promise<string[]> {
         names.push(entry.name);
       }
     }
-          } catch {
-        // fallback: try keys() or values()
-      try {
-        for await (const [name] of (handle as any).entries()) {
-          names.push(name as string);
-        }
-      } catch {
-        console.warn("Could not list directory entries");
+  } catch {
+    // fallback: try keys() or values()
+    try {
+      for await (const [name] of (handle as any).entries()) {
+        names.push(name as string);
       }
+    } catch {
+      console.warn("Could not list directory entries");
     }
+  }
   return names.sort();
 }
 

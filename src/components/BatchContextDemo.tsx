@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Settings } from '../types';
-import { fetchBatchPlayerContext } from '../services/nbaService';
+import { useEffect, useState } from "react";
+import { Settings } from "../types";
+import { fetchBatchPlayerContext } from "../services/nbaService";
 
 type DemoResult = { player?: string; error?: string; fetchedAt?: string };
 
@@ -12,18 +12,22 @@ export default function BatchContextDemo() {
     async function run() {
       setLoading(true);
       const requests = [
-        { player: 'LeBron James', stat: 'points', limit: 5 },
-        { player: 'Stephen Curry', stat: 'points', limit: 5 },
+        { player: "LeBron James", stat: "points", limit: 5 },
+        { player: "Stephen Curry", stat: "points", limit: 5 },
       ];
       const settings: Settings = {
-        aiProvider: 'local',
-        llmEndpoint: '',
-        llmModel: '',
+        aiProvider: "local",
+        llmEndpoint: "",
+        llmModel: "",
       };
 
       const res = await fetchBatchPlayerContext(requests, settings);
       setResults(
-        res.map((r: any) => ({ player: r.player || r.player_name || r.player, error: r.error, fetchedAt: r.fetchedAt }))
+        res.map((r: any) => ({
+          player: r.player || r.player_name || r.player,
+          error: r.error,
+          fetchedAt: r.fetchedAt,
+        }))
       );
       setLoading(false);
     }
@@ -38,7 +42,12 @@ export default function BatchContextDemo() {
       <ul>
         {results.map((r, i) => (
           <li key={i} className="py-2">
-            <strong>{r.player}</strong>: {r.error ? <span className="text-red-600">{r.error}</span> : <span>fetched at {r.fetchedAt}</span>}
+            <strong>{r.player}</strong>:{" "}
+            {r.error ? (
+              <span className="text-red-600">{r.error}</span>
+            ) : (
+              <span>fetched at {r.fetchedAt}</span>
+            )}
           </li>
         ))}
       </ul>

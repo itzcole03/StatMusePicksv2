@@ -145,15 +145,18 @@ export default function AnalysisSection({
             );
           });
           setV2Predictions(preds);
-          } catch {
-            setV2Predictions(null);
-          }
+        } catch {
+          setV2Predictions(null);
+        }
 
         // Run LLM via backend SSE stream and capture output in real-time
         let full = "";
         await streamOllamaAnalysis(
           prompt,
-          { model: settings.llmModel, testProjections: (settings as any).testProjections },
+          {
+            model: settings.llmModel,
+            testProjections: (settings as any).testProjections,
+          },
           (chunk) => {
             if (chunk.error) {
               // surface error but continue to let exception handling decide
@@ -180,11 +183,7 @@ export default function AnalysisSection({
         // Try parsing and validating. If invalid, retry once with stricter enforcement.
         let parsed = extractFirstJsonArray(full);
         let valid = parsed
-          ? validateOutput(
-              parsed,
-              projections,
-              externalUsed ? contexts : null
-            )
+          ? validateOutput(parsed, projections, externalUsed ? contexts : null)
           : { ok: false, reasons: ["No JSON array found in output"] };
         if (!valid.ok) {
           // Save raw output and reasons for debugging
@@ -219,7 +218,10 @@ export default function AnalysisSection({
           let full2 = "";
           await streamOllamaAnalysis(
             prompt + enforcement,
-            { model: settings.llmModel, testProjections: (settings as any).testProjections },
+            {
+              model: settings.llmModel,
+              testProjections: (settings as any).testProjections,
+            },
             (chunk) => {
               if (chunk.error) return;
               if (chunk.text) {
@@ -457,18 +459,27 @@ export default function AnalysisSection({
                               </div>
                             )}
 
-                            {ctx.rollingAverages && Object.keys(ctx.rollingAverages).length > 0 && (
-                              <div className="text-xs mt-1">
-                                <strong>Rolling averages:</strong>
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                  {Object.entries(ctx.rollingAverages).map(([k, v]: any) => (
-                                    <div key={k} className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
-                                      {k}: {v != null ? Number(v).toFixed(2) : "null"}
-                                    </div>
-                                  ))}
+                            {ctx.rollingAverages &&
+                              Object.keys(ctx.rollingAverages).length > 0 && (
+                                <div className="text-xs mt-1">
+                                  <strong>Rolling averages:</strong>
+                                  <div className="mt-1 flex flex-wrap gap-2">
+                                    {Object.entries(ctx.rollingAverages).map(
+                                      ([k, v]: any) => (
+                                        <div
+                                          key={k}
+                                          className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs"
+                                        >
+                                          {k}:{" "}
+                                          {v != null
+                                            ? Number(v).toFixed(2)
+                                            : "null"}
+                                        </div>
+                                      )
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
                             {ctx.noGamesThisSeason && (
                               <div className="mt-2 text-xs text-yellow-700 dark:text-yellow-300">
@@ -513,7 +524,7 @@ export default function AnalysisSection({
                                     }));
                                   } catch {
                                     // ignore; UI will still show existing context
-                                                          } finally {
+                                  } finally {
                                     setRefetchingIds((prev) => {
                                       const s = new Set(prev);
                                       s.delete(p.id);

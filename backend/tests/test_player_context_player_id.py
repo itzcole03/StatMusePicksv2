@@ -1,12 +1,18 @@
 from fastapi.testclient import TestClient
-from backend.main import app
+
 import backend.main as main_mod
+from backend.main import app
 
 
 def test_player_context_with_player_id(monkeypatch):
     # Simulate nba_stats_client returning a player id and fetch by id path
     sample_recent = [
-        {"date": "2025-11-05", "statValue": 28, "opponentTeamId": "BOS", "opponentDefRating": 105.0},
+        {
+            "date": "2025-11-05",
+            "statValue": 28,
+            "opponentTeamId": "BOS",
+            "opponentDefRating": 105.0,
+        },
     ]
 
     class DummyClient:
@@ -23,11 +29,11 @@ def test_player_context_with_player_id(monkeypatch):
             assert pid == 2544
             return sample_recent
 
-    monkeypatch.setattr(main_mod, 'nba_stats_client', DummyClient)
+    monkeypatch.setattr(main_mod, "nba_stats_client", DummyClient)
 
     client = TestClient(app)
-    resp = client.get('/api/player_context?player_name=LeBron%20James&limit=1')
+    resp = client.get("/api/player_context?player_name=LeBron%20James&limit=1")
     assert resp.status_code == 200
     data = resp.json()
-    assert data['player_id'] == 2544
-    assert len(data['recentGames']) == 1
+    assert data["player_id"] == 2544
+    assert len(data["recentGames"]) == 1

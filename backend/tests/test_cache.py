@@ -1,8 +1,5 @@
 import asyncio
 
-import pytest
-import asyncio
-
 from backend.services import cache
 
 

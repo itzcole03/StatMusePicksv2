@@ -9,31 +9,34 @@ Behavior:
 - Use `nba_api` when installed; otherwise functions return `None` or []
   so callers can handle missing data gracefully.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
 import time
-import threading
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from cachetools import TTLCache
 
 from backend.services.cache import get_sync_redis
+
 from .token_bucket import TokenBucket
 
 logger = logging.getLogger(__name__)
 
 # Try importing nba_api optional dependency
 try:
+    from nba_api.stats.endpoints import (
+        leaguedashplayerstats,
+        leaguegamelog,
+        playercareerstats,
+        playergamelog,
+        teamgamelog,
+    )
     from nba_api.stats.static import players
     from nba_api.stats.static import teams as static_teams
-    from nba_api.stats.endpoints import playergamelog
-    from nba_api.stats.endpoints import teamgamelog
-    from nba_api.stats.endpoints import leaguegamelog
-    from nba_api.stats.endpoints import playercareerstats
-    from nba_api.stats.endpoints import leaguedashplayerstats
 except Exception:  # pragma: no cover - optional dep
     players = None
     static_teams = None
@@ -64,6 +67,7 @@ def set_token_bucket(bucket: TokenBucket) -> None:
 def get_token_bucket() -> TokenBucket:
     return _token_bucket
 
+
 # Timeout for nba_api HTTP requests (seconds). Increase default to reduce transient read timeouts.
 NBA_API_TIMEOUT = int(os.environ.get("NBA_API_TIMEOUT", "180"))
 
@@ -77,7 +81,14 @@ def _acquire_token(timeout: float = 5.0) -> bool:
         return False
 
 
-def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff: float = 120.0, **kwargs):
+def _with_retries(
+    fn,
+    *args,
+    retries: int = 8,
+    backoff: float = 1.0,
+    max_backoff: float = 120.0,
+    **kwargs,
+):
     """Invoke `fn` with retries, exponential backoff and jitter.
 
     - `retries`: number of attempts before giving up
@@ -85,18 +96,19 @@ def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff
     - `max_backoff`: cap for backoff
     """
     import random
-    import requests
     import socket
     import ssl
-    import urllib3
     from http.client import RemoteDisconnected as _RemoteDisconnected
+
+    import requests
+    import urllib3
 
     last_exc = None
     # retry metric
     try:
         _retry_count
     except NameError:
-        _retry_count = 0
+        pass
     for attempt in range(retries):
         ok = _acquire_token(timeout=2.0)
         if not ok:
@@ -118,7 +130,7 @@ def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff
             last_exc = e
             # increment retry metric for observability
             try:
-                globals()['_retry_count'] = globals().get('_retry_count', 0) + 1
+                globals()["_retry_count"] = globals().get("_retry_count", 0) + 1
             except Exception:
                 pass
         except Exception as e:
@@ -148,7 +160,7 @@ def _with_retries(fn, *args, retries: int = 8, backoff: float = 1.0, max_backoff
 
             # exponential backoff with larger cap for connection issues
             cap = max_backoff if is_conn_err else max_backoff / 2.0
-            sleep_t = min(cap, backoff * (2 ** attempt))
+            sleep_t = min(cap, backoff * (2**attempt))
             # add jitter
             sleep_t = sleep_t * (0.4 + random.random() * 0.8)
             time.sleep(sleep_t)
@@ -207,6 +219,7 @@ def find_player_id_by_name(name: str) -> Optional[int]:
         return None
 
     try:
+
         def _lookup(n):
             return players.find_players_by_full_name(n)
 
@@ -230,11 +243,16 @@ def find_player_id_by_name(name: str) -> Optional[int]:
         lname = (name or "").lower().strip()
         for p in allp:
             try:
-                full = p.get('full_name') or p.get('fullName') or p.get('display_name') or ""
+                full = (
+                    p.get("full_name")
+                    or p.get("fullName")
+                    or p.get("display_name")
+                    or ""
+                )
                 if not full:
                     continue
                 if full.lower().strip() == lname:
-                    pid = p.get('id') or p.get('player_id')
+                    pid = p.get("id") or p.get("player_id")
                     if pid:
                         pid = int(pid)
                         _local_cache[cache_key] = pid
@@ -267,7 +285,9 @@ __all__ = [
 ]
 
 
-def get_player_season_stats_multi(player_id: int, seasons: Optional[List[str]]) -> Dict[str, Dict[str, float]]:
+def get_player_season_stats_multi(
+    player_id: int, seasons: Optional[List[str]]
+) -> Dict[str, Dict[str, float]]:
     """Return a mapping season -> basic season stats for the given seasons list.
 
     If `seasons` is None or empty, returns an empty dict.
@@ -285,7 +305,7 @@ def get_player_season_stats_multi(player_id: int, seasons: Optional[List[str]]) 
 
 def get_nba_retry_count() -> int:
     """Return the number of retries observed in this process (best-effort)."""
-    return globals().get('_retry_count', 0)
+    return globals().get("_retry_count", 0)
 
 
 def fetch_all_players() -> List[dict]:
@@ -301,7 +321,11 @@ def fetch_all_players() -> List[dict]:
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -328,9 +352,9 @@ def fetch_all_players() -> List[dict]:
         # Attempt to load a shipped/local cache file as a final fallback.
         try:
             repo_root = os.path.dirname(os.path.dirname(__file__))
-            local_path = os.path.join(repo_root, 'data', 'all_players.json')
+            local_path = os.path.join(repo_root, "data", "all_players.json")
             if os.path.exists(local_path):
-                with open(local_path, 'r', encoding='utf-8') as fh:
+                with open(local_path, "r", encoding="utf-8") as fh:
                     lst = json.load(fh)
                     _local_cache[cache_key] = lst
                     return lst
@@ -351,7 +375,11 @@ def fetch_all_teams() -> List[dict]:
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -378,7 +406,9 @@ def fetch_all_teams() -> List[dict]:
         return []
 
 
-def fetch_full_player_history(player_id: int, seasons: Optional[List[str]] = None) -> List[dict]:
+def fetch_full_player_history(
+    player_id: int, seasons: Optional[List[str]] = None
+) -> List[dict]:
     """Fetch and return aggregated game logs for a player over the provided seasons.
 
     Returns newest-first list of game dicts.
@@ -391,7 +421,9 @@ def fetch_full_player_history(player_id: int, seasons: Optional[List[str]] = Non
     return fetch_recent_games_multi(player_id, seasons, limit_per_season=82)
 
 
-def fetch_full_team_history(team_id: int, seasons: Optional[List[str]] = None) -> List[dict]:
+def fetch_full_team_history(
+    team_id: int, seasons: Optional[List[str]] = None
+) -> List[dict]:
     """Fetch and return aggregated team game logs across seasons."""
     if not team_id:
         return []
@@ -408,13 +440,17 @@ def fetch_full_team_history(team_id: int, seasons: Optional[List[str]] = None) -
         all_games = fetch_team_games(team_id, limit=500, season=None)
 
     try:
-        all_games.sort(key=lambda g: g.get('GAME_DATE') or g.get('gameDate') or '', reverse=True)
+        all_games.sort(
+            key=lambda g: g.get("GAME_DATE") or g.get("gameDate") or "", reverse=True
+        )
     except Exception:
         pass
     return all_games
 
 
-def get_team_stats_multi(team_id: int, seasons: Optional[List[str]]) -> Dict[str, Dict[str, float]]:
+def get_team_stats_multi(
+    team_id: int, seasons: Optional[List[str]]
+) -> Dict[str, Dict[str, float]]:
     """Return team stats per season for provided seasons."""
     out = {}
     if not team_id or not seasons:
@@ -427,7 +463,9 @@ def get_team_stats_multi(team_id: int, seasons: Optional[List[str]]) -> Dict[str
     return out
 
 
-def get_advanced_player_stats_multi(player_id: int, seasons: Optional[List[str]], use_fallback: bool = True) -> Dict[str, object]:
+def get_advanced_player_stats_multi(
+    player_id: int, seasons: Optional[List[str]], use_fallback: bool = True
+) -> Dict[str, object]:
     """Aggregate advanced player stats across multiple seasons.
 
     Returns a dict with:
@@ -475,6 +513,7 @@ def get_advanced_player_stats_multi(player_id: int, seasons: Optional[List[str]]
     result["aggregated"] = agg
     return result
 
+
 # Compatibility wrappers expected by callers (legacy names used in `backend.main`)
 def find_player_id(name: str) -> Optional[int]:
     """Backward-compatible alias for `find_player_id_by_name`.
@@ -485,7 +524,9 @@ def find_player_id(name: str) -> Optional[int]:
     return find_player_id_by_name(name)
 
 
-def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[str] = None) -> List[dict]:
+def fetch_recent_games_by_id(
+    player_id: int, limit: int = 8, season: Optional[str] = None
+) -> List[dict]:
     """Fetch recent games for a player id.
 
     Uses Redis/local cache, then `playergamelog.PlayerGameLog` when available.
@@ -501,7 +542,11 @@ def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[st
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -510,14 +555,14 @@ def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[st
     # Check for deterministic cached logs under repo for CI/tests
     try:
         repo_root = os.path.dirname(os.path.dirname(__file__))
-        cached_dir = os.path.join(repo_root, 'data', 'cached_game_logs')
+        cached_dir = os.path.join(repo_root, "data", "cached_game_logs")
         if season:
             cached_path = os.path.join(cached_dir, f"player_{player_id}_{season}.json")
         else:
             cached_path = os.path.join(cached_dir, f"player_{player_id}.json")
         if os.path.exists(cached_path):
             try:
-                with open(cached_path, 'r', encoding='utf-8') as fh:
+                with open(cached_path, "r", encoding="utf-8") as fh:
                     data = json.load(fh)
                     _local_cache[cache_key] = data
                     return data
@@ -533,16 +578,21 @@ def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[st
         return []
 
     try:
+
         def _fetch(pid, lim, seas):
             # `PlayerGameLog` has varying signatures across nba_api versions.
             last_err = None
             try:
                 if seas:
-                    gl = playergamelog.PlayerGameLog(player_id=pid, season=seas, timeout=NBA_API_TIMEOUT)
+                    gl = playergamelog.PlayerGameLog(
+                        player_id=pid, season=seas, timeout=NBA_API_TIMEOUT
+                    )
                 else:
-                    gl = playergamelog.PlayerGameLog(player_id=pid, timeout=NBA_API_TIMEOUT)
+                    gl = playergamelog.PlayerGameLog(
+                        player_id=pid, timeout=NBA_API_TIMEOUT
+                    )
                 df = gl.get_data_frames()[0]
-                return df.head(lim).to_dict(orient='records')
+                return df.head(lim).to_dict(orient="records")
             except TypeError as e:
                 last_err = e
             try:
@@ -552,7 +602,7 @@ def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[st
                 else:
                     gl = playergamelog.PlayerGameLog(pid)
                 df = gl.get_data_frames()[0]
-                return df.head(lim).to_dict(orient='records')
+                return df.head(lim).to_dict(orient="records")
             except Exception:
                 # re-raise the most helpful original error
                 if last_err is not None:
@@ -571,7 +621,7 @@ def fetch_recent_games_by_id(player_id: int, limit: int = 8, season: Optional[st
     except Exception:
         logger.exception("Error fetching recent games for player_id=%s", player_id)
         try:
-            _record_failed_fetch('player', player_id, 'fetch_recent_games')
+            _record_failed_fetch("player", player_id, "fetch_recent_games")
         except Exception:
             pass
         return []
@@ -588,7 +638,9 @@ def fetch_recent_games_by_name(name: str, limit: int = 8) -> List[dict]:
     return []
 
 
-def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = None) -> List[dict]:
+def fetch_recent_games(
+    player_id: int, limit: int = 8, season: Optional[str] = None
+) -> List[dict]:
     """Compatibility wrapper expected by older callers/tests.
 
     Delegates to `fetch_recent_games_by_id`. The optional `season` arg is
@@ -598,6 +650,7 @@ def fetch_recent_games(player_id: int, limit: int = 8, season: Optional[str] = N
         return fetch_recent_games_by_id(int(player_id), limit=limit)
     except Exception:
         return []
+
 
 __all__ = [
     "find_player_id_by_name",
@@ -621,7 +674,7 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     # When running in offline/dev mode prefer computing simple season stats
     # from available game logs instead of calling external `playercareerstats`.
     try:
-        if os.environ.get('NBA_FORCE_FALLBACK', '') == '1':
+        if os.environ.get("NBA_FORCE_FALLBACK", "") == "1":
             try:
                 games = fetch_recent_games(player_id, limit=500, season=season)
                 if not games:
@@ -630,7 +683,7 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
                 cnt = 0
                 for g in games:
                     v = None
-                    for k in ('PTS', 'points'):
+                    for k in ("PTS", "points"):
                         if k in g and g.get(k) is not None:
                             try:
                                 v = float(g.get(k))
@@ -642,7 +695,7 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
                         cnt += 1
                 if cnt == 0:
                     return {}
-                return {'PTS': sum_pts / cnt}
+                return {"PTS": sum_pts / cnt}
             except Exception:
                 return {}
     except Exception:
@@ -655,7 +708,11 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -667,27 +724,30 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
     # Try playercareerstats if available
     if playercareerstats is not None:
         try:
+
             def _pcs(pid):
-                    # PlayerCareerStats may accept different arg patterns across nba_api versions
-                    last_err = None
-                    try:
-                        pcs = playercareerstats.PlayerCareerStats(player_id=pid, timeout=NBA_API_TIMEOUT)
-                        return pcs.get_data_frames()[0]
-                    except TypeError as e:
-                        last_err = e
-                    try:
-                        pcs = playercareerstats.PlayerCareerStats(player_id=pid)
-                        return pcs.get_data_frames()[0]
-                    except TypeError:
-                        pass
-                    try:
-                        pcs = playercareerstats.PlayerCareerStats(pid)
-                        return pcs.get_data_frames()[0]
-                    except Exception:
-                        # re-raise the most helpful error to trigger retry/backoff
-                        if last_err:
-                            raise last_err
-                        raise
+                # PlayerCareerStats may accept different arg patterns across nba_api versions
+                last_err = None
+                try:
+                    pcs = playercareerstats.PlayerCareerStats(
+                        player_id=pid, timeout=NBA_API_TIMEOUT
+                    )
+                    return pcs.get_data_frames()[0]
+                except TypeError as e:
+                    last_err = e
+                try:
+                    pcs = playercareerstats.PlayerCareerStats(player_id=pid)
+                    return pcs.get_data_frames()[0]
+                except TypeError:
+                    pass
+                try:
+                    pcs = playercareerstats.PlayerCareerStats(pid)
+                    return pcs.get_data_frames()[0]
+                except Exception:
+                    # re-raise the most helpful error to trigger retry/backoff
+                    if last_err:
+                        raise last_err
+                    raise
 
             df = _with_retries(_pcs, player_id)
             # Expect df to be a DataFrame-like object
@@ -696,35 +756,39 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
 
             # Filter by season id
             try:
-                season_rows = df[df['SEASON_ID'] == season]
+                season_rows = df[df["SEASON_ID"] == season]
             except Exception:
                 # If df indexing fails, fall back to scanning rows
                 season_rows = []
                 try:
-                    for r in df.to_dict(orient='records'):
-                        if r.get('SEASON_ID') == season:
+                    for r in df.to_dict(orient="records"):
+                        if r.get("SEASON_ID") == season:
                             season_rows.append(r)
                 except Exception:
                     season_rows = []
 
             # If season_rows is empty or DataFrame-like with no rows, return {}
-            if hasattr(season_rows, 'empty') and season_rows.empty:
+            if hasattr(season_rows, "empty") and season_rows.empty:
                 stats = {}
             else:
                 # Compute basic means
                 import pandas as _pd
 
-                if not hasattr(season_rows, 'to_dict'):
+                if not hasattr(season_rows, "to_dict"):
                     # season_rows is a list of dicts
                     df_season = _pd.DataFrame(season_rows)
                 else:
-                    df_season = season_rows if isinstance(season_rows, _pd.DataFrame) else _pd.DataFrame(season_rows)
+                    df_season = (
+                        season_rows
+                        if isinstance(season_rows, _pd.DataFrame)
+                        else _pd.DataFrame(season_rows)
+                    )
 
                 if df_season.empty:
                     stats = {}
                 else:
                     stats = {}
-                    for k in ('PTS', 'AST', 'REB'):
+                    for k in ("PTS", "AST", "REB"):
                         if k in df_season.columns:
                             try:
                                 stats[k] = float(df_season[k].mean())
@@ -742,7 +806,12 @@ def get_player_season_stats(player_id: int, season: str) -> Dict[str, float]:
 
             return stats
         except Exception:
-            logger.debug('player season stats lookup failed for %s %s', player_id, season, exc_info=True)
+            logger.debug(
+                "player season stats lookup failed for %s %s",
+                player_id,
+                season,
+                exc_info=True,
+            )
 
     # Not available
     return {}
@@ -765,7 +834,11 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -779,11 +852,14 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
         return {}
 
     try:
+
         def _fetch(tid, s):
             # Only pass `season` when truthy; some nba_api versions
             # expect the argument to be omitted rather than None.
             if s:
-                tg = teamgamelog.TeamGameLog(team_id=tid, season=s, timeout=NBA_API_TIMEOUT)
+                tg = teamgamelog.TeamGameLog(
+                    team_id=tid, season=s, timeout=NBA_API_TIMEOUT
+                )
             else:
                 tg = teamgamelog.TeamGameLog(team_id=tid, timeout=NBA_API_TIMEOUT)
             return tg.get_data_frames()[0]
@@ -793,7 +869,11 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
             return {}
 
         # Normalize column names - common variants for opponent points
-        opp_cols = [c for c in ("OPP_PTS", "PTS_OPP", "OPPPTS", "PTS_ALLOWED") if c in df.columns]
+        opp_cols = [
+            c
+            for c in ("OPP_PTS", "PTS_OPP", "OPPPTS", "PTS_ALLOWED")
+            if c in df.columns
+        ]
         pts_col = "PTS" if "PTS" in df.columns else None
 
         if pts_col is None:
@@ -828,7 +908,7 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
         # Additional derived metrics when columns available
         # Games count
         try:
-            stats['games'] = int(len(df))
+            stats["games"] = int(len(df))
         except Exception:
             pass
 
@@ -846,7 +926,11 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
                     break
             if fgm_col and fga_col:
                 try:
-                    stats['FG_pct'] = float(df[fgm_col].sum()) / float(df[fga_col].sum()) if float(df[fga_col].sum()) > 0 else None
+                    stats["FG_pct"] = (
+                        float(df[fgm_col].sum()) / float(df[fga_col].sum())
+                        if float(df[fga_col].sum()) > 0
+                        else None
+                    )
                 except Exception:
                     pass
         except Exception:
@@ -865,7 +949,11 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
                     break
             if ftm_col and fta_col:
                 try:
-                    stats['FT_pct'] = float(df[ftm_col].sum()) / float(df[fta_col].sum()) if float(df[fta_col].sum()) > 0 else None
+                    stats["FT_pct"] = (
+                        float(df[ftm_col].sum()) / float(df[fta_col].sum())
+                        if float(df[fta_col].sum()) > 0
+                        else None
+                    )
                 except Exception:
                     pass
         except Exception:
@@ -887,7 +975,9 @@ def get_team_stats(team_id: int, season: Optional[str] = None) -> Dict[str, floa
     return {}
 
 
-def fetch_team_games(team_id: int, limit: int = 500, season: Optional[str] = None) -> List[dict]:
+def fetch_team_games(
+    team_id: int, limit: int = 500, season: Optional[str] = None
+) -> List[dict]:
     """Fetch recent team game logs. Returns list of raw game dicts.
 
     Uses Redis/local cache and `teamgamelog.TeamGameLog` when available.
@@ -902,7 +992,11 @@ def fetch_team_games(team_id: int, limit: int = 500, season: Optional[str] = Non
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -911,14 +1005,14 @@ def fetch_team_games(team_id: int, limit: int = 500, season: Optional[str] = Non
     # Check for deterministic cached logs under repo for CI/tests
     try:
         repo_root = os.path.dirname(os.path.dirname(__file__))
-        cached_dir = os.path.join(repo_root, 'data', 'cached_game_logs')
+        cached_dir = os.path.join(repo_root, "data", "cached_game_logs")
         if season:
             cached_path = os.path.join(cached_dir, f"team_{team_id}_{season}.json")
         else:
             cached_path = os.path.join(cached_dir, f"team_{team_id}.json")
         if os.path.exists(cached_path):
             try:
-                with open(cached_path, 'r', encoding='utf-8') as fh:
+                with open(cached_path, "r", encoding="utf-8") as fh:
                     data = json.load(fh)
                     _local_cache[cache_key] = data
                     return data
@@ -935,13 +1029,14 @@ def fetch_team_games(team_id: int, limit: int = 500, season: Optional[str] = Non
         return []
 
     try:
+
         def _fetch(tid, lim, s):
             if s:
                 tg = teamgamelog.TeamGameLog(team_id=tid, season=s)
             else:
                 tg = teamgamelog.TeamGameLog(team_id=tid)
             df = tg.get_data_frames()[0]
-            return df.head(lim).to_dict(orient='records')
+            return df.head(lim).to_dict(orient="records")
 
         recent = _with_retries(_fetch, team_id, limit, season)
         _local_cache[cache_key] = recent
@@ -955,13 +1050,15 @@ def fetch_team_games(team_id: int, limit: int = 500, season: Optional[str] = Non
     except Exception:
         logger.exception("Error fetching team games for team_id=%s", team_id)
         try:
-            _record_failed_fetch('team', team_id, 'fetch_team_games')
+            _record_failed_fetch("team", team_id, "fetch_team_games")
         except Exception:
             pass
         return []
 
 
-def get_advanced_team_stats_fallback(team_id: int, season: Optional[str]) -> Dict[str, float]:
+def get_advanced_team_stats_fallback(
+    team_id: int, season: Optional[str]
+) -> Dict[str, float]:
     """Compute basic team advanced-like stats from season game logs.
 
     Returns PTS_avg, OPP_PTS_avg, PTS_diff, games, and TS-like metrics
@@ -977,7 +1074,11 @@ def get_advanced_team_stats_fallback(team_id: int, season: Optional[str]) -> Dic
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -1004,17 +1105,25 @@ def get_advanced_team_stats_fallback(team_id: int, season: Optional[str]) -> Dic
         try:
             count += 1
             # Team PTS column variants
-            pts = g.get('PTS') if 'PTS' in g else g.get('TEAM_PTS') if 'TEAM_PTS' in g else None
-            opp = g.get('OPP_PTS') if 'OPP_PTS' in g else g.get('PTS_OPP') if 'PTS_OPP' in g else None
+            pts = (
+                g.get("PTS")
+                if "PTS" in g
+                else g.get("TEAM_PTS") if "TEAM_PTS" in g else None
+            )
+            opp = (
+                g.get("OPP_PTS")
+                if "OPP_PTS" in g
+                else g.get("PTS_OPP") if "PTS_OPP" in g else None
+            )
             if pts is not None:
                 sum_pts += float(pts)
             if opp is not None:
                 sum_opp += float(opp)
 
-            fga = g.get('FGA') if 'FGA' in g else None
-            fgm = g.get('FGM') if 'FGM' in g else None
-            fta = g.get('FTA') if 'FTA' in g else None
-            ftm = g.get('FTM') if 'FTM' in g else None
+            fga = g.get("FGA") if "FGA" in g else None
+            fgm = g.get("FGM") if "FGM" in g else None
+            fta = g.get("FTA") if "FTA" in g else None
+            ftm = g.get("FTM") if "FTM" in g else None
 
             if fga is not None:
                 try:
@@ -1043,23 +1152,23 @@ def get_advanced_team_stats_fallback(team_id: int, season: Optional[str]) -> Dic
         return {}
 
     stats = {}
-    stats['games'] = count
-    stats['PTS_avg'] = sum_pts / count
-    stats['OPP_PTS_avg'] = sum_opp / count if sum_opp else None
-    if stats.get('OPP_PTS_avg') is not None:
-        stats['PTS_diff'] = stats['PTS_avg'] - stats['OPP_PTS_avg']
+    stats["games"] = count
+    stats["PTS_avg"] = sum_pts / count
+    stats["OPP_PTS_avg"] = sum_opp / count if sum_opp else None
+    if stats.get("OPP_PTS_avg") is not None:
+        stats["PTS_diff"] = stats["PTS_avg"] - stats["OPP_PTS_avg"]
     else:
-        stats['PTS_diff'] = None
+        stats["PTS_diff"] = None
 
     try:
-        stats['FG_pct'] = (sum_fgm / sum_fga) if sum_fga > 0 else None
+        stats["FG_pct"] = (sum_fgm / sum_fga) if sum_fga > 0 else None
     except Exception:
-        stats['FG_pct'] = None
+        stats["FG_pct"] = None
 
     try:
-        stats['FT_pct'] = (sum_ftm / sum_fta) if sum_fta > 0 else None
+        stats["FT_pct"] = (sum_ftm / sum_fta) if sum_fta > 0 else None
     except Exception:
-        stats['FT_pct'] = None
+        stats["FT_pct"] = None
 
     # persist
     _local_cache[cache_key] = stats
@@ -1073,7 +1182,9 @@ def get_advanced_team_stats_fallback(team_id: int, season: Optional[str]) -> Dic
     return stats
 
 
-def fetch_recent_games_multi(player_id: int, seasons: Optional[List[str]] = None, limit_per_season: int = 82) -> List[dict]:
+def fetch_recent_games_multi(
+    player_id: int, seasons: Optional[List[str]] = None, limit_per_season: int = 82
+) -> List[dict]:
     """Fetch and aggregate recent games across multiple seasons.
 
     Returns games ordered newest-first across the provided seasons. If
@@ -1082,14 +1193,20 @@ def fetch_recent_games_multi(player_id: int, seasons: Optional[List[str]] = None
     if not player_id or not seasons:
         return []
 
-    cache_key = f"player_recent_multi:{player_id}:{','.join(seasons)}:{limit_per_season}"
+    cache_key = (
+        f"player_recent_multi:{player_id}:{','.join(seasons)}:{limit_per_season}"
+    )
     try:
         rc = _redis_client()
         if rc:
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -1111,7 +1228,10 @@ def fetch_recent_games_multi(player_id: int, seasons: Optional[List[str]] = None
 
         # Sort by date if GAME_DATE present (newest first)
         try:
-            all_games.sort(key=lambda g: g.get('GAME_DATE') or g.get('gameDate') or '', reverse=True)
+            all_games.sort(
+                key=lambda g: g.get("GAME_DATE") or g.get("gameDate") or "",
+                reverse=True,
+            )
         except Exception:
             pass
 
@@ -1125,11 +1245,15 @@ def fetch_recent_games_multi(player_id: int, seasons: Optional[List[str]] = None
 
         return all_games
     except Exception:
-        logger.exception("Error fetching recent games multi for player_id=%s", player_id)
+        logger.exception(
+            "Error fetching recent games multi for player_id=%s", player_id
+        )
         return []
 
 
-def get_advanced_team_stats_multi(team_id: int, seasons: Optional[List[str]], use_fallback: bool = True) -> Dict[str, object]:
+def get_advanced_team_stats_multi(
+    team_id: int, seasons: Optional[List[str]], use_fallback: bool = True
+) -> Dict[str, object]:
     """Return per-season and aggregated advanced-like team stats across seasons."""
     result = {"per_season": {}, "aggregated": {}}
     if not team_id or not seasons:
@@ -1166,12 +1290,14 @@ def get_advanced_team_stats_multi(team_id: int, seasons: Optional[List[str]], us
         except Exception:
             agg[k] = total
 
-    result['per_season'] = per_season
-    result['aggregated'] = agg
+    result["per_season"] = per_season
+    result["aggregated"] = agg
     return result
 
 
-def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str, float]:
+def get_advanced_player_stats(
+    player_id: int, season: Optional[str]
+) -> Dict[str, float]:
     """Return advanced metrics for a player for a given season using LeagueDashPlayerStats.
 
     Uses `per_mode_simple='PerGame'` to request per-game metrics and extracts
@@ -1185,16 +1311,13 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
     # when running in offline/dev environments or when the upstream API is
     # unstable. Set env `NBA_FORCE_FALLBACK=1` to enable.
     try:
-        if os.environ.get('NBA_FORCE_FALLBACK', '') == '1':
+        if os.environ.get("NBA_FORCE_FALLBACK", "") == "1":
             try:
                 return get_advanced_player_stats_fallback(player_id, season) or {}
             except Exception:
                 return {}
     except Exception:
         pass
-
-
-    
 
     cache_key = f"player_advanced:{player_id}:{season}"
     try:
@@ -1203,7 +1326,11 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode("utf-8"))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -1216,27 +1343,36 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
         return {}
 
     try:
+
         def _fetch(s):
             # `nba_api` has changed signatures across versions. Try several
             # invocation patterns for compatibility.
             last_err = None
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame', timeout=NBA_API_TIMEOUT)
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, per_mode_simple="PerGame", timeout=NBA_API_TIMEOUT
+                )
                 return lds.get_data_frames()[0]
             except TypeError as e:
                 last_err = e
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame')
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, per_mode_simple="PerGame"
+                )
                 return lds.get_data_frames()[0]
             except TypeError as e:
                 last_err = e
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode='PerGame', timeout=NBA_API_TIMEOUT)
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, per_mode="PerGame", timeout=NBA_API_TIMEOUT
+                )
                 return lds.get_data_frames()[0]
             except TypeError as e:
                 last_err = e
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, timeout=NBA_API_TIMEOUT)
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, timeout=NBA_API_TIMEOUT
+                )
                 return lds.get_data_frames()[0]
             except Exception as e:
                 last_err = e
@@ -1249,11 +1385,11 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
 
         # Filter for the player row
         try:
-            player_rows = df_all[df_all['PLAYER_ID'] == player_id]
+            player_rows = df_all[df_all["PLAYER_ID"] == player_id]
         except Exception:
             player_rows = []
 
-        if getattr(player_rows, 'empty', False) or not player_rows:
+        if getattr(player_rows, "empty", False) or not player_rows:
             return {}
 
         # Take first matching row
@@ -1262,7 +1398,7 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
         else:
             row = player_rows.iloc[0]
 
-        cols = ['PER', 'TS_PCT', 'USG_PCT', 'PIE', 'OFF_RATING', 'DEF_RATING']
+        cols = ["PER", "TS_PCT", "USG_PCT", "PIE", "OFF_RATING", "DEF_RATING"]
         stats: Dict[str, float] = {}
         for col in cols:
             try:
@@ -1286,7 +1422,12 @@ def get_advanced_player_stats(player_id: int, season: Optional[str]) -> Dict[str
 
         return stats
     except Exception:
-        logger.debug('advanced player stats lookup failed for %s %s', player_id, season, exc_info=True)
+        logger.debug(
+            "advanced player stats lookup failed for %s %s",
+            player_id,
+            season,
+            exc_info=True,
+        )
         return {}
 
 
@@ -1307,7 +1448,11 @@ def fetch_league_player_advanced(season: str) -> Dict[int, Dict[str, float]]:
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -1317,25 +1462,34 @@ def fetch_league_player_advanced(season: str) -> Dict[int, Dict[str, float]]:
         return out
 
     try:
+
         def _fetch(s):
             last_err = None
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame', timeout=NBA_API_TIMEOUT)
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, per_mode_simple="PerGame", timeout=NBA_API_TIMEOUT
+                )
                 return lds.get_data_frames()[0]
             except TypeError as e:
                 last_err = e
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode_simple='PerGame')
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, per_mode_simple="PerGame"
+                )
                 return lds.get_data_frames()[0]
             except TypeError as e:
                 last_err = e
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, per_mode='PerGame', timeout=NBA_API_TIMEOUT)
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, per_mode="PerGame", timeout=NBA_API_TIMEOUT
+                )
                 return lds.get_data_frames()[0]
             except TypeError as e:
                 last_err = e
             try:
-                lds = leaguedashplayerstats.LeagueDashPlayerStats(season=s, timeout=NBA_API_TIMEOUT)
+                lds = leaguedashplayerstats.LeagueDashPlayerStats(
+                    season=s, timeout=NBA_API_TIMEOUT
+                )
                 return lds.get_data_frames()[0]
             except Exception as e:
                 last_err = e
@@ -1347,16 +1501,16 @@ def fetch_league_player_advanced(season: str) -> Dict[int, Dict[str, float]]:
 
         # normalize to mapping
         try:
-            rows = df_all.to_dict(orient='records')
+            rows = df_all.to_dict(orient="records")
         except Exception:
             rows = []
 
-        for r in (rows or []):
-            pid = r.get('PLAYER_ID') or r.get('player_id')
+        for r in rows or []:
+            pid = r.get("PLAYER_ID") or r.get("player_id")
             if not pid:
                 continue
             stats = {}
-            for col in ('PER', 'TS_PCT', 'USG_PCT', 'PIE', 'OFF_RATING', 'DEF_RATING'):
+            for col in ("PER", "TS_PCT", "USG_PCT", "PIE", "OFF_RATING", "DEF_RATING"):
                 if col in r and r.get(col) is not None:
                     try:
                         stats[col] = float(r.get(col))
@@ -1375,7 +1529,7 @@ def fetch_league_player_advanced(season: str) -> Dict[int, Dict[str, float]]:
 
         return out
     except Exception:
-        logger.exception('fetch_league_player_advanced failed for %s', season)
+        logger.exception("fetch_league_player_advanced failed for %s", season)
         return {}
 
 
@@ -1391,8 +1545,9 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
     if not season:
         return out
 
-
-    def get_player_name_by_id(player_id: int, seasons: Optional[List[str]] = None) -> Optional[str]:
+    def get_player_name_by_id(
+        player_id: int, seasons: Optional[List[str]] = None
+    ) -> Optional[str]:
         """Resolve a player name given a numeric NBA player id.
 
         Strategy:
@@ -1411,7 +1566,11 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
                 raw = rc.get(cache_key)
                 if raw:
                     try:
-                        return raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else str(raw)
+                        return (
+                            raw.decode("utf-8")
+                            if isinstance(raw, (bytes, bytearray))
+                            else str(raw)
+                        )
                     except Exception:
                         return str(raw)
         except Exception:
@@ -1425,8 +1584,12 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
             allp = fetch_all_players() or []
             for p in allp:
                 try:
-                    if int(p.get('id')) == int(player_id):
-                        name = p.get('full_name') or p.get('fullName') or p.get('display_name')
+                    if int(p.get("id")) == int(player_id):
+                        name = (
+                            p.get("full_name")
+                            or p.get("fullName")
+                            or p.get("display_name")
+                        )
                         if name:
                             _local_cache[cache_key] = name
                             try:
@@ -1450,7 +1613,11 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
                     games = lg.get(int(player_id))
                     if games and len(games) > 0:
                         # attempt to extract PLAYER_NAME from a game row
-                        rn = games[0].get('PLAYER_NAME') or games[0].get('player_name') or games[0].get('PLAYER')
+                        rn = (
+                            games[0].get("PLAYER_NAME")
+                            or games[0].get("player_name")
+                            or games[0].get("PLAYER")
+                        )
                         if rn:
                             _local_cache[cache_key] = rn
                             try:
@@ -1474,7 +1641,11 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -1484,6 +1655,7 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
         return out
 
     try:
+
         def _fetch(s):
             lg = leaguegamelog.LeagueGameLog(season=s, timeout=NBA_API_TIMEOUT)
             return lg.get_data_frames()[0]
@@ -1493,13 +1665,13 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
             return out
 
         try:
-            rows = df.to_dict(orient='records')
+            rows = df.to_dict(orient="records")
         except Exception:
             rows = []
 
-        for r in (rows or []):
+        for r in rows or []:
             # PLAYER_ID variants
-            pid = r.get('PLAYER_ID') or r.get('player_id')
+            pid = r.get("PLAYER_ID") or r.get("player_id")
             if not pid:
                 continue
             try:
@@ -1513,7 +1685,13 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
         # sort each player's list newest-first if date available
         for pid, games in out.items():
             try:
-                games.sort(key=lambda g: g.get('GAME_DATE') or g.get('GAME_DATE_EST') or g.get('gameDate') or '', reverse=True)
+                games.sort(
+                    key=lambda g: g.get("GAME_DATE")
+                    or g.get("GAME_DATE_EST")
+                    or g.get("gameDate")
+                    or "",
+                    reverse=True,
+                )
             except Exception:
                 pass
 
@@ -1528,7 +1706,7 @@ def fetch_season_league_player_game_logs(season: str) -> Dict[int, List[dict]]:
 
         return out
     except Exception:
-        logger.exception('fetch_season_league_player_game_logs failed for %s', season)
+        logger.exception("fetch_season_league_player_game_logs failed for %s", season)
         return {}
 
 
@@ -1536,15 +1714,23 @@ def _record_failed_fetch(kind: str, entity_id: int, reason: str) -> None:
     """Append a failed fetch record to a local retry queue file for later retry."""
     try:
         repo_root = os.path.dirname(os.path.dirname(__file__))
-        failed_path = os.path.join(repo_root, 'data', 'failed_nba_fetches.jsonl')
-        rec = {'kind': kind, 'id': int(entity_id) if entity_id is not None else None, 'reason': reason}
-        with open(failed_path, 'a', encoding='utf-8') as fh:
-            fh.write(json.dumps(rec) + '\n')
+        failed_path = os.path.join(repo_root, "data", "failed_nba_fetches.jsonl")
+        rec = {
+            "kind": kind,
+            "id": int(entity_id) if entity_id is not None else None,
+            "reason": reason,
+        }
+        with open(failed_path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(rec) + "\n")
     except Exception:
-        logger.debug('failed to record failed fetch for %s %s', kind, entity_id, exc_info=True)
+        logger.debug(
+            "failed to record failed fetch for %s %s", kind, entity_id, exc_info=True
+        )
 
 
-def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) -> Dict[str, float]:
+def get_advanced_player_stats_fallback(
+    player_id: int, season: Optional[str]
+) -> Dict[str, float]:
     """Derive advanced-like metrics from season game logs when league dash data
     is unavailable. Computes TS%, FG%, 3P%, FT%, PTS/AST/REB per game and games count.
     """
@@ -1558,7 +1744,11 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
             raw = rc.get(cache_key)
             if raw:
                 try:
-                    return json.loads(raw) if not isinstance(raw, (bytes, bytearray)) else json.loads(raw.decode('utf-8'))
+                    return (
+                        json.loads(raw)
+                        if not isinstance(raw, (bytes, bytearray))
+                        else json.loads(raw.decode("utf-8"))
+                    )
                 except Exception:
                     pass
     except Exception:
@@ -1593,16 +1783,20 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
     for g in games:
         try:
             count += 1
-            sum_pts += float(g.get('PTS') or g.get('PTS', 0) or 0)
-            sum_ast += float(g.get('AST') or 0)
-            sum_reb += float(g.get('REB') or 0)
+            sum_pts += float(g.get("PTS") or g.get("PTS", 0) or 0)
+            sum_ast += float(g.get("AST") or 0)
+            sum_reb += float(g.get("REB") or 0)
             # many nba_api versions use different keys; attempt variants
-            fga = g.get('FGA') if 'FGA' in g else g.get('FG_ATT') if 'FG_ATT' in g else None
-            fgm = g.get('FGM') if 'FGM' in g else None
-            fg3m = g.get('FG3M') if 'FG3M' in g else None
-            fg3a = g.get('FG3A') if 'FG3A' in g else None
-            fta = g.get('FTA') if 'FTA' in g else None
-            ftm = g.get('FTM') if 'FTM' in g else None
+            fga = (
+                g.get("FGA")
+                if "FGA" in g
+                else g.get("FG_ATT") if "FG_ATT" in g else None
+            )
+            fgm = g.get("FGM") if "FGM" in g else None
+            fg3m = g.get("FG3M") if "FG3M" in g else None
+            fg3a = g.get("FG3A") if "FG3A" in g else None
+            fta = g.get("FTA") if "FTA" in g else None
+            ftm = g.get("FTM") if "FTM" in g else None
 
             if fga is not None:
                 try:
@@ -1636,25 +1830,39 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
                     pass
             # optional defensive / turnover / minutes fields
             try:
-                stl = g.get('STL') if 'STL' in g else g.get('stl') if 'stl' in g else None
+                stl = (
+                    g.get("STL") if "STL" in g else g.get("stl") if "stl" in g else None
+                )
                 if stl is not None:
                     sum_stl += float(stl)
             except Exception:
                 pass
             try:
-                blk = g.get('BLK') if 'BLK' in g else g.get('blk') if 'blk' in g else None
+                blk = (
+                    g.get("BLK") if "BLK" in g else g.get("blk") if "blk" in g else None
+                )
                 if blk is not None:
                     sum_blk += float(blk)
             except Exception:
                 pass
             try:
-                tov = g.get('TO') if 'TO' in g else g.get('TOV') if 'TOV' in g else g.get('to') if 'to' in g else None
+                tov = (
+                    g.get("TO")
+                    if "TO" in g
+                    else (
+                        g.get("TOV")
+                        if "TOV" in g
+                        else g.get("to") if "to" in g else None
+                    )
+                )
                 if tov is not None:
                     sum_to += float(tov)
             except Exception:
                 pass
             try:
-                mins = g.get('MIN') if 'MIN' in g else g.get('min') if 'min' in g else None
+                mins = (
+                    g.get("MIN") if "MIN" in g else g.get("min") if "min" in g else None
+                )
                 if mins is not None:
                     # MIN may be '36:12' format in some logs; attempt float conversion
                     try:
@@ -1662,7 +1870,7 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
                     except Exception:
                         # try parsing mm:ss
                         try:
-                            parts = str(mins).split(':')
+                            parts = str(mins).split(":")
                             if len(parts) == 2:
                                 sum_min += float(parts[0]) + float(parts[1]) / 60.0
                         except Exception:
@@ -1676,38 +1884,38 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
         return {}
 
     stats = {}
-    stats['games'] = count
-    stats['PTS_per_game'] = sum_pts / count
-    stats['AST_per_game'] = sum_ast / count
-    stats['REB_per_game'] = sum_reb / count
+    stats["games"] = count
+    stats["PTS_per_game"] = sum_pts / count
+    stats["AST_per_game"] = sum_ast / count
+    stats["REB_per_game"] = sum_reb / count
 
     # FG%
     try:
-        stats['FG_pct'] = (sum_fgm / sum_fga) if sum_fga > 0 else None
+        stats["FG_pct"] = (sum_fgm / sum_fga) if sum_fga > 0 else None
     except Exception:
-        stats['FG_pct'] = None
+        stats["FG_pct"] = None
 
     # 3P%
     try:
-        stats['FG3_pct'] = (sum_fg3m / sum_fg3a) if sum_fg3a > 0 else None
+        stats["FG3_pct"] = (sum_fg3m / sum_fg3a) if sum_fg3a > 0 else None
     except Exception:
-        stats['FG3_pct'] = None
+        stats["FG3_pct"] = None
 
     # FT%
     try:
-        stats['FT_pct'] = (sum_ftm / sum_fta) if sum_fta > 0 else None
+        stats["FT_pct"] = (sum_ftm / sum_fta) if sum_fta > 0 else None
     except Exception:
-        stats['FT_pct'] = None
+        stats["FT_pct"] = None
 
     # True Shooting % approx if we have FGA and FTA
     try:
         if sum_fga > 0:
             ts = sum_pts / (2.0 * (sum_fga + 0.44 * sum_fta))
-            stats['TS_PCT'] = float(ts)
+            stats["TS_PCT"] = float(ts)
         else:
-            stats['TS_PCT'] = None
+            stats["TS_PCT"] = None
     except Exception:
-        stats['TS_PCT'] = None
+        stats["TS_PCT"] = None
     # Prefer using the play-by-play prototype estimator for PER/WS fallbacks
     # when available. This centralizes the prototype logic and ensures tuned
     # scale factors are applied consistently.
@@ -1718,24 +1926,24 @@ def get_advanced_player_stats_fallback(player_id: int, season: Optional[str]) ->
             agg = per_ws_from_playbyplay.aggregate_season_games(games)
             est = per_ws_from_playbyplay.compute_per_ws_from_aggregates(agg)
             # copy back useful fields into stats
-            stats['PER_proxy'] = est.get('PER_est_raw') or None
-            stats['PER'] = est.get('PER_est')
-            stats['WS_proxy_per_game'] = est.get('ws_per_game') or None
-            stats['WS'] = est.get('WS_est')
+            stats["PER_proxy"] = est.get("PER_est_raw") or None
+            stats["PER"] = est.get("PER_est")
+            stats["WS_proxy_per_game"] = est.get("ws_per_game") or None
+            stats["WS"] = est.get("WS_est")
             # keep raw aggregates for debugging
-            stats.update({'_per_ws_agg_games': agg.get('games', 0)})
+            stats.update({"_per_ws_agg_games": agg.get("games", 0)})
         except Exception:
             # fallback: leave PER/WS absent
-            stats['PER_proxy'] = None
-            stats['PER'] = None
-            stats['WS_proxy_per_game'] = None
-            stats['WS'] = None
+            stats["PER_proxy"] = None
+            stats["PER"] = None
+            stats["WS_proxy_per_game"] = None
+            stats["WS"] = None
     except Exception:
         # If prototype module not importable, leave proxies absent
-        stats['PER_proxy'] = None
-        stats['PER'] = None
-        stats['WS_proxy_per_game'] = None
-        stats['WS'] = None
+        stats["PER_proxy"] = None
+        stats["PER"] = None
+        stats["WS_proxy_per_game"] = None
+        stats["WS"] = None
 
     # persist to caches
     _local_cache[cache_key] = stats

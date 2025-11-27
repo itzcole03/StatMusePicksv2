@@ -12,43 +12,44 @@ file produced by `compute_per_ws_sample.py`, computes scale factors to map proto
 estimates onto canonical values (least-squares single multiplier per metric), and
 writes a report to `backend/models_store/compare_per_ws_tuning_<ts>.json`.
 """
+
 from __future__ import annotations
+
 import argparse
+import csv
+import datetime
 import glob
 import json
 import math
 import os
 import sys
-import datetime
 from typing import Dict, Tuple
 
-import csv
-
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-STORE_DIR = os.path.join(ROOT, 'models_store')
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+STORE_DIR = os.path.join(ROOT, "models_store")
 
 
 def find_latest_sample() -> str:
-    pattern = os.path.join(STORE_DIR, 'per_ws_playbyplay_sample_*.json')
+    pattern = os.path.join(STORE_DIR, "per_ws_playbyplay_sample_*.json")
     files = glob.glob(pattern)
     if not files:
-        raise FileNotFoundError(f'No sample JSON found matching {pattern}')
+        raise FileNotFoundError(f"No sample JSON found matching {pattern}")
     files.sort()
     return files[-1]
 
 
 def load_sample(path: str) -> Dict:
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def load_canonical_csv(path: str) -> Dict[Tuple[str, str], Dict[str, float]]:
     out = {}
-    with open(path, 'r', encoding='utf-8') as f:
+    with open(path, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for r in reader:
-            key = (r['player'].strip(), r['season'].strip())
-            out[key] = {'PER': float(r['PER']), 'WS': float(r['WS'])}
+            key = (r["player"].strip(), r["season"].strip())
+            out[key] = {"PER": float(r["PER"]), "WS": float(r["WS"])}
     return out
 
 
@@ -69,25 +70,36 @@ def default_canonical_mapping() -> Dict[Tuple[str, str], Dict[str, float]]:
     return mapping
 
 
-def gather_pairs(sample: Dict, canonical_map: Dict[Tuple[str, str], Dict[str, float]]) -> Tuple[list, list, list]:
+def gather_pairs(
+    sample: Dict, canonical_map: Dict[Tuple[str, str], Dict[str, float]]
+) -> Tuple[list, list, list]:
     per_ests = []
     ws_ests = []
     rows = []
     for player, pdata in sample.items():
-        ests = pdata.get('estimates', {})
+        ests = pdata.get("estimates", {})
         for season, svals in ests.items():
-            proto = svals.get('estimates', {})
-            per_e = float(proto.get('PER_est', math.nan))
-            ws_e = float(proto.get('WS_est', math.nan))
+            proto = svals.get("estimates", {})
+            per_e = float(proto.get("PER_est", math.nan))
+            ws_e = float(proto.get("WS_est", math.nan))
             key = (player, season)
             canonical = canonical_map.get(key)
             if canonical is None:
                 continue
-            per_c = float(canonical['PER'])
-            ws_c = float(canonical['WS'])
+            per_c = float(canonical["PER"])
+            ws_c = float(canonical["WS"])
             per_ests.append((per_e, per_c))
             ws_ests.append((ws_e, ws_c))
-            rows.append({'player': player, 'season': season, 'PER_est': per_e, 'PER_can': per_c, 'WS_est': ws_e, 'WS_can': ws_c})
+            rows.append(
+                {
+                    "player": player,
+                    "season": season,
+                    "PER_est": per_e,
+                    "PER_can": per_c,
+                    "WS_est": ws_e,
+                    "WS_can": ws_c,
+                }
+            )
     return per_ests, ws_ests, rows
 
 
@@ -110,31 +122,67 @@ def rmse(pairs, scale=1.0):
         diff = scale * est - can
         s += diff * diff
         n += 1
-    return math.sqrt(s / n) if n else float('nan')
+    return math.sqrt(s / n) if n else float("nan")
 
 
 def write_report(rows, per_scale, ws_scale, sample_path):
-    ts = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-    out_json = os.path.join(STORE_DIR, f'compare_per_ws_tuning_{ts}.json')
-    out_csv = os.path.join(STORE_DIR, f'compare_per_ws_tuning_{ts}.csv')
-    report = {'sample_path': sample_path, 'per_scale': per_scale, 'ws_scale': ws_scale, 'rows': rows}
-    with open(out_json, 'w', encoding='utf-8') as f:
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    out_json = os.path.join(STORE_DIR, f"compare_per_ws_tuning_{ts}.json")
+    out_csv = os.path.join(STORE_DIR, f"compare_per_ws_tuning_{ts}.csv")
+    report = {
+        "sample_path": sample_path,
+        "per_scale": per_scale,
+        "ws_scale": ws_scale,
+        "rows": rows,
+    }
+    with open(out_json, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2)
     # CSV
-    with open(out_csv, 'w', encoding='utf-8', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=['player', 'season', 'PER_est', 'PER_can', 'PER_est_scaled', 'PER_diff', 'WS_est', 'WS_can', 'WS_est_scaled', 'WS_diff'])
+    with open(out_csv, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=[
+                "player",
+                "season",
+                "PER_est",
+                "PER_can",
+                "PER_est_scaled",
+                "PER_diff",
+                "WS_est",
+                "WS_can",
+                "WS_est_scaled",
+                "WS_diff",
+            ],
+        )
         writer.writeheader()
         for r in rows:
-            per_scaled = r['PER_est'] * per_scale
-            ws_scaled = r['WS_est'] * ws_scale
-            writer.writerow({'player': r['player'], 'season': r['season'], 'PER_est': r['PER_est'], 'PER_can': r['PER_can'], 'PER_est_scaled': per_scaled, 'PER_diff': per_scaled - r['PER_can'], 'WS_est': r['WS_est'], 'WS_can': r['WS_can'], 'WS_est_scaled': ws_scaled, 'WS_diff': ws_scaled - r['WS_can']})
+            per_scaled = r["PER_est"] * per_scale
+            ws_scaled = r["WS_est"] * ws_scale
+            writer.writerow(
+                {
+                    "player": r["player"],
+                    "season": r["season"],
+                    "PER_est": r["PER_est"],
+                    "PER_can": r["PER_can"],
+                    "PER_est_scaled": per_scaled,
+                    "PER_diff": per_scaled - r["PER_can"],
+                    "WS_est": r["WS_est"],
+                    "WS_can": r["WS_can"],
+                    "WS_est_scaled": ws_scaled,
+                    "WS_diff": ws_scaled - r["WS_can"],
+                }
+            )
     return out_json, out_csv
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument('--canonical-csv', help='Path to CSV with player,season,PER,WS')
-    parser.add_argument('--use-defaults', action='store_true', help='Use built-in canonical mapping for demo/tuning')
+    parser.add_argument("--canonical-csv", help="Path to CSV with player,season,PER,WS")
+    parser.add_argument(
+        "--use-defaults",
+        action="store_true",
+        help="Use built-in canonical mapping for demo/tuning",
+    )
     args = parser.parse_args(argv)
 
     try:
@@ -151,12 +199,16 @@ def main(argv=None):
     elif args.use_defaults:
         canonical_map = default_canonical_mapping()
     else:
-        print('No canonical CSV provided and --use-defaults not set. Provide --canonical-csv or --use-defaults to run.')
+        print(
+            "No canonical CSV provided and --use-defaults not set. Provide --canonical-csv or --use-defaults to run."
+        )
         sys.exit(1)
 
     per_pairs, ws_pairs, rows = gather_pairs(sample, canonical_map)
     if not rows:
-        print('No overlapping player-season pairs found between sample and canonical mapping.')
+        print(
+            "No overlapping player-season pairs found between sample and canonical mapping."
+        )
         sys.exit(1)
 
     per_scale = fit_scale(per_pairs)
@@ -169,13 +221,13 @@ def main(argv=None):
 
     out_json, out_csv = write_report(rows, per_scale, ws_scale, sample_path)
 
-    print('Wrote report:', out_json)
-    print('Wrote CSV   :', out_csv)
-    print('PER scale   :', per_scale)
-    print('PER RMSE before/after :', per_rmse_before, per_rmse_after)
-    print('WS scale    :', ws_scale)
-    print('WS RMSE before/after  :', ws_rmse_before, ws_rmse_after)
+    print("Wrote report:", out_json)
+    print("Wrote CSV   :", out_csv)
+    print("PER scale   :", per_scale)
+    print("PER RMSE before/after :", per_rmse_before, per_rmse_after)
+    print("WS scale    :", ws_scale)
+    print("WS RMSE before/after  :", ws_rmse_before, ws_rmse_after)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

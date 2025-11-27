@@ -9,10 +9,10 @@ Set `REDIS_URL` to your Redis instance. If not set or redis is unavailable,
 the module will use a simple in-memory dict with TTL semantics.
 """
 
-import os
-import json
 import asyncio
+import json
 import logging
+import os
 from typing import Any, Optional
 
 try:
@@ -56,14 +56,14 @@ def _inc_metric(name: str, amount: int = 1) -> None:
         if Counter is not None:
             # lazily create counters on first use
             global _prom_counters
-            if '_prom_counters' not in globals():
+            if "_prom_counters" not in globals():
                 _prom_counters = {
-                    'hits': Counter('cache_hits_total', 'Cache hits'),
-                    'misses': Counter('cache_misses_total', 'Cache misses'),
-                    'sets': Counter('cache_sets_total', 'Cache sets'),
-                    'deletes': Counter('cache_deletes_total', 'Cache deletes'),
+                    "hits": Counter("cache_hits_total", "Cache hits"),
+                    "misses": Counter("cache_misses_total", "Cache misses"),
+                    "sets": Counter("cache_sets_total", "Cache sets"),
+                    "deletes": Counter("cache_deletes_total", "Cache deletes"),
                 }
-            cnt = globals()['_prom_counters'].get(name)
+            cnt = globals()["_prom_counters"].get(name)
             if cnt is not None:
                 cnt.inc(amount)
     except Exception:
@@ -154,7 +154,9 @@ async def redis_get_json(key: str) -> Optional[Any]:
             return json.loads(raw)
         except Exception:
             # fall back to in-memory store
-            _logger.exception("Error reading from redis, falling back to in-memory store")
+            _logger.exception(
+                "Error reading from redis, falling back to in-memory store"
+            )
 
     # Fallback path: check the single fallback store while holding the lock
     async with _fallback_lock:
@@ -325,7 +327,11 @@ def redis_delete_prefix_sync(prefix: str) -> int:
     except Exception:
         sync_redis = None
 
-    _logger.debug("redis_delete_prefix_sync called prefix=%s sync_redis=%s", prefix, 'present' if sync_redis is not None else 'absent')
+    _logger.debug(
+        "redis_delete_prefix_sync called prefix=%s sync_redis=%s",
+        prefix,
+        "present" if sync_redis is not None else "absent",
+    )
 
     if sync_redis is None:
         # operate on fallback directly
@@ -363,7 +369,9 @@ def redis_delete_prefix_sync(prefix: str) -> int:
             async def _do():
                 nonlocal deleted
                 async with _fallback_lock:
-                    keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
+                    keys = [
+                        k for k in list(_fallback_store.keys()) if k.startswith(prefix)
+                    ]
                     for k in keys:
                         del _fallback_store[k]
                         deleted += 1
@@ -414,7 +422,9 @@ def redis_delete_prefix_sync(prefix: str) -> int:
             return deleted
     except Exception:
         # If creating client failed, also fall back to deleting from in-process store
-        _logger.debug('Failed to create sync redis client, falling back to in-memory deletion')
+        _logger.debug(
+            "Failed to create sync redis client, falling back to in-memory deletion"
+        )
         keys = [k for k in list(_fallback_store.keys()) if k.startswith(prefix)]
         for k in keys:
             try:

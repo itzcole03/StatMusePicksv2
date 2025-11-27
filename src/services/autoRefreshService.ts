@@ -18,17 +18,28 @@ let timer: number | null = null;
 
 function readSetting(): AutoRefreshSettings {
   const enabled = localStorage.getItem(storageKey("enabled")) === "true";
-  const interval = parseInt(localStorage.getItem(storageKey("interval")) || "60", 10);
+  const interval = parseInt(
+    localStorage.getItem(storageKey("interval")) || "60",
+    10
+  );
   const url = localStorage.getItem(storageKey("url")) || DEFAULT_URL;
   const proxyUrl = localStorage.getItem(storageKey("proxyUrl")) || null;
-  return { enabled, intervalMinutes: isNaN(interval) ? 60 : interval, url, proxyUrl };
+  return {
+    enabled,
+    intervalMinutes: isNaN(interval) ? 60 : interval,
+    url,
+    proxyUrl,
+  };
 }
 
 function writeSetting(s: Partial<AutoRefreshSettings>) {
-  if (typeof s.enabled === "boolean") localStorage.setItem(storageKey("enabled"), String(s.enabled));
-  if (typeof s.intervalMinutes === "number") localStorage.setItem(storageKey("interval"), String(s.intervalMinutes));
+  if (typeof s.enabled === "boolean")
+    localStorage.setItem(storageKey("enabled"), String(s.enabled));
+  if (typeof s.intervalMinutes === "number")
+    localStorage.setItem(storageKey("interval"), String(s.intervalMinutes));
   if (typeof s.url === "string") localStorage.setItem(storageKey("url"), s.url);
-  if (typeof s.proxyUrl === "string") localStorage.setItem(storageKey("proxyUrl"), s.proxyUrl);
+  if (typeof s.proxyUrl === "string")
+    localStorage.setItem(storageKey("proxyUrl"), s.proxyUrl);
 }
 
 function getStoredHeaders() {
@@ -39,9 +50,14 @@ function getStoredHeaders() {
   };
 }
 
-function saveHeaders(etag?: string | null, lastModified?: string | null, headHash?: string | null) {
+function saveHeaders(
+  etag?: string | null,
+  lastModified?: string | null,
+  headHash?: string | null
+) {
   if (etag) localStorage.setItem(storageKey("etag"), etag);
-  if (lastModified) localStorage.setItem(storageKey("lastModified"), lastModified);
+  if (lastModified)
+    localStorage.setItem(storageKey("lastModified"), lastModified);
   if (headHash) localStorage.setItem(storageKey("headHash"), headHash);
 }
 
@@ -64,8 +80,10 @@ function backoffKeyNext(url: string) {
 
 function getBackoffInfo(url: string) {
   try {
-    const attempts = parseInt(localStorage.getItem(backoffKeyAttempts(url)) || "0", 10) || 0;
-    const next = parseInt(localStorage.getItem(backoffKeyNext(url)) || "0", 10) || 0;
+    const attempts =
+      parseInt(localStorage.getItem(backoffKeyAttempts(url)) || "0", 10) || 0;
+    const next =
+      parseInt(localStorage.getItem(backoffKeyNext(url)) || "0", 10) || 0;
     return { attempts, next };
   } catch {
     return { attempts: 0, next: 0 };
@@ -92,14 +110,22 @@ function applyBackoff(url: string) {
     const next = Date.now() + delay * 1000;
     localStorage.setItem(backoffKeyAttempts(url), String(attempts));
     localStorage.setItem(backoffKeyNext(url), String(next));
-    try { window.dispatchEvent(new CustomEvent('auto-refresh-backoff', { detail: { url, attempts, next, delay } })); } catch {}
+    try {
+      window.dispatchEvent(
+        new CustomEvent("auto-refresh-backoff", {
+          detail: { url, attempts, next, delay },
+        })
+      );
+    } catch {}
     return { attempts, next, delay };
   } catch {
     return null;
   }
 }
 
-async function fetchAndMaybeDispatch(url: string): Promise<{ ok: boolean; type: string; detail?: any }> {
+async function fetchAndMaybeDispatch(
+  url: string
+): Promise<{ ok: boolean; type: string; detail?: any }> {
   const headers: Record<string, string> = {};
   const stored = getStoredHeaders();
   if (stored.etag) headers["If-None-Match"] = stored.etag;
@@ -111,22 +137,47 @@ async function fetchAndMaybeDispatch(url: string): Promise<{ ok: boolean; type: 
   const settings = readSetting();
   const userProxy = settings.proxyUrl || undefined;
 
-  const tryOrder = [...FALLBACK_PROXIES, backendProxy, userProxy].filter(Boolean) as string[];
+  const tryOrder = [...FALLBACK_PROXIES, backendProxy, userProxy].filter(
+    Boolean
+  ) as string[];
   // lastErr was previously tracked for diagnostics; not needed now
 
   // helper to handle a successful text payload
-  const handlePayload = (text: string, etag?: string | null, lastModified?: string | null, source?: string) => {
+  const handlePayload = (
+    text: string,
+    etag?: string | null,
+    lastModified?: string | null,
+    source?: string
+  ) => {
     const head = text.slice(0, 4096);
     const headHash = djb2Hash(head + (etag || "") + (lastModified || ""));
     const storedHash = localStorage.getItem(storageKey("headHash"));
     if (storedHash && storedHash === headHash) {
-      try { window.dispatchEvent(new CustomEvent("auto-refresh-nochange", { detail: { elapsed: Date.now() - start, source } })); } catch {}
+      try {
+        window.dispatchEvent(
+          new CustomEvent("auto-refresh-nochange", {
+            detail: { elapsed: Date.now() - start, source },
+          })
+        );
+      } catch {}
       // update headers if needed and return indicator
       saveHeaders(etag || undefined, lastModified || undefined, headHash);
       return { same: true };
     }
     saveHeaders(etag || undefined, lastModified || undefined, headHash);
-    try { window.dispatchEvent(new CustomEvent("auto-refresh-fetched", { detail: { raw: text, etag, lastModified, elapsed: Date.now() - start, source } })); } catch {}
+    try {
+      window.dispatchEvent(
+        new CustomEvent("auto-refresh-fetched", {
+          detail: {
+            raw: text,
+            etag,
+            lastModified,
+            elapsed: Date.now() - start,
+            source,
+          },
+        })
+      );
+    } catch {}
     return { same: false };
   };
 
@@ -136,67 +187,127 @@ async function fetchAndMaybeDispatch(url: string): Promise<{ ok: boolean; type: 
       // skip if in backoff
       const { next } = getBackoffInfo(attemptUrl);
       if (next && Date.now() < next) {
-        try { window.dispatchEvent(new CustomEvent('auto-refresh-skip', { detail: { url: attemptUrl, reason: 'backoff' } })); } catch {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("auto-refresh-skip", {
+              detail: { url: attemptUrl, reason: "backoff" },
+            })
+          );
+        } catch {}
         continue;
       }
 
-      try { window.dispatchEvent(new CustomEvent('auto-refresh-attempt', { detail: { url: attemptUrl } })); } catch {}
-      const proxyUrl = attemptUrl.includes('?') ? `${attemptUrl}&url=${encodeURIComponent(url)}` : `${attemptUrl}?url=${encodeURIComponent(url)}`;
-      const resp = await fetch(proxyUrl, { headers, cache: 'no-store' });
+      try {
+        window.dispatchEvent(
+          new CustomEvent("auto-refresh-attempt", {
+            detail: { url: attemptUrl },
+          })
+        );
+      } catch {}
+      const proxyUrl = attemptUrl.includes("?")
+        ? `${attemptUrl}&url=${encodeURIComponent(url)}`
+        : `${attemptUrl}?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxyUrl, { headers, cache: "no-store" });
       if (resp.status === 429) {
         applyBackoff(attemptUrl);
         continue;
       }
       if (!resp.ok) {
-        try { window.dispatchEvent(new CustomEvent('auto-refresh-error', { detail: { status: resp.status, viaProxy: attemptUrl } })); } catch {}
-        try { window.dispatchEvent(new CustomEvent('auto-refresh-error', { detail: { status: resp.status, viaProxy: attemptUrl } })); } catch {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("auto-refresh-error", {
+              detail: { status: resp.status, viaProxy: attemptUrl },
+            })
+          );
+        } catch {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("auto-refresh-error", {
+              detail: { status: resp.status, viaProxy: attemptUrl },
+            })
+          );
+        } catch {}
         continue;
       }
-      const etag = resp.headers.get('etag');
-      const lastModified = resp.headers.get('last-modified');
+      const etag = resp.headers.get("etag");
+      const lastModified = resp.headers.get("last-modified");
       const text = await resp.text();
       const same = handlePayload(text, etag, lastModified, attemptUrl);
       clearBackoff(attemptUrl);
-      if (same && same.same) return { ok: false, type: 'no-change', detail: { source: attemptUrl } };
-      return { ok: true, type: 'fetched', detail: { source: attemptUrl } };
+      if (same && same.same)
+        return { ok: false, type: "no-change", detail: { source: attemptUrl } };
+      return { ok: true, type: "fetched", detail: { source: attemptUrl } };
     } catch (err) {
-      try { window.dispatchEvent(new CustomEvent('auto-refresh-error', { detail: { error: String(err), step: 'proxy', url: attemptUrl } })); } catch {}
+      try {
+        window.dispatchEvent(
+          new CustomEvent("auto-refresh-error", {
+            detail: { error: String(err), step: "proxy", url: attemptUrl },
+          })
+        );
+      } catch {}
       continue;
     }
   }
 
   // as last resort, try direct fetch (subject to backoff)
   try {
-    const directKey = 'direct:' + url;
+    const directKey = "direct:" + url;
     const { next } = getBackoffInfo(directKey);
     if (next && Date.now() < next) {
-      try { window.dispatchEvent(new CustomEvent('auto-refresh-skip', { detail: { url: 'direct', reason: 'backoff' } })); } catch {}
-      return { ok: false, type: 'error', detail: { error: 'in backoff' } };
+      try {
+        window.dispatchEvent(
+          new CustomEvent("auto-refresh-skip", {
+            detail: { url: "direct", reason: "backoff" },
+          })
+        );
+      } catch {}
+      return { ok: false, type: "error", detail: { error: "in backoff" } };
     }
-    try { window.dispatchEvent(new CustomEvent('auto-refresh-attempt', { detail: { url } })); } catch {}
-    const resp = await fetch(url, { headers, cache: 'no-store' });
+    try {
+      window.dispatchEvent(
+        new CustomEvent("auto-refresh-attempt", { detail: { url } })
+      );
+    } catch {}
+    const resp = await fetch(url, { headers, cache: "no-store" });
     if (resp.status === 429) {
       applyBackoff(directKey);
-      return { ok: false, type: 'error', detail: { error: '429' } };
+      return { ok: false, type: "error", detail: { error: "429" } };
     }
     if (resp.status === 304) {
-      try { window.dispatchEvent(new CustomEvent('auto-refresh-skip', { detail: { status: 304 } })); } catch {}
-      return { ok: true, type: 'skip', detail: { status: 304 } };
+      try {
+        window.dispatchEvent(
+          new CustomEvent("auto-refresh-skip", { detail: { status: 304 } })
+        );
+      } catch {}
+      return { ok: true, type: "skip", detail: { status: 304 } };
     }
     if (!resp.ok) {
-      try { window.dispatchEvent(new CustomEvent('auto-refresh-error', { detail: { status: resp.status } })); } catch {}
-      return { ok: false, type: 'error', detail: { status: resp.status } };
+      try {
+        window.dispatchEvent(
+          new CustomEvent("auto-refresh-error", {
+            detail: { status: resp.status },
+          })
+        );
+      } catch {}
+      return { ok: false, type: "error", detail: { status: resp.status } };
     }
-    const etag = resp.headers.get('etag');
-    const lastModified = resp.headers.get('last-modified');
+    const etag = resp.headers.get("etag");
+    const lastModified = resp.headers.get("last-modified");
     const text = await resp.text();
-    const same = handlePayload(text, etag, lastModified, 'direct');
+    const same = handlePayload(text, etag, lastModified, "direct");
     clearBackoff(directKey);
-    if (same && same.same) return { ok: false, type: 'no-change', detail: { source: 'direct' } };
-    return { ok: true, type: 'fetched', detail: { source: 'direct' } };
+    if (same && same.same)
+      return { ok: false, type: "no-change", detail: { source: "direct" } };
+    return { ok: true, type: "fetched", detail: { source: "direct" } };
   } catch (err) {
-    try { window.dispatchEvent(new CustomEvent('auto-refresh-error', { detail: { error: String(err), step: 'direct' } })); } catch {}
-    return { ok: false, type: 'error', detail: { error: String(err) } };
+    try {
+      window.dispatchEvent(
+        new CustomEvent("auto-refresh-error", {
+          detail: { error: String(err), step: "direct" },
+        })
+      );
+    } catch {}
+    return { ok: false, type: "error", detail: { error: String(err) } };
   }
 }
 
@@ -205,16 +316,26 @@ export function startAutoRefresh() {
   stopAutoRefresh();
   // run immediately then schedule
   void fetchAndMaybeDispatch(settings.url);
-  timer = window.setInterval(() => { void fetchAndMaybeDispatch(settings.url); }, Math.max(1000, settings.intervalMinutes * 60 * 1000));
+  timer = window.setInterval(() => {
+    void fetchAndMaybeDispatch(settings.url);
+  }, Math.max(1000, settings.intervalMinutes * 60 * 1000));
   writeSetting({ enabled: true });
-  try { window.dispatchEvent(new CustomEvent("auto-refresh-started", { detail: { interval: settings.intervalMinutes } })); } catch {}
+  try {
+    window.dispatchEvent(
+      new CustomEvent("auto-refresh-started", {
+        detail: { interval: settings.intervalMinutes },
+      })
+    );
+  } catch {}
 }
 
 export function stopAutoRefresh() {
   if (timer) {
     clearInterval(timer);
     timer = null;
-    try { window.dispatchEvent(new CustomEvent("auto-refresh-stopped")); } catch {}
+    try {
+      window.dispatchEvent(new CustomEvent("auto-refresh-stopped"));
+    } catch {}
   }
   writeSetting({ enabled: false });
 }

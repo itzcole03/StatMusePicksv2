@@ -1,4 +1,5 @@
 import json
+
 from fastapi.testclient import TestClient
 
 from backend.main import app
@@ -8,28 +9,28 @@ def main():
     client = TestClient(app)
 
     payload = {
-        'player': 'LeBron James',
-        'stat': 'points',
-        'line': 25.5,
-        'player_data': {
-            'recentGames': [
-                {'gameDate': '2025-11-01', 'statValue': 28},
-                {'gameDate': '2025-11-03', 'statValue': 30},
-                {'gameDate': '2025-11-05', 'statValue': 26},
+        "player": "LeBron James",
+        "stat": "points",
+        "line": 25.5,
+        "player_data": {
+            "recentGames": [
+                {"gameDate": "2025-11-01", "statValue": 28},
+                {"gameDate": "2025-11-03", "statValue": 30},
+                {"gameDate": "2025-11-05", "statValue": 26},
             ],
-            'seasonAvg': 27.5,
-            'rollingAverages': {'last5Games': 28}
+            "seasonAvg": 27.5,
+            "rollingAverages": {"last5Games": 28},
         },
-        'opponent_data': {'defensiveRating': 105, 'pace': 99}
+        "opponent_data": {"defensiveRating": 105, "pace": 99},
     }
 
-    resp = client.post('/api/predict', json=payload)
-    print('status_code:', resp.status_code)
+    resp = client.post("/api/predict", json=payload)
+    print("status_code:", resp.status_code)
     try:
         print(json.dumps(resp.json(), indent=2))
     except Exception:
         print(resp.text)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

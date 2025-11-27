@@ -4,20 +4,19 @@ This module should contain functions to fetch and normalize external data
 from NBA APIs or commercial providers. For now it provides a small
 interface and TODO notes for implementation.
 """
-from typing import List, Dict
+
+import hashlib
+import hmac
+import json
 import logging
 import os
-import json
 from datetime import date
-import time
+from typing import Dict, List
 
 # HTTP client with retries
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-import time
-import hmac
-import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,13 @@ AUDIT_DIR = os.environ.get("INGEST_AUDIT_DIR", "./backend/ingest_audit")
 os.makedirs(AUDIT_DIR, exist_ok=True)
 
 # Critical fields required for ingestion; configurable via env var (comma-separated)
-CRITICAL_FIELDS = [f.strip() for f in os.environ.get("INGEST_CRITICAL_FIELDS", "game_date,home_team,away_team").split(",") if f.strip()]
+CRITICAL_FIELDS = [
+    f.strip()
+    for f in os.environ.get(
+        "INGEST_CRITICAL_FIELDS", "game_date,home_team,away_team"
+    ).split(",")
+    if f.strip()
+]
 
 # Small mapping table to translate common team full names to 3-letter abbreviations.
 # Extend this table as needed for other providers or locale variations.
@@ -81,17 +86,21 @@ def _normalize_team_name(name: str) -> str:
 
 # Attempt to load a fuller mapping from `backend/data/team_abbrevs.json` if present.
 try:
-    data_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'data', 'team_abbrevs.json'))
+    data_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "data", "team_abbrevs.json")
+    )
     if os.path.exists(data_path):
         try:
-            with open(data_path, 'r', encoding='utf-8') as _fh:
+            with open(data_path, "r", encoding="utf-8") as _fh:
                 import json as _json
 
                 loaded = _json.load(_fh)
                 # Normalize keys to lowercase and values to uppercase
-                TEAM_NAME_MAP = {str(k).lower(): str(v).upper() for k, v in loaded.items()}
+                TEAM_NAME_MAP = {
+                    str(k).lower(): str(v).upper() for k, v in loaded.items()
+                }
         except Exception:
-            logger.debug('Failed to load team_abbrevs.json', exc_info=True)
+            logger.debug("Failed to load team_abbrevs.json", exc_info=True)
 except Exception:
     # Non-fatal if file read fails
     pass
@@ -119,6 +128,7 @@ def invalidate_all_player_contexts() -> None:
     """Invalidate all `player_context:` keys (use with caution)."""
     try:
         from backend.services import cache as cache_module
+
         cache_module.redis_delete_prefix_sync("player_context:")
     except Exception:
         logger.exception("Failed to invalidate all player_context caches")
@@ -166,7 +176,9 @@ def save_raw_games(raw: List[Dict], when: date | None = None) -> str:
                     fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 except Exception:
                     # Skip individual records that fail to serialize
-                    logger.debug("Failed to serialize audit record: %s", rec, exc_info=True)
+                    logger.debug(
+                        "Failed to serialize audit record: %s", rec, exc_info=True
+                    )
         logger.info("Appended %d raw games to %s", len(raw), fname)
         return fname
     except Exception:
@@ -186,10 +198,48 @@ def normalize_raw_game(raw: Dict) -> Dict:
     # Canonical keys: game_date, game_id, home_team, away_team, home_score, away_score
     synonyms = {
         "game_id": ["game_id", "id", "gid"],
-        "home_team": ["home_team", "homeTeam", "homeTeamName", "home_team_name", "h_team", "home", "home_team_name"],
-        "away_team": ["away_team", "awayTeam", "awayTeamName", "away_team_name", "a_team", "away", "away_team_name"],
-        "home_score": ["home_score", "homeScore", "home_pts", "homePoints", "hScore", "h_score", "h_pts", "home_points", "home-team-score", "homePoints"],
-        "away_score": ["away_score", "awayScore", "away_pts", "awayPoints", "aScore", "a_score", "a_pts", "away_points", "away-team-score", "awayPoints"],
+        "home_team": [
+            "home_team",
+            "homeTeam",
+            "homeTeamName",
+            "home_team_name",
+            "h_team",
+            "home",
+            "home_team_name",
+        ],
+        "away_team": [
+            "away_team",
+            "awayTeam",
+            "awayTeamName",
+            "away_team_name",
+            "a_team",
+            "away",
+            "away_team_name",
+        ],
+        "home_score": [
+            "home_score",
+            "homeScore",
+            "home_pts",
+            "homePoints",
+            "hScore",
+            "h_score",
+            "h_pts",
+            "home_points",
+            "home-team-score",
+            "homePoints",
+        ],
+        "away_score": [
+            "away_score",
+            "awayScore",
+            "away_pts",
+            "awayPoints",
+            "aScore",
+            "a_score",
+            "a_pts",
+            "away_points",
+            "away-team-score",
+            "awayPoints",
+        ],
         "timestamp": ["timestamp", "time", "utc_time", "start_time", "game_time"],
         "date": ["date", "game_date_str", "date_str"],
     }
@@ -258,7 +308,15 @@ def normalize_raw_game(raw: Dict) -> Dict:
             pass
 
     # Try common alternative fields where providers may store a date/time
-    candidates = ["date", "game_date_str", "game_time", "start_time", "timestamp", "utc_time", "time"]
+    candidates = [
+        "date",
+        "game_date_str",
+        "game_time",
+        "start_time",
+        "timestamp",
+        "utc_time",
+        "time",
+    ]
     for key in candidates:
         val = r.get(key)
         if not val:
@@ -295,8 +353,8 @@ def normalize_raw_game(raw: Dict) -> Dict:
     gid = r.get("game_id") or r.get("id")
     if gid:
         try:
-            import re
             import datetime as _dt
+            import re
 
             s = str(gid)
             m = re.search(r"(20\d{6})", s)
@@ -321,7 +379,9 @@ def detect_missing_values(record: Dict, required_fields: List[str]) -> List[str]
     """Return a list of required fields that are missing or falsy in record."""
     missing = []
     for f in required_fields:
-        if record.get(f) is None or (isinstance(record.get(f), str) and record.get(f).strip() == ""):
+        if record.get(f) is None or (
+            isinstance(record.get(f), str) and record.get(f).strip() == ""
+        ):
             missing.append(f)
     return missing
 
@@ -355,7 +415,10 @@ def validate_field_types(record: Dict, schema: Dict[str, type]) -> Dict[str, str
             elif expected is str:
                 if not isinstance(val, str):
                     raise TypeError()
-            elif expected.__name__ == 'datetime' or expected.__name__ == 'datetime.datetime':
+            elif (
+                expected.__name__ == "datetime"
+                or expected.__name__ == "datetime.datetime"
+            ):
                 # accept datetime-like or ISO strings
                 import datetime as _dt
 
@@ -375,7 +438,9 @@ def validate_field_types(record: Dict, schema: Dict[str, type]) -> Dict[str, str
     return errors
 
 
-def detect_outliers(records: List[Dict], field: str, z_thresh: float = 3.0) -> List[int]:
+def detect_outliers(
+    records: List[Dict], field: str, z_thresh: float = 3.0
+) -> List[int]:
     """Return list of indices where `field` is an outlier.
 
     Uses a robust Modified Z-score based on median and MAD. Falls back to
@@ -393,8 +458,8 @@ def detect_outliers(records: List[Dict], field: str, z_thresh: float = 3.0) -> L
     if len(nums) < 2:
         return []
 
-    import statistics as _stats
     import math as _math
+    import statistics as _stats
 
     # Robust approach: modified z-score using median and MAD
     med = _stats.median(nums)
@@ -468,7 +533,9 @@ def validate_record_types(record: Dict) -> List[str]:
     return errs
 
 
-def detect_outlier_values(records: List[Dict], field: str = "value", z_thresh: float = 3.0) -> List[int]:
+def detect_outlier_values(
+    records: List[Dict], field: str = "value", z_thresh: float = 3.0
+) -> List[int]:
     return detect_outliers(records, field=field, z_thresh=z_thresh)
 
 
@@ -507,7 +574,7 @@ def ingest_games(normalized_games: List[Dict]) -> None:
     # Extract player names from the normalized payloads
     players = set()
     for g in normalized_games:
-        name = g.get('player') or g.get('player_name') or g.get('name')
+        name = g.get("player") or g.get("player_name") or g.get("name")
         if name:
             players.add(name)
 
@@ -540,11 +607,14 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
     sync = sync.replace("+asyncmy", "")
 
     try:
-        from sqlalchemy import create_engine
-        from sqlalchemy.pool import NullPool
-        from sqlalchemy.orm import sessionmaker
-        from backend.models import Player, Game, PlayerStat
         from datetime import datetime
+
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        from sqlalchemy.pool import NullPool
+
+        from backend.models import Game, Player, PlayerStat
+
         engine = create_engine(sync, future=True, poolclass=NullPool)
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -555,15 +625,20 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
             # importing backend.models registers model classes with Base
             import backend.models  # noqa: F401
             from backend.db import Base
+
             # Avoid creating tables during Alembic runs (avoids duplicate DDL)
             if not os.environ.get("ALEMBIC_RUNNING"):
                 Base.metadata.create_all(engine)
             else:
-                logger.debug("Skipping metadata.create_all on sync engine because ALEMBIC_RUNNING is set")
+                logger.debug(
+                    "Skipping metadata.create_all on sync engine because ALEMBIC_RUNNING is set"
+                )
         except Exception:
             # If this fails, we'll proceed and let subsequent DB ops raise
             # a clear error which will be logged.
-            logger.debug("Could not ensure metadata.create_all on sync engine", exc_info=True)
+            logger.debug(
+                "Could not ensure metadata.create_all on sync engine", exc_info=True
+            )
     except Exception:
         logger.exception("Failed to create sync DB session for ingestion")
         return 0
@@ -579,7 +654,9 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
             gdate = rec.get("game_date")
 
             # Allow records that lack a player name when `player_nba_id` is present.
-            nba_pid_present = rec.get("player_nba_id") is not None or rec.get("Player_ID") is not None or rec.get("player_id") is not None
+            rec.get("player_nba_id") is not None or rec.get(
+                "Player_ID"
+            ) is not None or rec.get("player_id") is not None
             if stat_type is None or value is None or not gdate:
                 # log reason for skipping first several records to aid debugging
                 logger.debug(
@@ -591,14 +668,17 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
                 )
                 skipped += 1
                 if len(skipped_samples) < 10:
-                    skipped_samples.append({
-                        "reason": "missing_critical_fields",
-                        "player_name": pname,
-                        "player_nba_id": rec.get("player_nba_id") or rec.get("Player_ID"),
-                        "stat_type": stat_type,
-                        "value": value,
-                        "game_date": gdate,
-                    })
+                    skipped_samples.append(
+                        {
+                            "reason": "missing_critical_fields",
+                            "player_name": pname,
+                            "player_nba_id": rec.get("player_nba_id")
+                            or rec.get("Player_ID"),
+                            "stat_type": stat_type,
+                            "value": value,
+                            "game_date": gdate,
+                        }
+                    )
                 continue
 
             # parse game_date if string
@@ -624,7 +704,9 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
             try:
                 if nba_pid is not None:
                     # prefer lookup by nba_player_id when available
-                    player = session.query(Player).filter_by(nba_player_id=nba_pid).first()
+                    player = (
+                        session.query(Player).filter_by(nba_player_id=nba_pid).first()
+                    )
             except Exception:
                 player = None
 
@@ -637,13 +719,18 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
 
             if player is None:
                 # create a new player record; prefer name when present
-                player = Player(name=pname or f"player_{nba_pid}", nba_player_id=nba_pid)
+                player = Player(
+                    name=pname or f"player_{nba_pid}", nba_player_id=nba_pid
+                )
                 session.add(player)
                 session.flush()
             else:
                 # backfill nba_player_id if missing on existing player
                 try:
-                    if getattr(player, 'nba_player_id', None) is None and nba_pid is not None:
+                    if (
+                        getattr(player, "nba_player_id", None) is None
+                        and nba_pid is not None
+                    ):
                         player.nba_player_id = nba_pid
                         session.add(player)
                         session.flush()
@@ -661,21 +748,29 @@ def update_player_stats(normalized_games: List[Dict]) -> int:
 
             # insert player stat
             try:
-                ps = PlayerStat(player_id=player.id, game_id=game.id, stat_type=str(stat_type), value=float(value))
+                ps = PlayerStat(
+                    player_id=player.id,
+                    game_id=game.id,
+                    stat_type=str(stat_type),
+                    value=float(value),
+                )
                 session.add(ps)
                 inserted += 1
             except Exception:
                 logger.exception("Failed to add PlayerStat for %s", pname)
                 skipped += 1
                 if len(skipped_samples) < 10:
-                    skipped_samples.append({
-                        "reason": "insert_error",
-                        "player_name": pname,
-                        "player_nba_id": rec.get("player_nba_id") or rec.get("Player_ID"),
-                        "stat_type": stat_type,
-                        "value": value,
-                        "game_date": str(gd),
-                    })
+                    skipped_samples.append(
+                        {
+                            "reason": "insert_error",
+                            "player_name": pname,
+                            "player_nba_id": rec.get("player_nba_id")
+                            or rec.get("Player_ID"),
+                            "stat_type": stat_type,
+                            "value": value,
+                            "game_date": str(gd),
+                        }
+                    )
 
         session.commit()
     except Exception:
@@ -720,11 +815,14 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
     sync = sync.replace("+asyncmy", "")
 
     try:
-        from sqlalchemy import create_engine
-        from sqlalchemy.pool import NullPool
-        from sqlalchemy.orm import sessionmaker
-        from backend.models import Game
         from datetime import datetime
+
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import sessionmaker
+        from sqlalchemy.pool import NullPool
+
+        from backend.models import Game
+
         engine = create_engine(sync, future=True, poolclass=NullPool)
         Session = sessionmaker(bind=engine)
         session = Session()
@@ -734,13 +832,19 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
         try:
             import backend.models  # noqa: F401
             from backend.db import Base
+
             # Avoid creating tables during Alembic runs (avoids duplicate DDL)
             if not os.environ.get("ALEMBIC_RUNNING"):
                 Base.metadata.create_all(engine)
             else:
-                logger.debug("Skipping metadata.create_all on sync engine for team stats because ALEMBIC_RUNNING is set")
+                logger.debug(
+                    "Skipping metadata.create_all on sync engine for team stats because ALEMBIC_RUNNING is set"
+                )
         except Exception:
-            logger.debug("Could not ensure metadata.create_all on sync engine for team stats", exc_info=True)
+            logger.debug(
+                "Could not ensure metadata.create_all on sync engine for team stats",
+                exc_info=True,
+            )
     except Exception:
         logger.exception("Failed to create sync DB session for team ingestion")
         return 0
@@ -781,17 +885,29 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
 
                     gd = _parser.parse(gdate)
                 except Exception:
-                    logger.debug("Skipping team record with invalid game_date: %s", gdate)
+                    logger.debug(
+                        "Skipping team record with invalid game_date: %s", gdate
+                    )
                     continue
 
             # find existing game by date and teams
-            game = session.query(Game).filter_by(game_date=gd, home_team=home, away_team=away).first()
+            game = (
+                session.query(Game)
+                .filter_by(game_date=gd, home_team=home, away_team=away)
+                .first()
+            )
             if game is None:
                 game = session.query(Game).filter_by(game_date=gd).first()
 
             if game is None:
                 # create new game row
-                game = Game(game_date=gd, home_team=home, away_team=away, home_score=home_score, away_score=away_score)
+                game = Game(
+                    game_date=gd,
+                    home_team=home,
+                    away_team=away,
+                    home_score=home_score,
+                    away_score=away_score,
+                )
                 session.add(game)
                 session.flush()
                 updated += 1
@@ -834,10 +950,11 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
     # After updating games, compute derived team metrics for teams seen in this batch
     try:
         # compute per-team aggregates by season (year)
-        from backend.models import TeamStat, Game
-        from sqlalchemy import func, create_engine as _create_engine
-        from sqlalchemy.pool import NullPool as _NullPool
+        from sqlalchemy import create_engine as _create_engine
         from sqlalchemy.orm import sessionmaker as _sessionmaker
+        from sqlalchemy.pool import NullPool as _NullPool
+
+        from backend.models import Game, TeamStat
 
         # Use a fresh sync engine/session for aggregation and ensure disposal
         engine2 = _create_engine(sync, future=True, poolclass=_NullPool)
@@ -849,18 +966,24 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
 
             for team in teams:
                 # aggregate over games where team was home or away
-                q = session2.query(Game).filter((Game.home_team == team) | (Game.away_team == team))
+                q = session2.query(Game).filter(
+                    (Game.home_team == team) | (Game.away_team == team)
+                )
                 rows = q.all()
                 if not rows:
                     continue
                 seasons = set()
                 for g in rows:
-                    seasons.add(str(getattr(g.game_date, 'year', '') or ''))
+                    seasons.add(str(getattr(g.game_date, "year", "") or ""))
 
                 # compute season-level stats for each season represented
                 for season in seasons:
                     # filter rows for this season
-                    season_rows = [g for g in rows if str(getattr(g.game_date, 'year', '')) == season]
+                    season_rows = [
+                        g
+                        for g in rows
+                        if str(getattr(g.game_date, "year", "")) == season
+                    ]
                     if not season_rows:
                         continue
                     pf = []
@@ -882,9 +1005,19 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
                     pts_against_avg = float(sum(pa) / len(pa)) if pa else None
 
                     # upsert TeamStat by team+season
-                    existing = session2.query(TeamStat).filter_by(team=team, season=season).first()
+                    existing = (
+                        session2.query(TeamStat)
+                        .filter_by(team=team, season=season)
+                        .first()
+                    )
                     if existing is None:
-                        ts = TeamStat(team=team, season=season, games_count=games_count, pts_for_avg=pts_for_avg, pts_against_avg=pts_against_avg)
+                        ts = TeamStat(
+                            team=team,
+                            season=season,
+                            games_count=games_count,
+                            pts_for_avg=pts_for_avg,
+                            pts_against_avg=pts_against_avg,
+                        )
                         session2.add(ts)
                     else:
                         existing.games_count = games_count
@@ -908,7 +1041,9 @@ def update_team_stats(normalized_games: List[Dict]) -> int:
     return updated
 
 
-def _process_and_ingest(raw: List[Dict], when: date | None = None, dry_run: bool = False) -> Dict:
+def _process_and_ingest(
+    raw: List[Dict], when: date | None = None, dry_run: bool = False
+) -> Dict:
     """Process raw fetched rows synchronously: save, normalize, validate, ingest.
 
     If `dry_run` is True the function will perform normalization and validation
@@ -967,7 +1102,8 @@ async def run_daily_sync_async(when: date | None = None, dry_run: bool = False) 
     # Prefer a sync provider helper when present (tests often inject a sync stub).
     try:
         import sys
-        mod = sys.modules.get('backend.services.nba_stats_client')
+
+        mod = sys.modules.get("backend.services.nba_stats_client")
         if mod and hasattr(mod, "fetch_yesterday_games"):
             raw = mod.fetch_yesterday_games()
             return _process_and_ingest(raw, when=when, dry_run=dry_run)
@@ -978,7 +1114,10 @@ async def run_daily_sync_async(when: date | None = None, dry_run: bool = False) 
     try:
         raw = await fetch_yesterday_game_results()
     except Exception:
-        logger.debug("run_daily_sync_async: async fetch failed, falling back to empty list", exc_info=True)
+        logger.debug(
+            "run_daily_sync_async: async fetch failed, falling back to empty list",
+            exc_info=True,
+        )
         raw = []
     return _process_and_ingest(raw, when=when, dry_run=dry_run)
 
@@ -999,11 +1138,15 @@ def run_daily_sync(when: date | None = None, dry_run: bool = False) -> Dict:
         raw = []
         try:
             import sys
-            mod = sys.modules.get('backend.services.nba_stats_client')
+
+            mod = sys.modules.get("backend.services.nba_stats_client")
             if mod and hasattr(mod, "fetch_yesterday_games"):
                 raw = mod.fetch_yesterday_games()
         except Exception:
-            logger.debug("run_daily_sync: sync provider fetch failed in running-loop fallback", exc_info=True)
+            logger.debug(
+                "run_daily_sync: sync provider fetch failed in running-loop fallback",
+                exc_info=True,
+            )
             raw = []
         return _process_and_ingest(raw, when=when, dry_run=dry_run)
 
@@ -1058,19 +1201,24 @@ def send_alert(payload: str) -> None:
         hmac_secret = os.environ.get("INGEST_ALERT_HMAC_SECRET")
         if hmac_secret and body_bytes is not None:
             try:
-                sig = hmac.new(hmac_secret.encode("utf-8"), body_bytes, hashlib.sha256).hexdigest()
+                sig = hmac.new(
+                    hmac_secret.encode("utf-8"), body_bytes, hashlib.sha256
+                ).hexdigest()
                 # Add signature header for receiver verification
                 # Note: some servers do require signature present on the wire; add header and resend if necessary.
                 headers_sig = dict(headers)
                 headers_sig["X-Ingest-Signature"] = f"sha256={sig}"
                 # send a final POST with signature header (most endpoints accept same body twice; adapter/retry will be used)
-                resp = session.post(webhook, data=body_bytes, headers=headers_sig, timeout=5)
+                resp = session.post(
+                    webhook, data=body_bytes, headers=headers_sig, timeout=5
+                )
             except Exception:
-                logger.exception("Failed to compute/send HMAC signature for ingest alert")
+                logger.exception(
+                    "Failed to compute/send HMAC signature for ingest alert"
+                )
 
         # Raise for non-2xx/3xx responses
         resp.raise_for_status()
         logger.info("Sent ingest alert, response=%s", resp.status_code)
     except Exception:
         logger.exception("Failed to post ingest alert to %s", webhook)
-

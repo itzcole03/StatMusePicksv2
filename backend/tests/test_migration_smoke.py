@@ -1,7 +1,8 @@
 import os
 import tempfile
-from alembic.config import Config
+
 from alembic import command
+from alembic.config import Config
 
 
 def test_alembic_upgrade_head_smoke():
@@ -13,15 +14,21 @@ def test_alembic_upgrade_head_smoke():
 
     db_url = f"sqlite:///{tmp_path}"
     # Export DATABASE_URL for Alembic env.py substitution
-    os.environ['DATABASE_URL'] = db_url
+    os.environ["DATABASE_URL"] = db_url
 
     # Build alembic config pointing at backend/alembic
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-    alembic_cfg = Config(os.path.join(project_root, 'alembic.ini') if os.path.exists(os.path.join(project_root, 'alembic.ini')) else os.path.join(project_root, 'alembic', 'alembic.ini'))
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    alembic_cfg = Config(
+        os.path.join(project_root, "alembic.ini")
+        if os.path.exists(os.path.join(project_root, "alembic.ini"))
+        else os.path.join(project_root, "alembic", "alembic.ini")
+    )
     # Ensure config uses our DATABASE_URL
-    alembic_cfg.set_main_option('script_location', os.path.join(project_root, 'alembic'))
+    alembic_cfg.set_main_option(
+        "script_location", os.path.join(project_root, "alembic")
+    )
     # Run upgrade head
-    command.upgrade(alembic_cfg, 'head')
+    command.upgrade(alembic_cfg, "head")
 
     # Clean up temp DB
     try:

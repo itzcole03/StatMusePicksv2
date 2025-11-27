@@ -6,14 +6,16 @@ This script scans a directory of model .pkl files (produced by
 into the `model_metadata` table (or local sqlite `dev.db` if
 `DATABASE_URL` is not set).
 """
+
 from __future__ import annotations
 
 import argparse
-from pathlib import Path
 import json
+from pathlib import Path
+
+import joblib
 
 from backend.services.model_registry import ModelRegistry
-import joblib
 
 
 def main(models_dir: str, version: str | None, notes: str | None):
@@ -43,8 +45,14 @@ def main(models_dir: str, version: str | None, notes: str | None):
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--models-dir", default="backend/models_store/smoke", help="Directory with .pkl models")
-    p.add_argument("--version", default=None, help="Version string to attach to metadata")
+    p.add_argument(
+        "--models-dir",
+        default="backend/models_store/smoke",
+        help="Directory with .pkl models",
+    )
+    p.add_argument(
+        "--version", default=None, help="Version string to attach to metadata"
+    )
     p.add_argument("--notes", default="smoke-trained models", help="Notes for metadata")
     args = p.parse_args()
     main(args.models_dir, args.version, args.notes)

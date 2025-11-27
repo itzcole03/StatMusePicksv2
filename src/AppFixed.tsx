@@ -20,7 +20,9 @@ function App() {
   const [projectionsData, setProjectionsData] = useState<ParsedProjection[]>(
     []
   );
-  const [selectedProjections, setSelectedProjections] = useState<Set<string>>(new Set());
+  const [selectedProjections, setSelectedProjections] = useState<Set<string>>(
+    new Set()
+  );
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settings, setSettings] = useState<Settings>({
     aiProvider: "backend",
@@ -39,7 +41,9 @@ function App() {
   const [totalProjectionsCount, setTotalProjectionsCount] = useState(0);
   const [totalPlayersCount, setTotalPlayersCount] = useState(0);
   const [totalLeaguesCount, setTotalLeaguesCount] = useState(0);
-  const [analysisProjections, setAnalysisProjections] = useState<ParsedProjection[]>([]);
+  const [analysisProjections, setAnalysisProjections] = useState<
+    ParsedProjection[]
+  >([]);
   const [analysisVisible, setAnalysisVisible] = useState(false);
   const [sessionModel, setSessionModel] = useState<string | null>(null);
 
@@ -58,7 +62,9 @@ function App() {
       return;
     }
     if (selectedProjections.size > 10) {
-      alert("Please select no more than 10 projections at a time for optimal analysis.");
+      alert(
+        "Please select no more than 10 projections at a time for optimal analysis."
+      );
       return;
     }
     setAnalysisVisible(true);
@@ -74,9 +80,15 @@ function App() {
       }
       const items = await getProjectionsByIds(ids);
       try {
-        const contexts = await buildExternalContextForProjections(items, settings);
+        const contexts = await buildExternalContextForProjections(
+          items,
+          settings
+        );
         await saveNbaContexts(contexts);
-        const merged = items.map((it) => ({ ...it, nbaContext: contexts[it.id] || it.nbaContext || null }));
+        const merged = items.map((it) => ({
+          ...it,
+          nbaContext: contexts[it.id] || it.nbaContext || null,
+        }));
         setAnalysisProjections(merged);
       } catch {
         setAnalysisProjections(items);
@@ -86,7 +98,11 @@ function App() {
 
   const loadFirstPage = useCallback(async () => {
     setOffset(0);
-    const hasFiltersLocal = !!(filters.league || filters.stat || filters.search);
+    const hasFiltersLocal = !!(
+      filters.league ||
+      filters.stat ||
+      filters.search
+    );
     if (!hasFiltersLocal) {
       setProjectionsData([]);
       setTotalMatched(0);
@@ -141,7 +157,10 @@ function App() {
     window.addEventListener("llm-model-applied", modelHandler as EventListener);
     return () => {
       window.removeEventListener("db-updated", handler as EventListener);
-      window.removeEventListener("llm-model-applied", modelHandler as EventListener);
+      window.removeEventListener(
+        "llm-model-applied",
+        modelHandler as EventListener
+      );
     };
   }, []);
 
@@ -179,7 +198,10 @@ function App() {
             {analysisVisible && (
               <AnalysisSection
                 projections={analysisProjections}
-                settings={{ ...settings, llmModel: sessionModel || settings.llmModel }}
+                settings={{
+                  ...settings,
+                  llmModel: sessionModel || settings.llmModel,
+                }}
               />
             )}
           </>

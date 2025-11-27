@@ -32,9 +32,17 @@ def connect(db_url: str):
     return psycopg2.connect(db_url)
 
 
-def create_target_like_source(conn, source: str, target: str, convert_to_hypertable: bool = False, chunk_interval: Optional[str] = None):
+def create_target_like_source(
+    conn,
+    source: str,
+    target: str,
+    convert_to_hypertable: bool = False,
+    chunk_interval: Optional[str] = None,
+):
     with conn.cursor() as cur:
-        cur.execute(f"CREATE TABLE IF NOT EXISTS {target} (LIKE {source} INCLUDING ALL);")
+        cur.execute(
+            f"CREATE TABLE IF NOT EXISTS {target} (LIKE {source} INCLUDING ALL);"
+        )
         conn.commit()
         if convert_to_hypertable:
             # create hypertable if extension exists
@@ -45,12 +53,17 @@ def create_target_like_source(conn, source: str, target: str, convert_to_hyperta
                 cur.execute(sql)
                 conn.commit()
             except Exception as e:
-                print('Warning: create_hypertable failed or not supported in this DB:', e)
+                print(
+                    "Warning: create_hypertable failed or not supported in this DB:", e
+                )
 
 
-def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_column: str = 'id'):
+def batched_backfill(
+    conn, source: str, target: str, batch: int = 10000, id_column: str = "id"
+):
     last_id = 0
     total_inserted = 0
+
     # Determine if the source table contains a `player_id` column so we can
     # perform narrow invalidation per affected player. This is best-effort and
     # non-fatal.
@@ -72,9 +85,15 @@ def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_colu
             # only the players affected by this batch. Otherwise return only the
             # id column as before.
             if _supports_player_id:
-                cur.execute(f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}, player_id", (last_id, batch))
+                cur.execute(
+                    f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}, player_id",
+                    (last_id, batch),
+                )
             else:
-                cur.execute(f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}", (last_id, batch))
+                cur.execute(
+                    f"INSERT INTO {target} (SELECT * FROM {source} WHERE {id_column} > %s ORDER BY {id_column} LIMIT %s) RETURNING {id_column}",
+                    (last_id, batch),
+                )
             try:
                 rows = cur.fetchall()
             except psycopg2.ProgrammingError:
@@ -87,7 +106,9 @@ def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_colu
         total_inserted += inserted
         # rows may be tuples of (id,) or (id, player_id)
         last_id = rows[-1][0]
-        print(f"Inserted batch: {inserted} rows (last_id={last_id}). Total so far: {total_inserted}")
+        print(
+            f"Inserted batch: {inserted} rows (last_id={last_id}). Total so far: {total_inserted}"
+        )
         # small sleep to yield
         time.sleep(0.1)
         # Per-player narrow invalidation: if we returned player_ids, collect
@@ -106,11 +127,17 @@ def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_colu
                     try:
                         # resolve ids -> names
                         with conn.cursor(cursor_factory=RealDictCursor) as cur2:
-                            cur2.execute("SELECT id, name FROM players WHERE id = ANY(%s)", (list(player_ids),))
+                            cur2.execute(
+                                "SELECT id, name FROM players WHERE id = ANY(%s)",
+                                (list(player_ids),),
+                            )
                             res = cur2.fetchall()
-                        names = [row['name'] for row in res if row.get('name')]
+                        names = [row["name"] for row in res if row.get("name")]
                         if names:
-                            from backend.services.data_ingestion_service import invalidate_player_contexts
+                            from backend.services.data_ingestion_service import (
+                                invalidate_player_contexts,
+                            )
+
                             invalidate_player_contexts(names)
                             continue  # invalidation done for this batch
                     except Exception:
@@ -119,11 +146,15 @@ def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_colu
 
             # Broad fallback: invalidate all player_context keys (best-effort)
             try:
-                from backend.services.data_ingestion_service import invalidate_all_player_contexts
+                from backend.services.data_ingestion_service import (
+                    invalidate_all_player_contexts,
+                )
+
                 invalidate_all_player_contexts()
             except Exception:
                 try:
                     from backend.services import cache as cache_module
+
                     cache_module.redis_delete_prefix_sync("player_context:")
                 except Exception:
                     pass
@@ -133,7 +164,7 @@ def batched_backfill(conn, source: str, target: str, batch: int = 10000, id_colu
     print(f"Backfill complete. Total rows inserted: {total_inserted}")
 
 
-def parity_checks(conn, source: str, target: str, sum_column: Optional[str] = 'value'):
+def parity_checks(conn, source: str, target: str, sum_column: Optional[str] = "value"):
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(f"SELECT COUNT(*) AS cnt, SUM({sum_column}) AS sumv FROM {source}")
         s = cur.fetchone()
@@ -142,7 +173,9 @@ def parity_checks(conn, source: str, target: str, sum_column: Optional[str] = 'v
     print("Parity check results:")
     print(f"  source: count={s['cnt']}, sum_{sum_column}={s['sumv']}")
     print(f"  target: count={t['cnt']}, sum_{sum_column}={t['sumv']}")
-    if s['cnt'] == t['cnt'] and (s['sumv'] == t['sumv'] or (s['sumv'] is None and t['sumv'] is None)):
+    if s["cnt"] == t["cnt"] and (
+        s["sumv"] == t["sumv"] or (s["sumv"] is None and t["sumv"] is None)
+    ):
         print("Parity: OK")
     else:
         print("Parity: MISMATCH - investigate differences (counts or sum mismatch)")
@@ -150,30 +183,56 @@ def parity_checks(conn, source: str, target: str, sum_column: Optional[str] = 'v
 
 def parse_args():
     p = argparse.ArgumentParser()
-    p.add_argument('--db', default=os.environ.get('DATABASE_URL'), help='Database URL (ENV DATABASE_URL)')
-    p.add_argument('--source', required=True, help='Source table name')
-    p.add_argument('--target', required=True, help='Target table name')
-    p.add_argument('--batch', type=int, default=10000, help='Batch size for backfill')
-    p.add_argument('--id-column', default='id', help='Monotonic id column to paginate (default: id)')
-    p.add_argument('--create-target', action='store_true', help='Create target table LIKE source before backfill')
-    p.add_argument('--hypertable', action='store_true', help='Convert target to hypertable after creating it (requires timescaledb extension)')
-    p.add_argument('--chunk-interval', default=None, help="Chunk time interval for hypertable, e.g. 'INTERVAL ''7 days''' )")
-    p.add_argument('--sum-column', default='value', help='Numeric column to use for sum parity check')
+    p.add_argument(
+        "--db",
+        default=os.environ.get("DATABASE_URL"),
+        help="Database URL (ENV DATABASE_URL)",
+    )
+    p.add_argument("--source", required=True, help="Source table name")
+    p.add_argument("--target", required=True, help="Target table name")
+    p.add_argument("--batch", type=int, default=10000, help="Batch size for backfill")
+    p.add_argument(
+        "--id-column",
+        default="id",
+        help="Monotonic id column to paginate (default: id)",
+    )
+    p.add_argument(
+        "--create-target",
+        action="store_true",
+        help="Create target table LIKE source before backfill",
+    )
+    p.add_argument(
+        "--hypertable",
+        action="store_true",
+        help="Convert target to hypertable after creating it (requires timescaledb extension)",
+    )
+    p.add_argument(
+        "--chunk-interval",
+        default=None,
+        help="Chunk time interval for hypertable, e.g. 'INTERVAL ''7 days''' )",
+    )
+    p.add_argument(
+        "--sum-column",
+        default="value",
+        help="Numeric column to use for sum parity check",
+    )
     return p.parse_args()
 
 
 def main():
     args = parse_args()
     if not args.db:
-        print('Error: provide --db or set DATABASE_URL env var')
+        print("Error: provide --db or set DATABASE_URL env var")
         sys.exit(2)
     conn = connect(args.db)
     if args.create_target:
-        create_target_like_source(conn, args.source, args.target, args.hypertable, args.chunk_interval)
+        create_target_like_source(
+            conn, args.source, args.target, args.hypertable, args.chunk_interval
+        )
     batched_backfill(conn, args.source, args.target, args.batch, args.id_column)
     parity_checks(conn, args.source, args.target, args.sum_column)
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

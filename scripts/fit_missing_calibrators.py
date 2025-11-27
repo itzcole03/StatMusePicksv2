@@ -8,26 +8,26 @@ Scans models in `models_dir`, for each model without an existing calibrator:
 - fits an isotonic calibrator and persists it via `CalibrationService`
 - appends per-player calibration metrics to a JSON report
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import logging
+import os
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-import os
-import sys
-
 # Ensure repo root is on sys.path so `backend` imports work when run as script
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from backend.services.model_registry import ModelRegistry
 from backend.services.calibration_service import CalibrationService
+from backend.services.model_registry import ModelRegistry
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("fit_calibrators")
@@ -70,17 +70,33 @@ def main(manifest: str, models_dir: str, out_report: str | None = None):
             # ensure validation data exists for player
             val_df = parts["val"][parts["val"]["player"] == player].copy()
             if val_df.shape[0] < 3:
-                log.info("Not enough val rows for %s (%d), skipping", player, val_df.shape[0])
-                report.append({"player": player, "status": "skip_no_val", "val_rows": int(val_df.shape[0])})
+                log.info(
+                    "Not enough val rows for %s (%d), skipping", player, val_df.shape[0]
+                )
+                report.append(
+                    {
+                        "player": player,
+                        "status": "skip_no_val",
+                        "val_rows": int(val_df.shape[0]),
+                    }
+                )
                 continue
 
             # ensure validation features exist; use the same numeric feature columns
             val_df = val_df.sort_values("game_date").reset_index(drop=True)
             # derive simple lag features if missing (safe to add)
             if "lag_1" not in val_df.columns:
-                val_df["lag_1"] = val_df["target"].shift(1).fillna(val_df["target"].mean())
+                val_df["lag_1"] = (
+                    val_df["target"].shift(1).fillna(val_df["target"].mean())
+                )
             if "lag_3_mean" not in val_df.columns:
-                val_df["lag_3_mean"] = val_df["target"].shift(1).rolling(window=3, min_periods=1).mean().fillna(val_df["target"].mean())
+                val_df["lag_3_mean"] = (
+                    val_df["target"]
+                    .shift(1)
+                    .rolling(window=3, min_periods=1)
+                    .mean()
+                    .fillna(val_df["target"].mean())
+                )
 
             model = registry.load_model(player)
             if model is None:
@@ -91,7 +107,11 @@ def main(manifest: str, models_dir: str, out_report: str | None = None):
             # Build X_val using all numeric columns that are likely model features,
             # excluding identifiers and the target.
             drop_cols = {"player", "target", "game_date", "game_id", "season"}
-            numeric_cols = [c for c in val_df.select_dtypes(include=[np.number]).columns if c not in drop_cols]
+            numeric_cols = [
+                c
+                for c in val_df.select_dtypes(include=[np.number]).columns
+                if c not in drop_cols
+            ]
             if not numeric_cols:
                 log.info("No numeric features found for %s, skipping", player)
                 report.append({"player": player, "status": "no_numeric_features"})
@@ -138,7 +158,10 @@ def main(manifest: str, models_dir: str, out_report: str | None = None):
                         n_expected = getattr(model, "n_features_in_", None)
                         if n_expected and X_val.shape[1] < n_expected:
                             import numpy as _np
-                            pad = _np.zeros((X_val.shape[0], n_expected - X_val.shape[1]))
+
+                            pad = _np.zeros(
+                                (X_val.shape[0], n_expected - X_val.shape[1])
+                            )
                             try:
                                 y_pred = model.predict(_np.hstack([X_val.values, pad]))
                             except Exception:
@@ -150,7 +173,9 @@ def main(manifest: str, models_dir: str, out_report: str | None = None):
 
             # fit and persist calibrator
             try:
-                info = calib_service.fit_and_save(player, y_true=y_true, y_pred=y_pred, method="isotonic")
+                info = calib_service.fit_and_save(
+                    player, y_true=y_true, y_pred=y_pred, method="isotonic"
+                )
                 log.info("Fitted calibrator for %s: %s", player, info.get("method"))
                 report.append({"player": player, "status": "fitted", "metrics": info})
             except Exception as e:
