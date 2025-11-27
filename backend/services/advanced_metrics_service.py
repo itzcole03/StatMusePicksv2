@@ -4,10 +4,12 @@ Provides functions to compute or fetch advanced metrics (PER, TS%, USG%, ORtg/DR
 for players/teams. Uses existing `backend/services/nba_stats_client.py` when available.
 Caching via Redis or in-process fallback is supported.
 """
+
 from __future__ import annotations
+
 import logging
 import os
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +17,9 @@ _fallback_cache: Dict[str, Dict] = {}
 
 
 class AdvancedMetricsService:
-    def __init__(self, redis_client: Optional[object] = None, ttl_seconds: int = 6 * 3600):
+    def __init__(
+        self, redis_client: Optional[object] = None, ttl_seconds: int = 6 * 3600
+    ):
         self.redis = redis_client
         self.ttl = int(ttl_seconds)
 
@@ -89,14 +93,14 @@ class AdvancedMetricsService:
 
             # Support alternative client interface used in tests: NBAStatsClient
             try:
-                if hasattr(nba, 'NBAStatsClient'):
+                if hasattr(nba, "NBAStatsClient"):
                     try:
                         client = nba.NBAStatsClient()
                         # Try numeric id first, then fallback to original string id
                         client_arg = pid_int if pid_int is not None else player_id
-                        if hasattr(client, 'fetch_advanced_player_metrics'):
+                        if hasattr(client, "fetch_advanced_player_metrics"):
                             metrics = client.fetch_advanced_player_metrics(client_arg)
-                        elif hasattr(client, 'get_advanced_player_stats'):
+                        elif hasattr(client, "get_advanced_player_stats"):
                             metrics = client.get_advanced_player_stats(client_arg)
                     except Exception:
                         metrics = None
@@ -111,7 +115,9 @@ class AdvancedMetricsService:
 
                 if not metrics:
                     try:
-                        metrics = nba.get_advanced_player_stats_fallback(pid_int, season)
+                        metrics = nba.get_advanced_player_stats_fallback(
+                            pid_int, season
+                        )
                     except Exception:
                         metrics = None
 
@@ -121,10 +127,19 @@ class AdvancedMetricsService:
             # normalize keys we care about (mapping tolerated across helper variants)
             result = {
                 "PER": metrics.get("PER") or metrics.get("per") or metrics.get("Per"),
-                "TS_pct": metrics.get("TS_PCT") or metrics.get("TS_PCT") or metrics.get("TS_pct") or metrics.get("TS"),
-                "USG_pct": metrics.get("USG_PCT") or metrics.get("USG_pct") or metrics.get("USG"),
-                "ORtg": metrics.get("OFF_RATING") or metrics.get("ORtg") or metrics.get("off_rating"),
-                "DRtg": metrics.get("DEF_RATING") or metrics.get("DRtg") or metrics.get("def_rating"),
+                "TS_pct": metrics.get("TS_PCT")
+                or metrics.get("TS_PCT")
+                or metrics.get("TS_pct")
+                or metrics.get("TS"),
+                "USG_pct": metrics.get("USG_PCT")
+                or metrics.get("USG_pct")
+                or metrics.get("USG"),
+                "ORtg": metrics.get("OFF_RATING")
+                or metrics.get("ORtg")
+                or metrics.get("off_rating"),
+                "DRtg": metrics.get("DEF_RATING")
+                or metrics.get("DRtg")
+                or metrics.get("def_rating"),
             }
 
             # Try to extract Box Plus/Minus (BPM) if present in various possible keys.

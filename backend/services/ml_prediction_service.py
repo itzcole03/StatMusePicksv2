@@ -4,12 +4,12 @@ Provides `MLPredictionService.predict()` that prefers persisted models and falls
 back to a heuristic when models are absent. Calibrator use is supported via
 `ModelRegistry.load_calibrator` when available.
 """
-from typing import Dict, Optional
-import os
+
 import logging
+from typing import Dict, Optional
 
 import numpy as np
-import pandas as pd
+
 from .feature_engineering import engineer_features
 from .model_registry import ModelRegistry
 
@@ -21,7 +21,14 @@ class MLPredictionService:
         # Use the centralized ModelRegistry for persistence
         self.registry = ModelRegistry(model_dir=model_dir)
 
-    async def predict(self, player_name: str, stat_type: str, line: float, player_data: Dict, opponent_data: Optional[Dict] = None) -> Dict:
+    async def predict(
+        self,
+        player_name: str,
+        stat_type: str,
+        line: float,
+        player_data: Dict,
+        opponent_data: Optional[Dict] = None,
+    ) -> Dict:
         """Return a prediction dict. If a trained model exists, use it; otherwise use heuristic fallback."""
         try:
             features = engineer_features(player_data, opponent_data)
@@ -31,12 +38,22 @@ class MLPredictionService:
             if model is None:
                 # fallback heuristic
                 recent = player_data.get("recentGames") or []
-                vals = [g.get("statValue") for g in recent if g.get("statValue") is not None]
-                mean = float(np.mean(vals)) if vals else float(player_data.get("seasonAvg") or 0.0)
+                vals = [
+                    g.get("statValue") for g in recent if g.get("statValue") is not None
+                ]
+                mean = (
+                    float(np.mean(vals))
+                    if vals
+                    else float(player_data.get("seasonAvg") or 0.0)
+                )
                 over_prob = 0.5 + (mean - line) * 0.05
                 over_prob = float(max(0.05, min(0.95, over_prob)))
                 ev = self._calculate_ev(over_prob)
-                rec = "OVER" if over_prob > 0.55 else ("UNDER" if over_prob < 0.45 else None)
+                rec = (
+                    "OVER"
+                    if over_prob > 0.55
+                    else ("UNDER" if over_prob < 0.45 else None)
+                )
                 return {
                     "player": player_name,
                     "stat": stat_type,
@@ -55,13 +72,17 @@ class MLPredictionService:
                 raw = model.predict(features)[0]
             except Exception:
                 logger.exception("model prediction failed, using fallback")
-                return await self.predict(player_name, stat_type, line, player_data, opponent_data)
+                return await self.predict(
+                    player_name, stat_type, line, player_data, opponent_data
+                )
 
             # simple transform to probability (sigmoid centered on line)
             over_prob = 1.0 / (1.0 + np.exp(-(raw - line)))
             over_prob = float(max(0.0, min(1.0, over_prob)))
             ev = self._calculate_ev(over_prob)
-            rec = "OVER" if over_prob > 0.55 else ("UNDER" if over_prob < 0.45 else None)
+            rec = (
+                "OVER" if over_prob > 0.55 else ("UNDER" if over_prob < 0.45 else None)
+            )
 
             return {
                 "player": player_name,
@@ -80,7 +101,9 @@ class MLPredictionService:
             return {"player": player_name, "error": str(e)}
 
     @staticmethod
-    def _calculate_ev(over_probability: float, odds_over: int = -110, odds_under: int = -110) -> float:
+    def _calculate_ev(
+        over_probability: float, odds_over: int = -110, odds_under: int = -110
+    ) -> float:
         # Convert American odds to decimal
         def to_decimal(o):
             return (o / 100.0) + 1.0 if o > 0 else (100.0 / abs(o)) + 1.0

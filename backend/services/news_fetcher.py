@@ -8,12 +8,13 @@ Usage:
 The fetcher looks for files named after the player (several extensions supported)
 and returns the file contents (or aggregated contents if multiple matches).
 """
+
 from __future__ import annotations
-import json
+
 import csv
+import json
 from pathlib import Path
 from typing import Callable
-
 
 _EXTS = [".txt", ".md", ".json", ".csv", ".html"]
 
@@ -62,7 +63,9 @@ def _read_csv_file(p: Path) -> str:
         return ""
 
 
-def file_text_fetcher(base_dir: str = "backend/data/news_samples") -> Callable[[str], str]:
+def file_text_fetcher(
+    base_dir: str = "backend/data/news_samples",
+) -> Callable[[str], str]:
     """Return a `text_fetcher(player_name)` callable that reads local sample files.
 
     The callable returns an empty string when no sample is found.
@@ -72,7 +75,11 @@ def file_text_fetcher(base_dir: str = "backend/data/news_samples") -> Callable[[
     def fetcher(player_name: str) -> str:
         if not player_name:
             return ""
-        name_variants = [player_name, _normalize_name(player_name), player_name.replace(" ", "_")]
+        name_variants = [
+            player_name,
+            _normalize_name(player_name),
+            player_name.replace(" ", "_"),
+        ]
         candidates = []
         for nv in name_variants:
             for ext in _EXTS:

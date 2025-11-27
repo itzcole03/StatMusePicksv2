@@ -1,5 +1,9 @@
 import numpy as np
-from backend.evaluation.calibration_metrics import brier_score, expected_calibration_error
+
+from backend.evaluation.calibration_metrics import (
+    brier_score,
+    expected_calibration_error,
+)
 
 
 def test_brier_and_ece_perfect():

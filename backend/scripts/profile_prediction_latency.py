@@ -3,25 +3,54 @@
 Runs `engineer_features` on a synthetic player_data payload multiple times and
 measures durations. Writes a JSON report to `backend/artifacts/latency_report.json`.
 """
+
 from __future__ import annotations
-import time
+
 import json
 import statistics
-from backend.services.feature_engineering import engineer_features
+import time
 
+from backend.services.feature_engineering import engineer_features
 
 SAMPLE_PLAYER = {
     "playerName": "Test Player",
     "player_id": "test_123",
     "seasonAvg": 20.0,
     "recentGames": [
-        {"statValue": 22, "date": "2025-11-21", "opponentTeamId": "TEAM1", "opponentDefRating": 105},
-        {"statValue": 18, "date": "2025-11-19", "opponentTeamId": "TEAM2", "opponentDefRating": 108},
-        {"statValue": 25, "date": "2025-11-17", "opponentTeamId": "TEAM3", "opponentDefRating": 102},
-        {"statValue": 15, "date": "2025-11-15", "opponentTeamId": "TEAM4", "opponentDefRating": 110},
-        {"statValue": 30, "date": "2025-11-13", "opponentTeamId": "TEAM5", "opponentDefRating": 99},
+        {
+            "statValue": 22,
+            "date": "2025-11-21",
+            "opponentTeamId": "TEAM1",
+            "opponentDefRating": 105,
+        },
+        {
+            "statValue": 18,
+            "date": "2025-11-19",
+            "opponentTeamId": "TEAM2",
+            "opponentDefRating": 108,
+        },
+        {
+            "statValue": 25,
+            "date": "2025-11-17",
+            "opponentTeamId": "TEAM3",
+            "opponentDefRating": 102,
+        },
+        {
+            "statValue": 15,
+            "date": "2025-11-15",
+            "opponentTeamId": "TEAM4",
+            "opponentDefRating": 110,
+        },
+        {
+            "statValue": 30,
+            "date": "2025-11-13",
+            "opponentTeamId": "TEAM5",
+            "opponentDefRating": 99,
+        },
     ],
-    "advancedStatsMulti": {"aggregated": {"PER": 19.2, "TS_PCT": 0.585, "USG_PCT": 23.0}},
+    "advancedStatsMulti": {
+        "aggregated": {"PER": 19.2, "TS_PCT": 0.585, "USG_PCT": 23.0}
+    },
 }
 
 

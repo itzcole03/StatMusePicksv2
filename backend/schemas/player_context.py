@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from typing import Any, List, Optional
+
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
 
 try:
     from pydantic import ConfigDict
@@ -31,13 +32,15 @@ class PlayerContextResponse(BaseModel):
 # Provide Pydantic v2-compatible model config when available while remaining
 # compatible with Pydantic v1 deployments.
 if ConfigDict is not None:
-    PlayerContextResponse.model_config = ConfigDict(json_schema_extra={
-        "example": {
-            "player": "LeBron James",
-            "player_id": 2544,
-            "recentGames": [],
-            "seasonAvg": 27.5,
-            "fetchedAt": 0,
-            "cached": False,
+    PlayerContextResponse.model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "player": "LeBron James",
+                "player_id": 2544,
+                "recentGames": [],
+                "seasonAvg": 27.5,
+                "fetchedAt": 0,
+                "cached": False,
+            }
         }
-    })
+    )

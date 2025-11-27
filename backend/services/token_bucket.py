@@ -3,10 +3,11 @@
 This module provides a simple, thread-safe TokenBucket class that can be
 injected into clients that need rate-limiting behavior.
 """
+
 from __future__ import annotations
 
-import time
 import threading
+import time
 from typing import Optional
 
 

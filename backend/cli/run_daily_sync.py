@@ -7,11 +7,11 @@ Usage:
 This module calls `run_daily_sync_async()` from the ingestion service and
 returns non-zero exit codes on failure so it can be used in cron/systemd.
 """
-import sys
 import argparse
 import asyncio
 import json
 import logging
+import sys
 from datetime import datetime
 
 from backend.services import data_ingestion_service as ingest
@@ -23,7 +23,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Run the daily data ingestion sync")
     p.add_argument("--when", help="Optional date (YYYY-MM-DD) to run for", default=None)
-    p.add_argument("--dry-run", help="Perform a dry run (no DB/audit/alerting)", action="store_true")
+    p.add_argument(
+        "--dry-run",
+        help="Perform a dry run (no DB/audit/alerting)",
+        action="store_true",
+    )
     return p.parse_args(argv)
 
 
@@ -41,7 +45,9 @@ def main(argv=None):
         # prefer the async entrypoint
         # Prefer the async entrypoint and pass through dry_run flag.
         try:
-            result = asyncio.run(ingest.run_daily_sync_async(when, dry_run=args.dry_run))
+            result = asyncio.run(
+                ingest.run_daily_sync_async(when, dry_run=args.dry_run)
+            )
         except RuntimeError:
             # We're inside an event loop or asyncio.run failed; fall back to sync wrapper
             result = ingest.run_daily_sync(when, dry_run=args.dry_run)
@@ -58,7 +64,7 @@ def main(argv=None):
 
     # If dry-run, communicate via exit code 0 and print result
     try:
-        if args.dry_run and 'result' in locals():
+        if args.dry_run and "result" in locals():
             logger.info("dry-run result: %s", result)
     except Exception:
         pass

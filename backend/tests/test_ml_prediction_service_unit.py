@@ -18,7 +18,9 @@ def test_ml_prediction_with_persisted_model():
 
     opponent_data = {"defensiveRating": 105, "pace": 99}
 
-    result = asyncio.run(svc.predict("LeBron James", "points", 25.5, player_data, opponent_data))
+    result = asyncio.run(
+        svc.predict("LeBron James", "points", 25.5, player_data, opponent_data)
+    )
 
     assert isinstance(result, dict)
     assert "over_probability" in result

@@ -1,10 +1,6 @@
-import os
 from fastapi.testclient import TestClient
 
-import pytest
-
 from backend.fastapi_nba import app
-
 
 client = TestClient(app)
 

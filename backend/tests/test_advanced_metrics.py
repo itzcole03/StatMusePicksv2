@@ -1,5 +1,5 @@
-import types
 import sys
+import types
 
 
 def test_fetch_advanced_metrics_monkeypatch(tmp_path, monkeypatch):

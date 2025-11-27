@@ -37,12 +37,14 @@ def filter_manifest_for_players(manifest_path: Path, player_ids, out_dir: Path) 
             feat_path = feat_candidate
         else:
             # If feat_rel already starts with the manifest parent path, avoid duplicating
-            parent_str = str(manifest_path.parent).replace('\\', '/')
-            rel_str = str(feat_rel).replace('\\', '/')
-            if rel_str.startswith(parent_str) or rel_str.startswith(str(manifest_path.parent)):
+            parent_str = str(manifest_path.parent).replace("\\", "/")
+            rel_str = str(feat_rel).replace("\\", "/")
+            if rel_str.startswith(parent_str) or rel_str.startswith(
+                str(manifest_path.parent)
+            ):
                 feat_path = Path(rel_str)
             else:
-                feat_path = (manifest_path.parent / feat_rel)
+                feat_path = manifest_path.parent / feat_rel
         feat_path = feat_path.resolve()
         df = pd.read_parquet(feat_path)
         if "player_id" not in df.columns:
@@ -60,13 +62,17 @@ def filter_manifest_for_players(manifest_path: Path, player_ids, out_dir: Path) 
         df_player_num = pd.to_numeric(df["player_id"], errors="coerce")
         if df_player_num.isna().all():
             # no numeric player ids present
-            raise RuntimeError(f"features file {feat_path} has no numeric player_id values")
+            raise RuntimeError(
+                f"features file {feat_path} has no numeric player_id values"
+            )
 
         mask = df_player_num.fillna(-1).astype(int).isin(resolved_ints)
         subset = df.loc[mask].copy()
 
         # Ensure player_id dtype is integer in exported parquet
-        subset["player_id"] = pd.to_numeric(subset["player_id"], errors="coerce").astype('Int64')
+        subset["player_id"] = pd.to_numeric(
+            subset["player_id"], errors="coerce"
+        ).astype("Int64")
 
         out_feat = out_dir / f"{split}_features.parquet"
         subset.to_parquet(out_feat, index=False)
@@ -75,7 +81,7 @@ def filter_manifest_for_players(manifest_path: Path, player_ids, out_dir: Path) 
 
         new_manifest["parts"][split] = {
             "columns": list(subset.columns),
-            "files": {"features": os.path.relpath(out_feat, out_dir)} ,
+            "files": {"features": os.path.relpath(out_feat, out_dir)},
             "rows": len(subset),
         }
 
@@ -100,13 +106,32 @@ def run_orchestrator(manifest_path: Path, out_dir: Path, report_csv: Path):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--mismatch-csv", default="backend/models_store/roster_run/roster_mapping_mismatch.csv")
-    p.add_argument("--manifest", default="backend/data/datasets/points_dataset_v20251121T235153Z_c71436ea/dataset_manifest.json")
+    p.add_argument(
+        "--mismatch-csv",
+        default="backend/models_store/roster_run/roster_mapping_mismatch.csv",
+    )
+    p.add_argument(
+        "--manifest",
+        default="backend/data/datasets/points_dataset_v20251121T235153Z_c71436ea/dataset_manifest.json",
+    )
     p.add_argument("--alias-csv", default="backend/models_store/roster_alias_table.csv")
-    p.add_argument("--out-manifest-dir", default="backend/data/datasets/points_dataset_v20251121T235153Z_c71436ea/alias_subset")
-    p.add_argument("--out-model-dir", default="backend/models_store/roster_run_alias_subset")
-    p.add_argument("--report-csv", default="backend/models_store/roster_run_alias_subset_report.csv")
-    p.add_argument("--no-run", dest="run", action="store_false", help="Create alias table and manifest but don't run orchestrator")
+    p.add_argument(
+        "--out-manifest-dir",
+        default="backend/data/datasets/points_dataset_v20251121T235153Z_c71436ea/alias_subset",
+    )
+    p.add_argument(
+        "--out-model-dir", default="backend/models_store/roster_run_alias_subset"
+    )
+    p.add_argument(
+        "--report-csv",
+        default="backend/models_store/roster_run_alias_subset_report.csv",
+    )
+    p.add_argument(
+        "--no-run",
+        dest="run",
+        action="store_false",
+        help="Create alias table and manifest but don't run orchestrator",
+    )
     args = p.parse_args()
 
     mismatch = Path(args.mismatch_csv)

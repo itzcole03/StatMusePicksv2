@@ -4,6 +4,7 @@ Prints JSON returned by `AdvancedMetricsService.fetch_advanced_metrics`.
 Usage:
     $env:PYTHONPATH='.'; & .\.venv\Scripts\python.exe backend\scripts\check_adv_metrics.py --players "Stephen Curry,Nikola Jokic"
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,6 +19,7 @@ logging.basicConfig(level=logging.INFO)
 def get_player_id(name: str):
     try:
         from backend.services import nba_stats_client
+
         pid = nba_stats_client.find_player_id_by_name(name)
         return pid
     except Exception:
@@ -32,6 +34,7 @@ def fetch_metrics_for(name: str):
         return None
     try:
         from backend.services.advanced_metrics_service import create_default_service
+
         svc = create_default_service()
         metrics = svc.fetch_advanced_metrics(str(pid))
         print(name, "(id=", pid, ") ->")
@@ -47,17 +50,21 @@ def main(players: List[str]):
         fetch_metrics_for(p)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Check advanced metrics for players')
-    parser.add_argument('--players', default=None, help='Comma-separated player list')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Check advanced metrics for players")
+    parser.add_argument("--players", default=None, help="Comma-separated player list")
     args = parser.parse_args()
 
     default_players = [
-        'Stephen Curry', 'Nikola Jokic', 'Kevin Durant', 'Luka Doncic', 'Devin Booker'
+        "Stephen Curry",
+        "Nikola Jokic",
+        "Kevin Durant",
+        "Luka Doncic",
+        "Devin Booker",
     ]
 
     if args.players:
-        players = [p.strip() for p in args.players.split(',') if p.strip()]
+        players = [p.strip() for p in args.players.split(",") if p.strip()]
     else:
         players = default_players
 

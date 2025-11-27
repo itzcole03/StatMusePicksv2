@@ -1,6 +1,5 @@
 import asyncio
 import tempfile
-import os
 
 from backend.services import cache
 
@@ -25,8 +24,9 @@ def test_model_save_invalidates_cached_predictions():
         assert got2 is not None
 
         # Save a toy model via ModelRegistry which should invalidate prefixes
-        from backend.services.model_registry import ModelRegistry
         from sklearn.dummy import DummyRegressor
+
+        from backend.services.model_registry import ModelRegistry
 
         with tempfile.TemporaryDirectory() as td:
             mr = ModelRegistry(model_dir=td)

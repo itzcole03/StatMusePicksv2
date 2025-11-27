@@ -1,4 +1,7 @@
-from backend.services.feature_engineering import calculate_rolling_averages, engineer_features
+from backend.services.feature_engineering import (
+    calculate_rolling_averages,
+    engineer_features,
+)
 
 
 def test_calculate_rolling_averages_simple():

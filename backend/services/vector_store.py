@@ -3,6 +3,7 @@
 Provides add(id, embedding, metadata) and search(query_embedding, top_k).
 Uses cosine similarity.
 """
+
 from __future__ import annotations
 
 import math
@@ -14,7 +15,9 @@ class InMemoryVectorStore:
         # store as id -> (embedding, metadata)
         self._items: Dict[str, Tuple[List[float], Dict[str, Any]]] = {}
 
-    def add(self, id: str, embedding: List[float], metadata: Optional[Dict[str, Any]] = None) -> None:
+    def add(
+        self, id: str, embedding: List[float], metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         self._items[id] = (embedding, metadata or {})
 
     def _cosine(self, a: List[float], b: List[float]) -> float:
@@ -31,7 +34,9 @@ class InMemoryVectorStore:
             return 0.0
         return dot / (math.sqrt(na) * math.sqrt(nb))
 
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self, query_embedding: List[float], top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         scores = []
         for id, (emb, meta) in self._items.items():
             score = self._cosine(query_embedding, emb)
@@ -43,4 +48,7 @@ class InMemoryVectorStore:
         return results
 
     def all_items(self) -> List[Dict[str, Any]]:
-        return [{"id": id, "embedding": emb, "metadata": meta} for id, (emb, meta) in self._items.items()]
+        return [
+            {"id": id, "embedding": emb, "metadata": meta}
+            for id, (emb, meta) in self._items.items()
+        ]

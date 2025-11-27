@@ -7,6 +7,7 @@ Environment variables:
  - INDEXER_INTERVAL_SECONDS: seconds between runs (default 300)
  - DATABASE_URL: database connection URL
 """
+
 import logging
 import os
 

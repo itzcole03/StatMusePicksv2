@@ -10,15 +10,17 @@ Commands:
 This CLI is intentionally lightweight and operates against on-disk artifacts and the
 `model_metadata` table via a short-lived sync SQLAlchemy engine when DATABASE_URL is set.
 """
+
 from __future__ import annotations
 
 import argparse
+import datetime
+import logging
 import os
 import shutil
-import logging
 from typing import Optional
+
 from sqlalchemy import create_engine, select
-import datetime
 
 from backend.services.model_registry import ModelRegistry, _sync_db_url
 
@@ -34,7 +36,12 @@ def _print_file_info(path: str) -> None:
         st = os.stat(path)
         size = st.st_size
         try:
-            mtime = datetime.datetime.fromtimestamp(st.st_mtime, tz=datetime.timezone.utc).isoformat() + "Z"
+            mtime = (
+                datetime.datetime.fromtimestamp(
+                    st.st_mtime, tz=datetime.timezone.utc
+                ).isoformat()
+                + "Z"
+            )
         except Exception:
             mtime = None
         print(f"  size={size} bytes  mtime={mtime}")
@@ -62,7 +69,9 @@ def show_model(reg: ModelRegistry, player: str):
         _print_file_info(path)
 
 
-def _insert_metadata_row(player: str, version: Optional[str], path: str, notes: Optional[str]):
+def _insert_metadata_row(
+    player: str, version: Optional[str], path: str, notes: Optional[str]
+):
     try:
         from backend.models.model_metadata import ModelMetadata
 
@@ -81,7 +90,9 @@ def _insert_metadata_row(player: str, version: Optional[str], path: str, notes: 
         print("Warning: could not insert metadata row:", e)
 
 
-def promote_model(reg: ModelRegistry, player: str, tag: str = "production", force: bool = False):
+def promote_model(
+    reg: ModelRegistry, player: str, tag: str = "production", force: bool = False
+):
     player = _safe_player(player)
     src = reg._model_path(player)
     if not os.path.exists(src):
@@ -96,7 +107,12 @@ def promote_model(reg: ModelRegistry, player: str, tag: str = "production", forc
     print(f"Promoted {src} -> {dst}")
     # attempt to record metadata for the promoted artifact
     try:
-        _insert_metadata_row(player, version=tag, path=dst, notes=f"promoted at {datetime.datetime.now(datetime.timezone.utc).isoformat()}Z")
+        _insert_metadata_row(
+            player,
+            version=tag,
+            path=dst,
+            notes=f"promoted at {datetime.datetime.now(datetime.timezone.utc).isoformat()}Z",
+        )
     except Exception:
         pass
 
@@ -133,7 +149,9 @@ def show_metadata(player: str, db_url: Optional[str] = None):
             print(f"No metadata rows found for player: {player}")
             return
         for row in res:
-            print(f"id={row.id} name={row.name} version={row.version} path={row.path} created_at={row.created_at} notes={row.notes}")
+            print(
+                f"id={row.id} name={row.name} version={row.version} path={row.path} created_at={row.created_at} notes={row.notes}"
+            )
 
 
 def main(argv: Optional[list] = None):
@@ -150,12 +168,20 @@ def main(argv: Optional[list] = None):
 
     sp3 = sub.add_parser("promote", help="Promote model to tagged production copy")
     sp3.add_argument("player")
-    sp3.add_argument("--tag", default="production", help="Tag to append to promoted filename (default: production)")
-    sp3.add_argument("--force", action="store_true", help="Overwrite destination if exists")
+    sp3.add_argument(
+        "--tag",
+        default="production",
+        help="Tag to append to promoted filename (default: production)",
+    )
+    sp3.add_argument(
+        "--force", action="store_true", help="Overwrite destination if exists"
+    )
 
     sp4 = sub.add_parser("archive", help="Archive model file to models_store/archive/")
     sp4.add_argument("player")
-    sp4.add_argument("--force", action="store_true", help="Overwrite archived file if exists")
+    sp4.add_argument(
+        "--force", action="store_true", help="Overwrite archived file if exists"
+    )
 
     args = p.parse_args(argv)
 

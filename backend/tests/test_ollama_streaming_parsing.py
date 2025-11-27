@@ -1,10 +1,9 @@
 import json
 import os
 import sys
-import pytest
 
 # Ensure repo root is on sys.path so `backend` package imports work in pytest
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from backend.services.llm_feature_service import LLMFeatureService
 
@@ -40,16 +39,16 @@ class MockJSONResp:
 
 
 def test_streaming_parsing(monkeypatch):
-    os.environ['OLLAMA_STREAM'] = 'true'
-    os.environ['OLLAMA_CLOUD_API_KEY'] = 'fakekey'
-    os.environ['OLLAMA_URL'] = 'https://api.ollama.com'
+    os.environ["OLLAMA_STREAM"] = "true"
+    os.environ["OLLAMA_CLOUD_API_KEY"] = "fakekey"
+    os.environ["OLLAMA_URL"] = "https://api.ollama.com"
 
     svc = LLMFeatureService()
 
     lines = [
         'data: {"content":"injury: player injured"}\n',
         'data: {"content":"morale: high"}\n',
-        'data: [DONE]\n',
+        "data: [DONE]\n",
     ]
 
     def fake_post(url, json=None, headers=None, timeout=None, stream=False):
@@ -57,7 +56,7 @@ def test_streaming_parsing(monkeypatch):
         return MockStreamResp(lines)
 
     # Patch the global requests.post used by the service at call time
-    monkeypatch.setattr('requests.post', fake_post)
+    monkeypatch.setattr("requests.post", fake_post)
 
     out = svc._ollama_request_with_retries("prompt", max_attempts=1)
     assert out is not None
@@ -66,9 +65,9 @@ def test_streaming_parsing(monkeypatch):
 
 
 def test_json_parsing(monkeypatch):
-    os.environ.pop('OLLAMA_STREAM', None)
-    os.environ['OLLAMA_CLOUD_API_KEY'] = 'fakekey'
-    os.environ['OLLAMA_URL'] = 'https://api.ollama.com'
+    os.environ.pop("OLLAMA_STREAM", None)
+    os.environ["OLLAMA_CLOUD_API_KEY"] = "fakekey"
+    os.environ["OLLAMA_URL"] = "https://api.ollama.com"
 
     svc = LLMFeatureService()
     data = {"outputs": [{"content": "Player is confident and healthy"}]}
@@ -77,7 +76,7 @@ def test_json_parsing(monkeypatch):
         return MockJSONResp(data)
 
     # Patch the global requests.post used by the service at call time
-    monkeypatch.setattr('requests.post', fake_post)
+    monkeypatch.setattr("requests.post", fake_post)
 
     out = svc._ollama_request_with_retries("prompt", max_attempts=1)
     assert out is not None

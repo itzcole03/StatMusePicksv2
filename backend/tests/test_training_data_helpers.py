@@ -39,8 +39,20 @@ def test_build_dataset_from_specs_monkeypatched(monkeypatch):
     )
 
     specs = [
-        {"player": "A", "stat": "PTS", "game_date": "2024-10-01", "season": "2024-25", "label": 21},
-        {"player": "B", "stat": "PTS", "game_date": "2024-10-02", "season": "2024-25", "label": 19},
+        {
+            "player": "A",
+            "stat": "PTS",
+            "game_date": "2024-10-01",
+            "season": "2024-25",
+            "label": 21,
+        },
+        {
+            "player": "B",
+            "stat": "PTS",
+            "game_date": "2024-10-02",
+            "season": "2024-25",
+            "label": 19,
+        },
     ]
 
     X, y = training_data_service.build_dataset_from_specs(specs)

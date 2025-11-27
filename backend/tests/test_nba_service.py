@@ -1,9 +1,3 @@
-import json
-import time
-from unittest import mock
-
-import pytest
-
 from backend.services import nba_service
 
 
@@ -30,7 +24,9 @@ def test_get_player_summary_happy_path(monkeypatch, tmp_path):
     monkeypatch.setattr(nba_service, "_redis_client", lambda: fake_rc)
 
     # Mock nba_stats_client functions
-    monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 123)
+    monkeypatch.setattr(
+        nba_service.nba_stats_client, "find_player_id_by_name", lambda name: 123
+    )
 
     def fake_fetch(pid, limit, season=None):
         # return list of dict-like rows consistent with nba_api DataFrame->to_dict
@@ -41,7 +37,9 @@ def test_get_player_summary_happy_path(monkeypatch, tmp_path):
 
     monkeypatch.setattr(nba_service.nba_stats_client, "fetch_recent_games", fake_fetch)
 
-    out = nba_service.get_player_summary("LeBron James", stat="points", limit=2, debug=True)
+    out = nba_service.get_player_summary(
+        "LeBron James", stat="points", limit=2, debug=True
+    )
     assert out["player"] == "LeBron James"
     assert out["stat"] == "points"
     assert out["seasonAvg"] == 27.5
@@ -53,7 +51,9 @@ def test_get_player_summary_happy_path(monkeypatch, tmp_path):
 
 def test_build_external_context_for_projections_partial(monkeypatch):
     # Simulate missing player resolution
-    monkeypatch.setattr(nba_service.nba_stats_client, "find_player_id_by_name", lambda name: None)
+    monkeypatch.setattr(
+        nba_service.nba_stats_client, "find_player_id_by_name", lambda name: None
+    )
 
     inputs = [{"player": "Unknown Player"}, {"player": "Also Unknown"}]
     results = nba_service.build_external_context_for_projections(inputs)
