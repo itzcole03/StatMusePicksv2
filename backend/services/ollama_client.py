@@ -220,125 +220,113 @@ class OllamaClient:
                 pass
 
             if stream:
-                resp = requests.post(
-                    api_path,
-                    json=payload,
-                    headers=headers or None,
-                    timeout=timeout,
-                    stream=True,
-                )
-                resp.raise_for_status()
-                parts = []
-                for raw in resp.iter_lines(decode_unicode=True):
-                    if not raw:
-                        continue
-                    line = raw.strip()
-                    if line.startswith("data:"):
-                        line = line[len("data:") :].strip()
-                    if line == "[DONE]":
-                        break
-                    try:
-                        j = json.loads(line)
-                        # attempt to extract common fields
-                        if isinstance(j, dict):
-                            if "content" in j:
-                                parts.append(str(j.get("content") or ""))
-                            elif "text" in j:
-                                parts.append(str(j.get("text") or ""))
-                            else:
-                                # search nested
-                                def _find_text(obj):
-                                    if isinstance(obj, str):
-                                        return obj
-                                    if isinstance(obj, dict):
-                                        for v in obj.values():
-                                            t = _find_text(v)
-                                            if t:
-                                                return t
-                                    if isinstance(obj, list):
-                                        for v in obj:
-                                            t = _find_text(v)
-                                            if t:
-                                                return t
-                                    return None
+                return self._http_generate_stream(api_path, payload, headers, timeout)
 
-                                t = _find_text(j)
-                                if t:
-                                    parts.append(t)
-                        else:
-                            parts.append(str(j))
-                    except Exception:
-                        parts.append(line)
-                return "\n".join([p for p in parts if p]) or None
-
-            resp = requests.post(
-                api_path, json=payload, headers=headers or None, timeout=timeout
-            )
+            resp = requests.post(api_path, json=payload, headers=headers or None, timeout=timeout)
             resp.raise_for_status()
+            return self._parse_http_response(resp, response_format)
+        except Exception as e:
+            logger.debug("Ollama HTTP generate failed: %s", e)
+        return None
 
-            # Prefer returning JSON when explicitly requested
-            data = None
-            if response_format == "json":
-                try:
-                    return resp.json()
-                except Exception:
-                    data = None
+    def _http_generate_stream(self, api_path: str, payload: Dict[str, Any], headers: Dict[str, str], timeout: float) -> Optional[str]:
+        import requests
 
+        resp = requests.post(api_path, json=payload, headers=headers or None, timeout=timeout, stream=True)
+        resp.raise_for_status()
+        parts: list[str] = []
+        for raw in resp.iter_lines(decode_unicode=True):
+            if not raw:
+                continue
+            line = raw.strip()
+            if line.startswith("data:"):
+                line = line[len("data:") :].strip()
+            if line == "[DONE]":
+                break
             try:
-                data = resp.json()
+                j = json.loads(line)
+                if isinstance(j, dict):
+                    if "content" in j:
+                        parts.append(str(j.get("content") or ""))
+                    elif "text" in j:
+                        parts.append(str(j.get("text") or ""))
+                    else:
+                        def _find_text(obj):
+                            if isinstance(obj, str):
+                                return obj
+                            if isinstance(obj, dict):
+                                for v in obj.values():
+                                    t = _find_text(v)
+                                    if t:
+                                        return t
+                            if isinstance(obj, list):
+                                for v in obj:
+                                    t = _find_text(v)
+                                    if t:
+                                        return t
+                            return None
+
+                        t = _find_text(j)
+                        if t:
+                            parts.append(t)
+                else:
+                    parts.append(str(j))
+            except Exception:
+                parts.append(line)
+        return "\n".join([p for p in parts if p]) or None
+
+    def _parse_http_response(self, resp, response_format: Optional[str]) -> Optional[Any]:
+        # Prefer returning JSON when explicitly requested
+        data = None
+        if response_format == "json":
+            try:
+                return resp.json()
             except Exception:
                 data = None
 
-            if isinstance(data, (dict, list)):
-                if (
-                    isinstance(data, dict)
-                    and "outputs" in data
-                    and isinstance(data["outputs"], list)
-                ):
-                    out0 = data["outputs"][0]
-                    if isinstance(out0, dict):
-                        return (
-                            out0.get("content") or out0.get("text") or json.dumps(out0)
-                        )
-                    return str(out0)
-                if (
-                    isinstance(data, dict)
-                    and "output" in data
-                    and isinstance(data["output"], list)
-                ):
-                    pieces = []
-                    for it in data["output"]:
-                        if isinstance(it, dict):
-                            pieces.append(it.get("content") or it.get("text") or "")
-                        elif isinstance(it, str):
-                            pieces.append(it)
-                    return "\n".join(pieces).strip()
-                if isinstance(data, dict) and "text" in data:
-                    return data.get("text")
+        try:
+            data = resp.json()
+        except Exception:
+            data = None
 
-                def _find_text(obj):
-                    if isinstance(obj, str):
-                        return obj
-                    if isinstance(obj, dict):
-                        for v in obj.values():
-                            t = _find_text(v)
-                            if t:
-                                return t
-                    if isinstance(obj, list):
-                        for v in obj:
-                            t = _find_text(v)
-                            if t:
-                                return t
-                    return None
+        if isinstance(data, (dict, list)):
+            if isinstance(data, dict) and "outputs" in data and isinstance(data["outputs"], list):
+                out0 = data["outputs"][0]
+                if isinstance(out0, dict):
+                    return out0.get("content") or out0.get("text") or json.dumps(out0)
+                return str(out0)
+            if isinstance(data, dict) and "output" in data and isinstance(data["output"], list):
+                pieces = []
+                for it in data["output"]:
+                    if isinstance(it, dict):
+                        pieces.append(it.get("content") or it.get("text") or "")
+                    elif isinstance(it, str):
+                        pieces.append(it)
+                return "\n".join(pieces).strip()
+            if isinstance(data, dict) and "text" in data:
+                return data.get("text")
 
-                t = _find_text(data)
-                if t:
-                    return t
+            def _find_text(obj):
+                if isinstance(obj, str):
+                    return obj
+                if isinstance(obj, dict):
+                    for v in obj.values():
+                        t = _find_text(v)
+                        if t:
+                            return t
+                if isinstance(obj, list):
+                    for v in obj:
+                        t = _find_text(v)
+                        if t:
+                            return t
+                return None
 
-            if resp.text:
-                return resp.text
-        except Exception as e:
-            logger.debug("Ollama HTTP generate failed: %s", e)
+            t = _find_text(data)
+            if t:
+                return t
+
+        if resp.text:
+            return resp.text
         return None
 
     def embeddings(
