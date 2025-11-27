@@ -1,4 +1,4 @@
-from datetime import datetime
+import datetime
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 
@@ -17,7 +17,7 @@ class VectorIndex(Base):
     player_id = Column(Integer, ForeignKey("players.id"), nullable=True, index=True)
     model = Column(String(128), nullable=True)
     store = Column(String(64), nullable=True)
-    created_at = Column(DateTime, default=lambda: datetime.utcnow())
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
         return f"<VectorIndex id={self.id} vector_id={self.vector_id} source={self.source_type}:{self.source_id}>"

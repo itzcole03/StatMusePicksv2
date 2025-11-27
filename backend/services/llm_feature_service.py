@@ -237,13 +237,13 @@ class LLMFeatureService:
                 continue
 
             try:
-                vf = QualitativeFeatures.parse_obj(parsed)
+                vf = QualitativeFeatures.model_validate(parsed)
                 try:
                     if metrics is not None:
                         metrics.llm_structured_accepted.inc()
                 except Exception:
                     pass
-                return vf.dict()
+                return vf.model_dump()
             except ValidationError as ve:
                 # structured logging for validation failures (truncated parsed sample)
                 try:
@@ -268,13 +268,13 @@ class LLMFeatureService:
                 coerced = self._coerce_partial(parsed)
                 if coerced:
                     try:
-                        vf = QualitativeFeatures.parse_obj(coerced)
+                        vf = QualitativeFeatures.model_validate(coerced)
                         try:
                             if metrics is not None:
                                 metrics.llm_structured_coerced.inc()
                         except Exception:
                             pass
-                        return vf.dict()
+                        return vf.model_dump()
                     except ValidationError:
                         try:
                             if metrics is not None:

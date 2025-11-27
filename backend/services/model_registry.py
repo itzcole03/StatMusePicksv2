@@ -88,7 +88,8 @@ class ModelRegistry:
         import datetime
         import uuid
 
-        ver_id = version or datetime.datetime.utcnow().strftime("v%Y%m%dT%H%M%SZ")
+        # use timezone-aware UTC timestamp to avoid deprecated utcnow
+        ver_id = version or datetime.datetime.now(datetime.timezone.utc).strftime("v%Y%m%dT%H%M%SZ")
         # use uuid to avoid collisions for same-version tradeoffs
         uid = uuid.uuid4().hex[:12]
         player_dir = os.path.join(self.model_dir, safe)
