@@ -5,18 +5,19 @@ in tests.
 This script attempts to load each `.pkl` file, then re-dumps it. It is
 best-effort and will skip files that cannot be unpickled.
 """
-import os
+
 import warnings
 from pathlib import Path
 
-MODEL_DIR = Path(__file__).resolve().parents[1] / 'models_store'
+MODEL_DIR = Path(__file__).resolve().parents[1] / "models_store"
+
 
 def resave_models():
     if not MODEL_DIR.exists():
         print(f"Model directory {MODEL_DIR} does not exist; nothing to do.")
         return
 
-    files = list(MODEL_DIR.glob('*.pkl'))
+    files = list(MODEL_DIR.glob("*.pkl"))
     if not files:
         print("No .pkl model files found to resave.")
         return
@@ -26,7 +27,7 @@ def resave_models():
         try:
             # Suppress sklearn InconsistentVersionWarning during load
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
+                warnings.simplefilter("ignore")
                 try:
                     import joblib
                 except Exception:
@@ -36,7 +37,7 @@ def resave_models():
                 model = joblib.load(f)
 
             # Re-dump using joblib to update metadata for current sklearn
-            backup = f.with_suffix('.pkl.bak')
+            backup = f.with_suffix(".pkl.bak")
             try:
                 f.rename(backup)
             except Exception:
@@ -56,5 +57,6 @@ def resave_models():
         except Exception as e:
             print(f"Skipping {f.name}: failed to load ({e})")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     resave_models()

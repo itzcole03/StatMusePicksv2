@@ -10,10 +10,12 @@ def test_get_team_stats_computes_averages_and_caches(monkeypatch):
             self.team_id = team_id
 
         def get_data_frames(self):
-            df = pd.DataFrame([
-                {"PTS": 100, "OPP_PTS": 95},
-                {"PTS": 110, "OPP_PTS": 105},
-            ])
+            df = pd.DataFrame(
+                [
+                    {"PTS": 100, "OPP_PTS": 95},
+                    {"PTS": 110, "OPP_PTS": 105},
+                ]
+            )
             return [df]
 
     # Patch the imported teamgamelog with our fake

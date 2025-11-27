@@ -1,4 +1,5 @@
 import os
+
 import joblib
 
 from backend.services.test_models import DummyModel
@@ -12,5 +13,5 @@ def main():
     print("Wrote test model to", path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

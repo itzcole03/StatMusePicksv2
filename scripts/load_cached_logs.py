@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """Load cached game logs from backend/data/cached_game_logs and run ingestion."""
-import os
 import json
+import os
 from datetime import date
 
 ROOT = os.path.dirname(os.path.dirname(__file__))
-CACHED_DIR = os.path.join(ROOT, 'backend', 'data', 'cached_game_logs')
+CACHED_DIR = os.path.join(ROOT, "backend", "data", "cached_game_logs")
 
 all_records = []
 if os.path.exists(CACHED_DIR):
     for fname in os.listdir(CACHED_DIR):
-        if not fname.lower().endswith('.json'):
+        if not fname.lower().endswith(".json"):
             continue
         path = os.path.join(CACHED_DIR, fname)
         try:
-            with open(path, 'r', encoding='utf-8') as fh:
+            with open(path, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
                 if isinstance(data, list):
                     # Normalize team-level cached logs into minimal game records
@@ -22,37 +22,40 @@ if os.path.exists(CACHED_DIR):
                         # Try to normalize common keys to our expected schema
                         out = {}
                         # date
-                        if 'GAME_DATE' in rec:
-                            out['game_date'] = rec.get('GAME_DATE')
-                        elif 'game_date' in rec:
-                            out['game_date'] = rec.get('game_date')
+                        if "GAME_DATE" in rec:
+                            out["game_date"] = rec.get("GAME_DATE")
+                        elif "game_date" in rec:
+                            out["game_date"] = rec.get("game_date")
                         # scores
-                        if 'PTS' in rec:
-                            out['home_score'] = rec.get('PTS')
-                        if 'OPP_PTS' in rec:
-                            out['away_score'] = rec.get('OPP_PTS')
+                        if "PTS" in rec:
+                            out["home_score"] = rec.get("PTS")
+                        if "OPP_PTS" in rec:
+                            out["away_score"] = rec.get("OPP_PTS")
                         # ensure required team fields exist: attempt to infer from filename
                         # filename pattern: team_<teamid>_<season>.json
-                        parts = fname.split('_')
+                        parts = fname.split("_")
                         team_abbr = None
                         try:
-                            if parts[0].lower().startswith('team') and parts[1].isdigit():
+                            if (
+                                parts[0].lower().startswith("team")
+                                and parts[1].isdigit()
+                            ):
                                 tid = parts[1]
                                 # common mapping for GSW
-                                if tid == '1610612744':
-                                    team_abbr = 'GSW'
+                                if tid == "1610612744":
+                                    team_abbr = "GSW"
                                 else:
                                     team_abbr = f"TEAM_{tid}"
                         except Exception:
                             team_abbr = None
 
-                        out['home_team'] = team_abbr or 'UNKNOWN'
-                        out['away_team'] = 'UNKNOWN'
+                        out["home_team"] = team_abbr or "UNKNOWN"
+                        out["away_team"] = "UNKNOWN"
                         all_records.append(out)
                 elif isinstance(data, dict):
                     # some files are dict with key 'games' or similar
-                    if 'games' in data and isinstance(data['games'], list):
-                        all_records.extend(data['games'])
+                    if "games" in data and isinstance(data["games"], list):
+                        all_records.extend(data["games"])
                     else:
                         # try to extract list values
                         for v in data.values():

@@ -1,8 +1,6 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from backend.main import app
-
 
 client = TestClient(app)
 
@@ -21,4 +19,4 @@ def test_batch_player_context_basic():
     assert len(body) == 2
 
     # The second entry corresponds to the empty player and should contain an error
-    assert any(('error' in (entry or {})) for entry in body)
+    assert any(("error" in (entry or {})) for entry in body)

@@ -3,6 +3,7 @@
 This script must be executed on the machine that hosts the Ollama server/CLI.
 It is intentionally simple: it shells out and returns subprocess exit code.
 """
+
 import os
 import shlex
 import subprocess
@@ -27,7 +28,9 @@ def pull_model(model_name: str) -> int:
 
 
 def main():
-    model = os.environ.get("OLLAMA_PULL_MODEL") or (sys.argv[1] if len(sys.argv) > 1 else None)
+    model = os.environ.get("OLLAMA_PULL_MODEL") or (
+        sys.argv[1] if len(sys.argv) > 1 else None
+    )
     rc = pull_model(model)
     sys.exit(rc)
 

@@ -1,8 +1,7 @@
 import json
-import os
 
-from backend.services.vector_indexer import VectorIndexer
 from backend.models import VectorIndex
+from backend.services.vector_indexer import VectorIndexer
 
 
 def test_vector_indexer_run_once(tmp_path):

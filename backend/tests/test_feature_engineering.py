@@ -33,17 +33,35 @@ def test_calculate_rolling_averages():
 
 
 def test_engineer_features_dataframe():
-    player_data = {"recentGames": sample_recent_games(), "seasonAvg": 23.0, "contextualFactors": {"homeAway": "home", "daysRest": 2}}
-    df = feature_engineering.engineer_features(player_data, opponent_data={"defensiveRating": 110, "pace": 98.5})
+    player_data = {
+        "recentGames": sample_recent_games(),
+        "seasonAvg": 23.0,
+        "contextualFactors": {"homeAway": "home", "daysRest": 2},
+    }
+    df = feature_engineering.engineer_features(
+        player_data, opponent_data={"defensiveRating": 110, "pace": 98.5}
+    )
     assert df.shape[0] == 1
     # columns we expect
-    for col in ["recent_mean", "recent_std", "season_avg", "is_home", "days_rest", "last_3_avg", "exponential_moving_avg"]:
+    for col in [
+        "recent_mean",
+        "recent_std",
+        "season_avg",
+        "is_home",
+        "days_rest",
+        "last_3_avg",
+        "exponential_moving_avg",
+    ]:
         assert col in df.columns
     assert int(df.loc[0, "is_home"]) == 1
 
 
 def test_back_to_back_indicator():
-    player_data = {"recentGames": sample_recent_games(), "seasonAvg": 20.0, "contextualFactors": {"homeAway": "away", "daysRest": 0}}
+    player_data = {
+        "recentGames": sample_recent_games(),
+        "seasonAvg": 20.0,
+        "contextualFactors": {"homeAway": "away", "daysRest": 0},
+    }
     df = feature_engineering.engineer_features(player_data)
     assert df.shape[0] == 1
     assert "is_back_to_back" in df.columns
@@ -60,7 +78,10 @@ def test_engineer_features_multiple_players():
         player_data = {
             "recentGames": recent,
             "seasonAvg": 12.0 + i,
-            "contextualFactors": {"homeAway": "home" if i % 2 == 0 else "away", "daysRest": i % 4},
+            "contextualFactors": {
+                "homeAway": "home" if i % 2 == 0 else "away",
+                "daysRest": i % 4,
+            },
         }
         df = feature_engineering.engineer_features(player_data)
         assert df.shape[0] == 1

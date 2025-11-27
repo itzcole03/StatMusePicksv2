@@ -1,6 +1,7 @@
 import os
 import tempfile
 from datetime import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -15,14 +16,25 @@ def test_ingest_missing_fields(monkeypatch):
 
         # create tables
         from backend.db import Base
+
         engine = create_engine(url, future=True)
         Base.metadata.create_all(engine)
 
         games = [
             # missing away_team
-            {"game_date": datetime(2025, 11, 10), "home_team": "LAL", "home_score": 100, "away_score": 95},
+            {
+                "game_date": datetime(2025, 11, 10),
+                "home_team": "LAL",
+                "home_score": 100,
+                "away_score": 95,
+            },
             # missing home_team
-            {"game_date": datetime(2025, 11, 11), "away_team": "BOS", "home_score": 105, "away_score": 99},
+            {
+                "game_date": datetime(2025, 11, 11),
+                "away_team": "BOS",
+                "home_score": 105,
+                "away_score": 99,
+            },
             # missing both teams -> should be skipped
             {"game_date": datetime(2025, 11, 12), "home_score": 110, "away_score": 108},
         ]
@@ -35,6 +47,7 @@ def test_ingest_missing_fields(monkeypatch):
 
         # verify games exist in DB
         from backend.models import Game
+
         Session = sessionmaker(bind=engine)
         session = Session()
         try:

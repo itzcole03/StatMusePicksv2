@@ -9,31 +9,50 @@ re-indexing the same source_id.
 This module uses a synchronous SQLAlchemy engine consistent with other
 ingestion helpers in `backend/services`.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
-from backend.services.llm_feature_service import create_default_service, LLMFeatureService
 from backend.models import VectorIndex
+from backend.services.llm_feature_service import (
+    LLMFeatureService,
+    create_default_service,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class VectorIndexer:
-    def __init__(self, db_url: Optional[str] = None, source_file: Optional[str] = None, interval_seconds: int = 300):
+    def __init__(
+        self,
+        db_url: Optional[str] = None,
+        source_file: Optional[str] = None,
+        interval_seconds: int = 300,
+    ):
         raw_db = db_url or os.environ.get("DATABASE_URL") or "sqlite:///./dev.db"
         # strip async drivers if present
-        raw_db = raw_db.replace("+aiosqlite", "").replace("+asyncpg", "").replace("+asyncmy", "")
+        raw_db = (
+            raw_db.replace("+aiosqlite", "")
+            .replace("+asyncpg", "")
+            .replace("+asyncmy", "")
+        )
         self.engine = create_engine(raw_db, future=True, poolclass=NullPool)
         self.Session = sessionmaker(bind=self.engine)
-        self.source_file = source_file or os.environ.get("INDEXER_SOURCE_FILE") or os.path.join(os.path.dirname(__file__), "..", "ingest_audit", "news_to_index.jsonl")
+        self.source_file = (
+            source_file
+            or os.environ.get("INDEXER_SOURCE_FILE")
+            or os.path.join(
+                os.path.dirname(__file__), "..", "ingest_audit", "news_to_index.jsonl"
+            )
+        )
         try:
             # ensure tables exist when not running under alembic (safe no-op if tables already exist)
             from backend.db import Base
@@ -44,7 +63,9 @@ class VectorIndexer:
             logger.exception("VectorIndexer: failed to ensure metadata.create_all")
 
         self.svc: LLMFeatureService = create_default_service()
-        self.interval_seconds = int(interval_seconds or int(os.environ.get("INDEXER_INTERVAL_SECONDS", "300")))
+        self.interval_seconds = int(
+            interval_seconds or int(os.environ.get("INDEXER_INTERVAL_SECONDS", "300"))
+        )
 
     def _read_source_items(self) -> List[Tuple[str, str, dict]]:
         """Read JSONL source file and return list of (id, text, meta) tuples."""
@@ -62,11 +83,17 @@ class VectorIndexer:
                         continue
                     try:
                         obj = json.loads(line)
-                        vid = obj.get("id") or obj.get("source_id") or obj.get("news_id")
+                        vid = (
+                            obj.get("id") or obj.get("source_id") or obj.get("news_id")
+                        )
                         text = obj.get("text") or obj.get("content") or ""
                         if not vid or not text:
                             continue
-                        meta = obj.get("meta") or {k: v for k, v in obj.items() if k not in ("id", "text", "content", "meta")}
+                        meta = obj.get("meta") or {
+                            k: v
+                            for k, v in obj.items()
+                            if k not in ("id", "text", "content", "meta")
+                        }
                         items.append((str(vid), str(text), dict(meta)))
                     except Exception:
                         logger.debug("VectorIndexer: failed to parse line in %s", path)
@@ -76,7 +103,10 @@ class VectorIndexer:
         return items
 
     def _already_indexed(self, session, source_id: str) -> bool:
-        return session.query(VectorIndex).filter_by(source_id=source_id).first() is not None
+        return (
+            session.query(VectorIndex).filter_by(source_id=source_id).first()
+            is not None
+        )
 
     def run_once(self) -> int:
         """Run a single indexing pass: read items, index new ones, persist mappings.
@@ -96,7 +126,11 @@ class VectorIndexer:
             # transaction behavior in some DB/driver combos.
             source_ids = [it[0] for it in items]
             try:
-                existing_rows = session.query(VectorIndex.source_id).filter(VectorIndex.source_id.in_(source_ids)).all()
+                existing_rows = (
+                    session.query(VectorIndex.source_id)
+                    .filter(VectorIndex.source_id.in_(source_ids))
+                    .all()
+                )
                 existing_ids = {r[0] for r in existing_rows}
             except Exception as exc:
                 msg = str(exc).lower()
@@ -109,7 +143,11 @@ class VectorIndexer:
                         from backend.db import Base
 
                         Base.metadata.create_all(self.engine)
-                        existing_rows = session.query(VectorIndex.source_id).filter(VectorIndex.source_id.in_(source_ids)).all()
+                        existing_rows = (
+                            session.query(VectorIndex.source_id)
+                            .filter(VectorIndex.source_id.in_(source_ids))
+                            .all()
+                        )
                         existing_ids = {r[0] for r in existing_rows}
                     else:
                         # Fallback: per-item check
@@ -131,7 +169,10 @@ class VectorIndexer:
 
             to_index = [it for it in items if it[0] not in existing_ids]
             if not to_index:
-                logger.debug("VectorIndexer.run_once: no new items to index (found %d total)", len(items))
+                logger.debug(
+                    "VectorIndexer.run_once: no new items to index (found %d total)",
+                    len(items),
+                )
                 return 0
 
             # call LLMFeatureService.index_texts which will add vectors to vector store
@@ -143,7 +184,14 @@ class VectorIndexer:
                     continue
                 source_id = match[0]
                 # persist mapping; use same id as vector_id for stores that accept external ids
-                vi = VectorIndex(vector_id=vec_id, source_type="news", source_id=source_id, player_id=None, model=self.svc.default_model, store=os.environ.get("VECTOR_STORE") or "inmemory")
+                vi = VectorIndex(
+                    vector_id=vec_id,
+                    source_type="news",
+                    source_id=source_id,
+                    player_id=None,
+                    model=self.svc.default_model,
+                    store=os.environ.get("VECTOR_STORE") or "inmemory",
+                )
                 session.add(vi)
                 indexed_count += 1
             session.commit()
@@ -170,7 +218,11 @@ def run_periodic_indexer():
     import time
 
     idx = VectorIndexer()
-    logger.info("Starting VectorIndexer with source_file=%s interval=%s", idx.source_file, idx.interval_seconds)
+    logger.info(
+        "Starting VectorIndexer with source_file=%s interval=%s",
+        idx.source_file,
+        idx.interval_seconds,
+    )
     try:
         while True:
             try:

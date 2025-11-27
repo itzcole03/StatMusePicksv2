@@ -1,6 +1,4 @@
 import json
-import os
-import tempfile
 
 from backend.services.player_tracking_service import features_for_player
 

@@ -16,10 +16,9 @@ the target class.
 """
 from __future__ import annotations
 
-import ast
 import argparse
+import ast
 import pathlib
-import sys
 from typing import List, Tuple
 
 
@@ -37,15 +36,20 @@ def find_schema_extra_in_class(src: str) -> List[Tuple[str, int, str]]:
             outer = node
             # search for inner class Config
             for inner in outer.body:
-                if isinstance(inner, ast.ClassDef) and inner.name == 'Config':
+                if isinstance(inner, ast.ClassDef) and inner.name == "Config":
                     # look for Assign to schema_extra
                     for stmt in inner.body:
                         if isinstance(stmt, ast.Assign):
                             for target in stmt.targets:
-                                if isinstance(target, ast.Name) and target.id == 'schema_extra':
+                                if (
+                                    isinstance(target, ast.Name)
+                                    and target.id == "schema_extra"
+                                ):
                                     # extract source segment for the value
                                     try:
-                                        value_src = ast.get_source_segment(src, stmt.value)
+                                        value_src = ast.get_source_segment(
+                                            src, stmt.value
+                                        )
                                     except Exception:
                                         # fallback: try to unparse (py3.9+)
                                         try:
@@ -55,13 +59,17 @@ def find_schema_extra_in_class(src: str) -> List[Tuple[str, int, str]]:
 
                                     if value_src is not None:
                                         # insertion point: after outer class end
-                                        insert_lineno = getattr(outer, 'end_lineno', outer.lineno)
-                                        results.append((outer.name, insert_lineno, value_src))
+                                        insert_lineno = getattr(
+                                            outer, "end_lineno", outer.lineno
+                                        )
+                                        results.append(
+                                            (outer.name, insert_lineno, value_src)
+                                        )
     return results
 
 
 def process_file(path: pathlib.Path, apply: bool = False) -> Tuple[bool, str]:
-    src = path.read_text(encoding='utf-8')
+    src = path.read_text(encoding="utf-8")
     if f".model_config = ConfigDict" in src:
         return False, "already-has-model_config"
 
@@ -90,15 +98,15 @@ def process_file(path: pathlib.Path, apply: bool = False) -> Tuple[bool, str]:
     new_src = "\n".join(lines)
 
     if apply:
-        bak = path.with_suffix(path.suffix + '.bak')
+        bak = path.with_suffix(path.suffix + ".bak")
         path.replace(path)  # no-op to ensure permissions; if error will raise
-        path.write_text(new_src, encoding='utf-8')
+        path.write_text(new_src, encoding="utf-8")
         # write backup as well (best-effort)
         try:
-            bak.write_text(src, encoding='utf-8')
+            bak.write_text(src, encoding="utf-8")
         except Exception:
             pass
-        return True, 'modified'
+        return True, "modified"
     else:
         return True, new_src
 
@@ -110,9 +118,12 @@ def walk_and_process(targets: List[str], apply: bool = False):
         if p.is_file():
             paths.append(p)
         else:
-            for f in p.rglob('*.py'):
+            for f in p.rglob("*.py"):
                 # skip virtualenvs and typical vendored dirs
-                if any(part in ('site-packages', '.venv', 'venv', '__pycache__') for part in f.parts):
+                if any(
+                    part in ("site-packages", ".venv", "venv", "__pycache__")
+                    for part in f.parts
+                ):
                     continue
                 paths.append(f)
 
@@ -134,8 +145,8 @@ def walk_and_process(targets: List[str], apply: bool = False):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('targets', nargs='+', help='Files or directories to scan')
-    parser.add_argument('--apply', action='store_true', help='Apply changes')
+    parser.add_argument("targets", nargs="+", help="Files or directories to scan")
+    parser.add_argument("--apply", action="store_true", help="Apply changes")
     args = parser.parse_args()
 
     modified, skipped, previews = walk_and_process(args.targets, apply=args.apply)
@@ -143,20 +154,20 @@ def main():
     if args.apply:
         print(f"Modified {len(modified)} files:")
         for m in modified:
-            print('  ', m)
+            print("  ", m)
     else:
         print(f"Dry-run previews for {len(previews)} files (showing snippet):")
         for p, new in previews:
-            print('---', p)
+            print("---", p)
             # show a small preview (first 40 lines)
-            print('\n'.join(new.splitlines()[:40]))
-            print('...')
+            print("\n".join(new.splitlines()[:40]))
+            print("...")
 
     if skipped:
-        print('\nSkipped files:')
+        print("\nSkipped files:")
         for s in skipped[:50]:
-            print('  ', s[0], '-', s[1])
+            print("  ", s[0], "-", s[1])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch multi-season player logs for selected players via nba_stats_client and ingest.
-"""
-import os
-import json
+"""Fetch multi-season player logs for selected players via nba_stats_client and ingest."""
 from datetime import date
 
 PLAYERS = [
@@ -32,31 +29,38 @@ for name in PLAYERS:
         rec = {}
         # map known keys
         # prefer GAME_DATE or gameDate
-        gd = g.get('GAME_DATE') or g.get('gameDate') or g.get('GAME_DATE_RAW')
-        rec['game_date'] = gd
+        gd = g.get("GAME_DATE") or g.get("gameDate") or g.get("GAME_DATE_RAW")
+        rec["game_date"] = gd
         # teams attempt
-        rec['home_team'] = g.get('TEAM_ABBREVIATION') or g.get('TEAM') or g.get('team') or 'UNKNOWN'
-        rec['away_team'] = g.get('OPP_TEAM_ABBREVIATION') or g.get('OPP_TEAM') or g.get('opponent') or 'UNKNOWN'
+        rec["home_team"] = (
+            g.get("TEAM_ABBREVIATION") or g.get("TEAM") or g.get("team") or "UNKNOWN"
+        )
+        rec["away_team"] = (
+            g.get("OPP_TEAM_ABBREVIATION")
+            or g.get("OPP_TEAM")
+            or g.get("opponent")
+            or "UNKNOWN"
+        )
         # stat: points
         # many variants: PTS, PTS_PLAYER
         val = None
-        for k in ('PTS', 'PTS_PLAYER', 'PLAYER_PTS', 'PTS_HOME', 'PTS_AWAY'):
+        for k in ("PTS", "PTS_PLAYER", "PLAYER_PTS", "PTS_HOME", "PTS_AWAY"):
             if k in g:
                 val = g.get(k)
                 break
         if val is None:
             # try 'PTS' case-insensitive
             for kk, vv in g.items():
-                if kk.upper() == 'PTS':
+                if kk.upper() == "PTS":
                     val = vv
                     break
         if val is None:
             # skip if no points field
             continue
-        rec['player_name'] = name
-        rec['player_nba_id'] = pid
-        rec['stat_type'] = 'points'
-        rec['value'] = val
+        rec["player_name"] = name
+        rec["player_nba_id"] = pid
+        rec["stat_type"] = "points"
+        rec["value"] = val
         all_records.append(rec)
 
 print(f"Total player records to ingest: {len(all_records)}")

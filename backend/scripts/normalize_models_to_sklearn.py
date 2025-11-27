@@ -9,10 +9,13 @@ model replaces the original `.pkl` file after creating a `.orig` backup.
 Run with PYTHONPATH set to the repo root:
     $env:PYTHONPATH = "${PWD}"; python backend/scripts/normalize_models_to_sklearn.py
 """
+
 from __future__ import annotations
+
+import logging
 import os
 import shutil
-import logging
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -38,9 +41,9 @@ def normalize():
 
     for fname in files:
         try:
-            player = fname[:-4].replace('_', ' ')
+            player = fname[:-4].replace("_", " ")
             path = os.path.join(mr.model_dir, fname)
-            backup = path + '.orig'
+            backup = path + ".orig"
             if os.path.exists(backup):
                 logger.info("Skipping %s (already backed up)", fname)
                 continue
@@ -56,7 +59,7 @@ def normalize():
             y = None
 
             # If model exposes n_features_in_, use it
-            n_features = getattr(model, 'n_features_in_', None)
+            n_features = getattr(model, "n_features_in_", None)
             if n_features is None:
                 n_features = 5
 
@@ -70,7 +73,9 @@ def normalize():
                 try:
                     y_pred = model.predict(X)
                 except Exception:
-                    logger.exception("Model %s not predictive; skipping normalization", player)
+                    logger.exception(
+                        "Model %s not predictive; skipping normalization", player
+                    )
                     continue
 
             y = np.asarray(y_pred)
@@ -103,5 +108,5 @@ def normalize():
             logger.exception("Unexpected error while normalizing %s", fname)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     normalize()

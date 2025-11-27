@@ -1,4 +1,5 @@
 import asyncio
+
 from backend.services.ml_prediction_service import MLPredictionService
 
 
@@ -21,7 +22,9 @@ def test_ml_prediction_fallback_no_model(tmp_path):
 
     opponent_data = {"defensiveRating": 110, "pace": 98}
 
-    result = asyncio.run(svc.predict("Test Player", "points", 21.5, player_data, opponent_data))
+    result = asyncio.run(
+        svc.predict("Test Player", "points", 21.5, player_data, opponent_data)
+    )
 
     assert isinstance(result, dict)
     # Fallback must provide these keys

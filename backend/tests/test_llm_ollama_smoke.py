@@ -1,16 +1,18 @@
 import os
+
 import pytest
 
 from backend.services.llm_feature_service import LLMFeatureService
-
 
 # This smoke test exercises a live Ollama/cloud instance. It is skipped
 # unless an Ollama API key is provided via the environment. DO NOT commit
 # API keys into source control — set `OLLAMA_CLOUD_API_KEY` or
 # `OLLAMA_API_KEY` in your CI or local environment instead.
-OLLAMA_KEY = os.environ.get('OLLAMA_CLOUD_API_KEY') or os.environ.get('OLLAMA_API_KEY')
+OLLAMA_KEY = os.environ.get("OLLAMA_CLOUD_API_KEY") or os.environ.get("OLLAMA_API_KEY")
 
-pytestmark = pytest.mark.skipif(not OLLAMA_KEY, reason="OLLAMA API key not set; live smoke test skipped")
+pytestmark = pytest.mark.skipif(
+    not OLLAMA_KEY, reason="OLLAMA API key not set; live smoke test skipped"
+)
 
 
 def test_ollama_smoke_runs_and_returns_structured_features():
@@ -31,5 +33,11 @@ def test_ollama_smoke_runs_and_returns_structured_features():
 
     assert isinstance(out, dict)
     # ensure expected schema keys present (values may vary by model)
-    for key in ("injury_status", "morale_score", "news_sentiment", "trade_sentiment", "motivation"):
+    for key in (
+        "injury_status",
+        "morale_score",
+        "news_sentiment",
+        "trade_sentiment",
+        "motivation",
+    ):
         assert key in out

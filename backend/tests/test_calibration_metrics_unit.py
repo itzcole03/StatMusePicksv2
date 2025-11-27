@@ -1,4 +1,5 @@
 import numpy as np
+
 from backend.evaluation import calibration_metrics as cm
 
 
@@ -25,7 +26,9 @@ def test_ece_simple_two_bins():
 def test_reliability_diagram_data_counts_and_values():
     y_prob = np.array([0.05, 0.15, 0.45, 0.55, 0.95])
     y_true = np.array([0, 0, 0, 1, 1])
-    centers, avg_pred, avg_true, counts = cm.reliability_diagram_data(y_true, y_prob, n_bins=5)
+    centers, avg_pred, avg_true, counts = cm.reliability_diagram_data(
+        y_true, y_prob, n_bins=5
+    )
     assert len(centers) == 5
     assert counts.sum() == len(y_true)
     # check that bins with values have avg_pred > 0

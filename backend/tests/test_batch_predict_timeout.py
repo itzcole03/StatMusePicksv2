@@ -1,9 +1,8 @@
 import asyncio
-import os
-import pytest
+
+from fastapi.testclient import TestClient
 
 from backend import fastapi_nba as appmod
-from fastapi.testclient import TestClient
 
 
 def test_batch_predict_timeout(monkeypatch):
@@ -14,14 +13,16 @@ def test_batch_predict_timeout(monkeypatch):
         # sleep slightly longer than the timeout
         await asyncio.sleep(0.05)
         return {
-            "player": kwargs.get('player_name') or (args[0] if args else "unknown"),
-            "stat": kwargs.get('stat_type', 'points'),
-            "line": kwargs.get('line', 0.0),
+            "player": kwargs.get("player_name") or (args[0] if args else "unknown"),
+            "stat": kwargs.get("stat_type", "points"),
+            "line": kwargs.get("line", 0.0),
             "predicted_value": 12.3,
         }
 
     # monkeypatch the ml_service used by the app (predict must be awaitable)
-    monkeypatch.setattr(appmod, "ml_service", type("M", (), {"predict": slow_predict})())
+    monkeypatch.setattr(
+        appmod, "ml_service", type("M", (), {"predict": slow_predict})()
+    )
 
     with TestClient(appmod.app) as client:
         resp = client.post(

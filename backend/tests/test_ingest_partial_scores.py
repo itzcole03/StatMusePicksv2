@@ -1,6 +1,7 @@
 import os
 import tempfile
 from datetime import datetime
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -15,22 +16,35 @@ def test_ingest_partial_scores_update(monkeypatch):
 
         # create tables
         from backend.db import Base
+
         engine = create_engine(url, future=True)
         Base.metadata.create_all(engine)
 
         # initial ingest: one game with missing away_score
-        game = {"game_date": datetime(2025, 11, 20), "home_team": "LAL", "away_team": "BOS", "home_score": 110}
+        game = {
+            "game_date": datetime(2025, 11, 20),
+            "home_team": "LAL",
+            "away_team": "BOS",
+            "home_score": 110,
+        }
         updated1 = update_team_stats([game])
         assert updated1 >= 1
 
         # now provide the away_score in a follow-up ingest (should update existing game)
-        game_update = {"game_date": datetime(2025, 11, 20), "home_team": "LAL", "away_team": "BOS", "home_score": 110, "away_score": 105}
+        game_update = {
+            "game_date": datetime(2025, 11, 20),
+            "home_team": "LAL",
+            "away_team": "BOS",
+            "home_score": 110,
+            "away_score": 105,
+        }
         updated2 = update_team_stats([game_update])
         # updated2 should reflect that an existing row was changed (>=1)
         assert updated2 >= 1
 
         # verify stored values
         from backend.models import Game
+
         Session = sessionmaker(bind=engine)
         session = Session()
         try:

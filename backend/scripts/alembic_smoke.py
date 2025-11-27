@@ -3,10 +3,12 @@
 This script is suitable for CI smoke runs. It reads `DATABASE_URL` from
 the environment; if not set it defaults to `sqlite:///./tmp_alembic_smoke.db`.
 """
+
 import os
 import sys
-from alembic.config import Config
+
 from alembic import command
+from alembic.config import Config
 
 
 def main():

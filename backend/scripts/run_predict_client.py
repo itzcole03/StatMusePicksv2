@@ -1,5 +1,7 @@
 import json
+
 from fastapi.testclient import TestClient
+
 from backend.main import app
 
 
@@ -17,9 +19,9 @@ def main():
             ],
             "seasonAvg": 29.0,
             "fetchedAt": "2025-11-11T00:00:00Z",
-            "contextualFactors": {"homeAway": "home", "daysRest": 2}
+            "contextualFactors": {"homeAway": "home", "daysRest": 2},
         },
-        "opponent_data": {"defensiveRating": 105, "pace": 99}
+        "opponent_data": {"defensiveRating": 105, "pace": 99},
     }
 
     resp = client.post("/api/predict", json=payload)
