@@ -620,34 +620,209 @@ def calculate_rolling_averages(
     return out
 
 
+def _compute_rolling_stats_for_player(player_data: Dict) -> Dict:
+    """Helper wrapper used by `engineer_features` returning recent mean/std plus rolling metrics.
+
+    Preserves the original keys used by `engineer_features`: `recent_mean`, `recent_std`
+    and merges the output of `calculate_rolling_averages`.
+    """
+    recent = player_data.get("recentGames") or []
+    vals = [g.get("statValue") for g in recent if g.get("statValue") is not None]
+    out = {"recent_mean": None, "recent_std": None}
+    if vals:
+        out["recent_mean"] = float(np.mean(vals))
+        out["recent_std"] = float(np.std(vals))
+    out.update(calculate_rolling_averages(recent))
+    return out
+
+
+def _compute_contextual_for_player(player_data: Dict) -> Dict:
+    """Compute simple contextual fields used by `engineer_features`.
+
+    Returns keys: `season_avg`, `is_home`, `days_rest`, `is_back_to_back`.
+    """
+    ctx = player_data.get("contextualFactors", {}) or {}
+    season_avg = player_data.get("seasonAvg")
+    is_home = 1 if ctx.get("homeAway") == "home" else 0
+    days_rest = ctx.get("daysRest") or 0
+    is_back_to_back = 1 if days_rest == 0 else 0
+    return {
+        "season_avg": season_avg,
+        "is_home": is_home,
+        "days_rest": days_rest,
+        "is_back_to_back": is_back_to_back,
+    }
+
+
+def _temporal_and_phase3_enrichment(features: Dict, player_data: Dict, opponent_data: Optional[Dict]) -> Dict:
+    """Enrich `features` with opponent-adjusted stats, contextual flags, advanced metrics, LLM features, and tracking features.
+
+    This mirrors the Phase-3 wiring in `engineer_features` but is isolated for testing.
+    """
+    # Advanced metrics (PER, TS%, USG%, ORtg/DRtg) fetched when available
+    try:
+        from backend.services.advanced_metrics_service import (
+            create_default_service as _create_adv,
+        )
+
+        adv_svc = _create_adv()
+        pid = (
+            player_data.get("player_id")
+            or player_data.get("playerId")
+            or player_data.get("playerName")
+        )
+        if pid:
+            try:
+                adv = adv_svc.fetch_advanced_metrics(str(pid))
+                if adv:
+                    features["adv_PER"] = float(adv.get("PER") or 0.0)
+                    features["adv_WS"] = float(adv.get("WS") or 0.0)
+                    features["adv_TS_pct"] = float(adv.get("TS_pct") or 0.0)
+                    features["adv_USG_pct"] = float(adv.get("USG_pct") or 0.0)
+                    features["adv_ORtg"] = float(adv.get("ORtg") or 0.0)
+                    features["adv_DRtg"] = float(adv.get("DRtg") or 0.0)
+                    try:
+                        features["adv_BPM"] = float(
+                            adv.get("BPM")
+                            or adv.get("BPM_48")
+                            or adv.get("BPM_approx")
+                            or 0.0
+                        )
+                    except Exception:
+                        features["adv_BPM"] = 0.0
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    try:
+        # LLM-derived qualitative features: injury sentiment, morale, motivation
+        from backend.services.llm_feature_service import (
+            create_default_service as _create_llm,
+        )
+
+        llm_svc = _create_llm()
+
+        def _text_fetcher(name: str) -> str:
+            return player_data.get("news_summary") or player_data.get("news") or ""
+
+        pname = (
+            player_data.get("playerName")
+            or player_data.get("player_name")
+            or str(player_data.get("player_id") or "")
+        )
+        try:
+            # Prefer structured JSON path
+            text_context = _text_fetcher(pname)
+            if hasattr(llm_svc, "extract_from_text"):
+                try:
+                    structured = llm_svc.extract_from_text(pname, text_context)
+                except Exception:
+                    structured = None
+                if structured:
+                    features.update(
+                        {
+                            "injury_sentiment": float(
+                                structured.get("news_sentiment") or 0.0
+                            ),
+                            "morale_score": float(
+                                structured.get("morale_score") or 0.0
+                            ),
+                            "motivation": float(
+                                structured.get("motivation") or 0.0
+                            ),
+                            "trade_sentiment": float(
+                                structured.get("trade_sentiment") or 0.0
+                            ),
+                        }
+                    )
+                    raise StopIteration
+
+            llm_feats = llm_svc.fetch_news_and_extract(pname, "news_v1", _text_fetcher)
+            if llm_feats:
+                features.update(
+                    {
+                        "injury_sentiment": float(
+                            llm_feats.get("injury_sentiment") or 0.0
+                        ),
+                        "morale_score": float(llm_feats.get("morale_score") or 0.0),
+                        "motivation": float(llm_feats.get("motivation") or 0.0),
+                        "trade_sentiment": float(
+                            llm_feats.get("trade_sentiment")
+                            or llm_feats.get("trade_sent")
+                            or 0.0
+                        ),
+                    }
+                )
+        except StopIteration:
+            pass
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+    # opponent features (optional)
+    if opponent_data:
+        features["opp_def_rating"] = opponent_data.get("defensiveRating")
+        features["opp_pace"] = opponent_data.get("pace")
+    else:
+        features["opp_def_rating"] = None
+        features["opp_pace"] = None
+
+    # Opponent-adjusted features
+    adv = _calculate_opponent_adjusted(player_data.get("recentGames") or [], opponent_data)
+    features.update(adv)
+
+    # Phase 3: tracking features
+    try:
+        from backend.services.player_tracking_service import (
+            features_for_player as _trk_features_for_player,
+        )
+
+        pname = (
+            player_data.get("playerName")
+            or player_data.get("player_name")
+            or player_data.get("playerId")
+            or player_data.get("player_id")
+            or None
+        )
+        if pname:
+            try:
+                tr_feats = _trk_features_for_player(str(pname), seasons=None)
+                if isinstance(tr_feats, dict):
+                    for k, v in tr_feats.items():
+                        try:
+                            features[f"trk_{k}"] = float(v) if v is not None else 0.0
+                        except Exception:
+                            features[f"trk_{k}"] = 0.0
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Add contextual Phase 3 features (playoff, rivalry, national TV, travel, altitude)
+    try:
+        _add_contextual_features(features, player_data, opponent_data)
+    except Exception:
+        pass
+
+    return features
+
+
 def engineer_features(
     player_data: Dict, opponent_data: Optional[Dict] = None
 ) -> pd.DataFrame:
+    # rolling/recent stats helper
+    rolling_block = _compute_rolling_stats_for_player(player_data)
+
+    # contextual helper
+    contextual_block = _compute_contextual_for_player(player_data)
+
+    features = {}
+    features.update(rolling_block)
+    features.update(contextual_block)
+    # recent games list (new variable used by opponent-adjusted helpers)
     recent = player_data.get("recentGames") or []
-    rolling = calculate_rolling_averages(recent)
-
-    features = {
-        "recent_mean": None,
-        "recent_std": None,
-        "season_avg": player_data.get("seasonAvg"),
-        "is_home": (
-            1
-            if player_data.get("contextualFactors", {}).get("homeAway") == "home"
-            else 0
-        ),
-        "days_rest": player_data.get("contextualFactors", {}).get("daysRest") or 0,
-        # explicit back-to-back indicator: 1 when days_rest == 0, else 0
-        "is_back_to_back": (
-            1 if (player_data.get("contextualFactors", {}).get("daysRest") == 0) else 0
-        ),
-    }
-
-    vals = [g.get("statValue") for g in recent if g.get("statValue") is not None]
-    if vals:
-        features["recent_mean"] = float(np.mean(vals))
-        features["recent_std"] = float(np.std(vals))
-
-    features.update(rolling)
 
     # Multi-season aggregated features (if present on the player_data)
     multi_adv = player_data.get("advancedStatsMulti") or {}
