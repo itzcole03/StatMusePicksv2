@@ -1,93 +1,96 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { streamOllamaAnalysis } from '../services/aiService.v2'
+import React, { useState, useRef, useEffect } from "react";
+import { streamOllamaAnalysis } from "../services/aiService.v2";
 
 type Props = {
-  model?: string
-  initialPrompt?: string
-}
+  model?: string;
+  initialPrompt?: string;
+};
 
-export const StreamingAnalysis: React.FC<Props> = ({ model, initialPrompt = '' }) => {
-  const [prompt, setPrompt] = useState<string>(initialPrompt)
-  const [output, setOutput] = useState<string>('')
-  const [streaming, setStreaming] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const abortRef = useRef<AbortController | null>(null)
-  const pendingWordsRef = useRef<string[]>([])
-  const applyingRef = useRef(false)
+export const StreamingAnalysis: React.FC<Props> = ({
+  model,
+  initialPrompt = "",
+}) => {
+  const [prompt, setPrompt] = useState<string>(initialPrompt);
+  const [output, setOutput] = useState<string>("");
+  const [streaming, setStreaming] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const pendingWordsRef = useRef<string[]>([]);
+  const applyingRef = useRef(false);
 
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
     const applyPending = async () => {
-      if (applyingRef.current) return
-      applyingRef.current = true
+      if (applyingRef.current) return;
+      applyingRef.current = true;
       while (mounted && pendingWordsRef.current.length > 0) {
-        const w = pendingWordsRef.current.shift()
+        const w = pendingWordsRef.current.shift();
         if (w !== undefined) {
-          setOutput((s) => (s ? s + ' ' + w : w))
+          setOutput((s) => (s ? s + " " + w : w));
           // slight throttle so words appear one-by-one
           // adjustable for UX
-          await new Promise((r) => setTimeout(r, 30))
+          await new Promise((r) => setTimeout(r, 30));
         }
       }
-      applyingRef.current = false
-    }
+      applyingRef.current = false;
+    };
 
     const interval = setInterval(() => {
-      if (pendingWordsRef.current.length > 0) applyPending()
-    }, 50)
+      if (pendingWordsRef.current.length > 0) applyPending();
+    }, 50);
 
     return () => {
-      mounted = false
-      clearInterval(interval)
-    }
-  }, [])
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const start = async () => {
-    setOutput('')
-    setError(null)
-    setStreaming(true)
-    const ac = new AbortController()
-    abortRef.current = ac
+    setOutput("");
+    setError(null);
+    setStreaming(true);
+    const ac = new AbortController();
+    abortRef.current = ac;
 
     try {
       await streamOllamaAnalysis(
         prompt,
         { model, signal: ac.signal },
         (chunk) => {
-            if (chunk.error) {
-            setError(chunk.error)
-            setStreaming(false)
+          if (chunk.error) {
+            setError(chunk.error);
+            setStreaming(false);
             try {
-              ac.abort()
+              ac.abort();
             } catch {}
           }
           if (chunk.text) {
             // break incoming fragment into words to animate
-            const words = String(chunk.text).split(/\s+/).filter(Boolean)
-            pendingWordsRef.current.push(...words)
+            const words = String(chunk.text).split(/\s+/).filter(Boolean);
+            pendingWordsRef.current.push(...words);
           }
           if (chunk.done) {
-            setStreaming(false)
+            setStreaming(false);
           }
         },
         () => setStreaming(false),
         (e) => {
-          setError(String(e))
-          setStreaming(false)
+          setError(String(e));
+          setStreaming(false);
         }
-      )
-        } catch (err: any) {
-          setError(String(err))
-          setStreaming(false)
-        }
-  }
+      );
+    } catch (err: any) {
+      setError(String(err));
+      setStreaming(false);
+    }
+  };
 
   const stop = () => {
     try {
-      abortRef.current?.abort()
+      abortRef.current?.abort();
     } catch {}
-    setStreaming(false)
-  }
+    setStreaming(false);
+  };
 
   return (
     <div className="p-4 bg-white rounded shadow">
@@ -99,7 +102,11 @@ export const StreamingAnalysis: React.FC<Props> = ({ model, initialPrompt = '' }
           placeholder="Enter analysis prompt..."
         />
         {!streaming ? (
-          <button className="btn btn-primary px-3" onClick={start} disabled={!prompt}>
+          <button
+            className="btn btn-primary px-3"
+            onClick={start}
+            disabled={!prompt}
+          >
             Start
           </button>
         ) : (
@@ -110,14 +117,20 @@ export const StreamingAnalysis: React.FC<Props> = ({ model, initialPrompt = '' }
       </div>
 
       <div className="min-h-[120px] border rounded p-3 bg-slate-50 text-sm whitespace-pre-wrap">
-        {output || <span className="text-muted">Realtime analysis will appear here...</span>}
+        {output || (
+          <span className="text-muted">
+            Realtime analysis will appear here...
+          </span>
+        )}
       </div>
 
       {error && <div className="text-red-600 mt-2">Error: {error}</div>}
 
-      <div className="text-xs text-gray-500 mt-2">{streaming ? 'Streaming...' : 'Idle'}</div>
+      <div className="text-xs text-gray-500 mt-2">
+        {streaming ? "Streaming..." : "Idle"}
+      </div>
     </div>
-  )
-}
+  );
+};
 
-export default StreamingAnalysis
+export default StreamingAnalysis;

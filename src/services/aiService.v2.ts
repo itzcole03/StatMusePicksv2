@@ -154,19 +154,20 @@ export async function streamOllamaAnalysis(
 ): Promise<void> {
   const payload = { model: opts.model, prompt };
   // Resolve backend base URL: prefer Vite env `VITE_API_BASE`, fallback to localhost:3002
-  const apiBase = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:3002';
-  const url = apiBase.replace(/\/$/, '') + '/api/ollama_stream';
+  const apiBase =
+    (import.meta as any).env?.VITE_API_BASE || "http://localhost:3002";
+  const url = apiBase.replace(/\/$/, "") + "/api/ollama_stream";
 
   try {
     const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
       signal: opts.signal,
     });
 
     if (!resp.ok || !resp.body) {
-      const text = await resp.text().catch(() => '')
+      const text = await resp.text().catch(() => "");
       const msg = `stream request failed: ${resp.status} ${resp.statusText} ${text}`;
       onError(msg);
       return;
@@ -174,7 +175,7 @@ export async function streamOllamaAnalysis(
 
     const reader = resp.body.getReader();
     const decoder = new TextDecoder();
-    let buffer = '';
+    let buffer = "";
 
     while (true) {
       const { value, done } = await reader.read();
@@ -182,16 +183,16 @@ export async function streamOllamaAnalysis(
       buffer += decoder.decode(value, { stream: true });
 
       // SSE messages are separated by double-newline; process complete frames
-      const parts = buffer.split('\n\n');
-      buffer = parts.pop() || '';
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() || "";
 
       for (const p of parts) {
         const line = p.trim();
         if (!line) continue;
         // Only handle `data:` lines; ignore other SSE meta for now
-        if (line.startsWith('data:')) {
-          const data = line.replace(/^data:\s*/i, '');
-          if (data === '[DONE]') {
+        if (line.startsWith("data:")) {
+          const data = line.replace(/^data:\s*/i, "");
+          if (data === "[DONE]") {
             onChunk({ done: true });
             onDone();
             return;
@@ -206,11 +207,11 @@ export async function streamOllamaAnalysis(
             // not JSON — emit raw string (could be partial word/phrase)
             onChunk({ text: data });
           }
-        } else if (line.startsWith('event:')) {
+        } else if (line.startsWith("event:")) {
           // example: event: error\ndata: message
           if (/event:\s*error/i.test(line)) {
             const msgMatch = line.match(/data:\s*(.*)/i);
-            const msg = msgMatch ? msgMatch[1] : 'unknown';
+            const msg = msgMatch ? msgMatch[1] : "unknown";
             onChunk({ error: msg });
             onError(msg);
             return;
@@ -225,7 +226,7 @@ export async function streamOllamaAnalysis(
     // Flush any remaining buffer
     if (buffer.trim()) {
       const lr = buffer.trim();
-      if (lr === '[DONE]') {
+      if (lr === "[DONE]") {
         onChunk({ done: true });
         onDone();
         return;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import AnalysisSection from "../AnalysisSection";
 import { vi } from "vitest";
@@ -63,7 +63,7 @@ vi.mock("../../../src/services/aiService", async () => {
 // Provide a real aiService.v2 by importing normally
 // Mock the streaming helper so tests don't perform network calls
 vi.mock("../../../src/services/aiService.v2", async () => {
-  const actual = await vi.importActual('../../../src/services/aiService.v2');
+  const actual = await vi.importActual("../../../src/services/aiService.v2");
   return {
     ...actual,
     streamOllamaAnalysis: async (
@@ -74,22 +74,23 @@ vi.mock("../../../src/services/aiService.v2", async () => {
       onError: (e: any) => void
     ) => {
       try {
-        const arr = _opts?.testProjections?.map((p: any, idx: number) => ({
-          player: p.player,
-          stat: p.stat,
-          line: p.line,
-          recommendation: 'OVER',
-          confidence: 'High',
-          modelConfidenceScore: 85,
-          numericEvidence: {
-            recentGames: [{ statValue: 5 + idx }, { statValue: 6 + idx }],
-            seasonAvg: 5 + idx,
-            opponent: { name: 'Opp' },
-            projectedMinutes: 25,
-          },
-          reasoning: 'LLM says OVER',
-          dataUsed: { external: true, sources: ['nba'] },
-        })) || [];
+        const arr =
+          _opts?.testProjections?.map((p: any, idx: number) => ({
+            player: p.player,
+            stat: p.stat,
+            line: p.line,
+            recommendation: "OVER",
+            confidence: "High",
+            modelConfidenceScore: 85,
+            numericEvidence: {
+              recentGames: [{ statValue: 5 + idx }, { statValue: 6 + idx }],
+              seasonAvg: 5 + idx,
+              opponent: { name: "Opp" },
+              projectedMinutes: 25,
+            },
+            reasoning: "LLM says OVER",
+            dataUsed: { external: true, sources: ["nba"] },
+          })) || [];
         onChunk({ text: JSON.stringify(arr) });
         onChunk({ done: true });
         onDone();

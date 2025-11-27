@@ -84,14 +84,24 @@ export interface NBAPlayerContext {
   // Multi-season aggregated contexts (training-scoped responses)
   seasonsConsidered?: string[] | null;
   seasonStatsMulti?: Record<string, Record<string, number>> | null;
-  advancedStatsMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+  advancedStatsMulti?: {
+    per_season?: Record<string, Record<string, number>>;
+    aggregated?: Record<string, number>;
+  } | null;
   teamId?: number | null;
   teamStatsMulti?: Record<string, Record<string, number>> | null;
-  teamAdvancedMulti?: { per_season?: Record<string, Record<string, number>>; aggregated?: Record<string, number> } | null;
+  teamAdvancedMulti?: {
+    per_season?: Record<string, Record<string, number>>;
+    aggregated?: Record<string, number>;
+  } | null;
 }
 
 // Module-level normalizer so both single and batch fetchers can reuse the logic.
-function normalizeBackendResponse(json: any, playerName?: string, statType?: string): NBAPlayerContext | null {
+function normalizeBackendResponse(
+  json: any,
+  playerName?: string,
+  statType?: string
+): NBAPlayerContext | null {
   if (!json) return null;
   const recentGames = Array.isArray(json.recentGames)
     ? json.recentGames.map((g: any) => ({
@@ -100,13 +110,17 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
       }))
     : null;
   // rollingAverages may be returned as object of numeric strings
-  const rollingAverages = json.rollingAverages && typeof json.rollingAverages === 'object'
-    ? Object.fromEntries(
-        Object.entries(json.rollingAverages).map(([k, v]) => [k, v != null ? Number(v) : null])
-      )
-    : null;
+  const rollingAverages =
+    json.rollingAverages && typeof json.rollingAverages === "object"
+      ? Object.fromEntries(
+          Object.entries(json.rollingAverages).map(([k, v]) => [
+            k,
+            v != null ? Number(v) : null,
+          ])
+        )
+      : null;
   const seasonAvg = json.seasonAvg != null ? Number(json.seasonAvg) : null;
-  const recent = typeof json.recent === 'string' ? json.recent : null;
+  const recent = typeof json.recent === "string" ? json.recent : null;
   const notes = json.notes || null;
   const noGamesThisSeason = !!json.noGamesThisSeason;
   const recentSource = json.recentSource || null;
@@ -114,28 +128,48 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
   const opponent = json.opponent
     ? {
         name: json.opponent.name || null,
-        defensiveRating: json.opponent.defensiveRating != null ? Number(json.opponent.defensiveRating) : null,
+        defensiveRating:
+          json.opponent.defensiveRating != null
+            ? Number(json.opponent.defensiveRating)
+            : null,
         pace: json.opponent.pace != null ? Number(json.opponent.pace) : null,
       }
     : null;
-  const opponentInfo = json.opponentInfo && typeof json.opponentInfo === 'object' ? json.opponentInfo : null;
+  const opponentInfo =
+    json.opponentInfo && typeof json.opponentInfo === "object"
+      ? json.opponentInfo
+      : null;
   const contextualFactors = json.contextualFactors
     ? {
-        daysRest: json.contextualFactors.daysRest != null ? Number(json.contextualFactors.daysRest) : null,
-        isBackToBack: json.contextualFactors.isBackToBack != null ? Boolean(json.contextualFactors.isBackToBack) : null,
+        daysRest:
+          json.contextualFactors.daysRest != null
+            ? Number(json.contextualFactors.daysRest)
+            : null,
+        isBackToBack:
+          json.contextualFactors.isBackToBack != null
+            ? Boolean(json.contextualFactors.isBackToBack)
+            : null,
       }
     : null;
-  const projectedMinutes = json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
+  const projectedMinutes =
+    json.projectedMinutes != null ? Number(json.projectedMinutes) : null;
 
   // Multi-season / training-scoped fields (may be present on richer backend responses)
-  const seasonsConsidered = Array.isArray(json.seasonsConsidered) ? json.seasonsConsidered.map(String) : null;
+  const seasonsConsidered = Array.isArray(json.seasonsConsidered)
+    ? json.seasonsConsidered.map(String)
+    : null;
   const seasonStatsMulti = json.seasonStatsMulti || null;
   const advancedStatsMulti = json.advancedStatsMulti || null;
   const teamId = json.teamId != null ? Number(json.teamId) : null;
   const teamStatsMulti = json.teamStatsMulti || null;
   const teamAdvancedMulti = json.teamAdvancedMulti || null;
 
-  if ((!recentGames || recentGames.length === 0) && seasonAvg == null && !noGamesThisSeason) return null;
+  if (
+    (!recentGames || recentGames.length === 0) &&
+    seasonAvg == null &&
+    !noGamesThisSeason
+  )
+    return null;
 
   return {
     player: playerName || (json.player as string) || null,
@@ -155,15 +189,15 @@ function normalizeBackendResponse(json: any, playerName?: string, statType?: str
     contextualFactors,
     recentSource,
     seasonSource,
-      // include rolling averages/opponent info and optional multi-season training fields when present
-      rollingAverages,
-      opponentInfo,
-      seasonsConsidered,
-      seasonStatsMulti,
-      advancedStatsMulti,
-      teamId,
-      teamStatsMulti,
-      teamAdvancedMulti,
+    // include rolling averages/opponent info and optional multi-season training fields when present
+    rollingAverages,
+    opponentInfo,
+    seasonsConsidered,
+    seasonStatsMulti,
+    advancedStatsMulti,
+    teamId,
+    teamStatsMulti,
+    teamAdvancedMulti,
   } as NBAPlayerContext;
 }
 
@@ -174,7 +208,7 @@ export async function fetchPlayerContextFromNBA(
 ): Promise<NBAPlayerContext | null> {
   // Prefer Vite env var `VITE_NBA_ENDPOINT`, then local FastAPI backend on port 8000 (dev); fall back to 3002 if needed
   // This allows using e.g. .env: VITE_NBA_ENDPOINT=http://localhost:8001
-   
+
   // @ts-ignore
   const viteEnvEndpoint =
     typeof import.meta !== "undefined" &&
@@ -287,8 +321,8 @@ export async function buildExternalContextForProjections(
         }
         contexts[p.id] = c;
       } catch {
-          contexts[p.id] = null;
-        }
+        contexts[p.id] = null;
+      }
     }
     return contexts;
   } catch {
@@ -328,19 +362,45 @@ export async function fetchBatchPlayerContext(
   try {
     const resp = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(requests.map((r) => ({ player: r.player, stat: r.stat || "points", limit: r.limit || 8 }))),
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(
+        requests.map((r) => ({
+          player: r.player,
+          stat: r.stat || "points",
+          limit: r.limit || 8,
+        }))
+      ),
     });
-    if (!resp.ok) return requests.map((r) => ({ player: r.player, error: `http ${resp.status}` }));
+    if (!resp.ok)
+      return requests.map((r) => ({
+        player: r.player,
+        error: `http ${resp.status}`,
+      }));
     const json = await resp.json();
     // Expecting an array with per-player summaries or error objects
-    if (!Array.isArray(json)) return requests.map((r) => ({ player: r.player, error: "unexpected response" }));
+    if (!Array.isArray(json))
+      return requests.map((r) => ({
+        player: r.player,
+        error: "unexpected response",
+      }));
     return json.map((item: any, i: number) => {
-      if (item && item.error) return { player: item.player || requests[i].player, error: String(item.error) };
+      if (item && item.error)
+        return {
+          player: item.player || requests[i].player,
+          error: String(item.error),
+        };
       // try to normalize shape into NBAPlayerContext using the original request's player/stat
-      const normalized = normalizeBackendResponse(item, requests[i].player, requests[i].stat || 'points');
+      const normalized = normalizeBackendResponse(
+        item,
+        requests[i].player,
+        requests[i].stat || "points"
+      );
       return (
-        normalized || ({ player: requests[i].player, error: 'no context' } as any)
+        normalized ||
+        ({ player: requests[i].player, error: "no context" } as any)
       );
     });
   } catch (e) {

@@ -16,16 +16,28 @@ function openIndexedDB(): Promise<IDBDatabase> {
       try {
         if (!db.objectStoreNames.contains(STORE)) {
           const store = db.createObjectStore(STORE, { keyPath: "id" });
-          try { store.createIndex("league", "league", { unique: false }); } catch {}
-          try { store.createIndex("stat", "stat", { unique: false }); } catch {}
-          try { store.createIndex("player", "player", { unique: false }); } catch {}
+          try {
+            store.createIndex("league", "league", { unique: false });
+          } catch {}
+          try {
+            store.createIndex("stat", "stat", { unique: false });
+          } catch {}
+          try {
+            store.createIndex("player", "player", { unique: false });
+          } catch {}
         }
         if (!db.objectStoreNames.contains(PLAYERS_STORE)) {
           db.createObjectStore(PLAYERS_STORE, { keyPath: "name" });
         }
         if (!db.objectStoreNames.contains(PLAYER_MAP)) {
-          const pm = db.createObjectStore(PLAYER_MAP, { keyPath: ["league", "stat", "name"] });
-          try { pm.createIndex("league_stat", ["league", "stat"], { unique: false }); } catch {}
+          const pm = db.createObjectStore(PLAYER_MAP, {
+            keyPath: ["league", "stat", "name"],
+          });
+          try {
+            pm.createIndex("league_stat", ["league", "stat"], {
+              unique: false,
+            });
+          } catch {}
         }
       } catch {}
     };
@@ -42,7 +54,12 @@ function txDone(tx: IDBTransaction) {
   });
 }
 
-function findMatchingBracket(str: string, start: number, openCh: string, closeCh: string) {
+function findMatchingBracket(
+  str: string,
+  start: number,
+  openCh: string,
+  closeCh: string
+) {
   let depth = 0;
   for (let i = start; i < str.length; i++) {
     const ch = str[i];
@@ -79,16 +96,16 @@ async function* streamArrayItems(raw: string, startIdx: number) {
     // skip whitespace and commas
     while (i < L && /[\s,]/.test(raw[i])) i++;
     if (i >= L) break;
-    if (raw[i] === ']') break;
-    if (raw[i] === '{') {
-      const end = findMatchingBracket(raw, i, '{', '}');
-      if (end === -1) throw new Error('Unterminated object in array');
+    if (raw[i] === "]") break;
+    if (raw[i] === "{") {
+      const end = findMatchingBracket(raw, i, "{", "}");
+      if (end === -1) throw new Error("Unterminated object in array");
       const itemStr = raw.slice(i, end + 1);
       let parsed;
       try {
         parsed = JSON.parse(itemStr);
       } catch (e) {
-        throw new Error('Item parse error: ' + (e as any).message);
+        throw new Error("Item parse error: " + (e as any).message);
       }
       yield { item: parsed, endIndex: end + 1 };
       i = end + 1;
@@ -96,7 +113,7 @@ async function* streamArrayItems(raw: string, startIdx: number) {
       // handle primitives (strings/numbers/null) if necessary
       // find next comma or closing bracket
       let j = i;
-      while (j < L && raw[j] !== ',' && raw[j] !== ']') j++;
+      while (j < L && raw[j] !== "," && raw[j] !== "]") j++;
       const token = raw.slice(i, j).trim();
       if (token) {
         try {
@@ -115,8 +132,9 @@ async function* streamArrayItems(raw: string, startIdx: number) {
 self.onmessage = async (e: MessageEvent) => {
   // accept either a raw string or { raw: string, fastImport?: boolean }
   const payload: any = e.data;
-  const raw = typeof payload === 'string' ? payload : payload?.raw;
-  const fastImport = typeof payload === 'object' && payload?.fastImport === true;
+  const raw = typeof payload === "string" ? payload : payload?.raw;
+  const fastImport =
+    typeof payload === "object" && payload?.fastImport === true;
   let db: IDBDatabase | null = null;
   let totalSaved = 0;
   try {
@@ -127,12 +145,12 @@ self.onmessage = async (e: MessageEvent) => {
     if (incPos !== -1) {
       try {
         // find the ':' after 'included'
-        let colon = raw.indexOf(':', incPos + includedKey.length);
+        let colon = raw.indexOf(":", incPos + includedKey.length);
         if (colon !== -1) {
           // find the start of the value (skip whitespace)
           let vstart = colon + 1;
           while (vstart < raw.length && /[\s]/.test(raw[vstart])) vstart++;
-            if (raw[vstart] === '[') {
+          if (raw[vstart] === "[") {
             const res = extractJsonValue(raw, vstart);
             const parsedIncl = JSON.parse(res.slice);
             if (Array.isArray(parsedIncl)) {
@@ -175,30 +193,33 @@ self.onmessage = async (e: MessageEvent) => {
     const dataKey = '"data"';
     const dpos = raw.indexOf(dataKey);
     if (dpos !== -1) {
-      let colon = raw.indexOf(':', dpos + dataKey.length);
+      let colon = raw.indexOf(":", dpos + dataKey.length);
       if (colon !== -1) {
         let vstart = colon + 1;
         while (vstart < raw.length && /[\s]/.test(raw[vstart])) vstart++;
-        if (raw[vstart] === '[') dataStart = vstart;
+        if (raw[vstart] === "[") dataStart = vstart;
       }
     }
     if (dataStart === -1) {
       // if raw itself is an array
       const trimmed = raw.trimStart();
-      if (trimmed[0] === '[') {
-        dataStart = raw.indexOf('[');
+      if (trimmed[0] === "[") {
+        dataStart = raw.indexOf("[");
       }
     }
 
     if (dataStart === -1) {
-      throw new Error('No data array found in payload');
+      throw new Error("No data array found in payload");
     }
 
     db = await openIndexedDB();
 
     // adaptive chunk size based on payload length
     const targetTransactions = 60;
-    const CHUNK = Math.min(2000, Math.max(200, Math.ceil((raw.length / 1000) / targetTransactions)));
+    const CHUNK = Math.min(
+      2000,
+      Math.max(200, Math.ceil(raw.length / 1000 / targetTransactions))
+    );
 
     // accumulate per-chunk arrays and unique player_map entries
     let mappedBatch: ParsedProjection[] = [];
@@ -232,7 +253,7 @@ self.onmessage = async (e: MessageEvent) => {
           status: proj.attributes?.status || "unknown",
           gameId: gameId,
         };
-        if (rec.status === 'pre_game') {
+        if (rec.status === "pre_game") {
           mappedBatch.push(rec);
           pmSet.add(`${rec.league}:::${rec.stat}:::${rec.player}`);
           playerCounts.set(rec.player, (playerCounts.get(rec.player) || 0) + 1);
@@ -244,16 +265,23 @@ self.onmessage = async (e: MessageEvent) => {
       if (mappedBatch.length >= CHUNK) {
         // write batch
         try {
-          const tx = db.transaction([STORE, PLAYER_MAP], 'readwrite');
+          const tx = db.transaction([STORE, PLAYER_MAP], "readwrite");
           const store = tx.objectStore(STORE);
           const pm = tx.objectStore(PLAYER_MAP);
           for (const it of mappedBatch) {
-            try { store.put(it); totalSaved++; } catch {}
+            try {
+              store.put(it);
+              totalSaved++;
+            } catch {}
           }
           for (const key of pmSet) {
             try {
-              const parts = key.split(':::');
-              pm.put({ league: parts[0] || '', stat: parts[1] || '', name: parts[2] || '' });
+              const parts = key.split(":::");
+              pm.put({
+                league: parts[0] || "",
+                stat: parts[1] || "",
+                name: parts[2] || "",
+              });
             } catch {}
           }
           await txDone(tx);
@@ -270,7 +298,7 @@ self.onmessage = async (e: MessageEvent) => {
       const now = Date.now();
       if (now - lastPost >= POST_INTERVAL) {
         const progress = Math.min(1, processedChars / raw.length);
-        self.postMessage({ type: 'chunk', count: pendingCount, progress });
+        self.postMessage({ type: "chunk", count: pendingCount, progress });
         pendingCount = 0;
         lastPost = now;
       }
@@ -279,16 +307,23 @@ self.onmessage = async (e: MessageEvent) => {
     // flush remaining mappedBatch
     if (mappedBatch.length > 0) {
       try {
-        const tx = db.transaction([STORE, PLAYER_MAP], 'readwrite');
+        const tx = db.transaction([STORE, PLAYER_MAP], "readwrite");
         const store = tx.objectStore(STORE);
         const pm = tx.objectStore(PLAYER_MAP);
         for (const it of mappedBatch) {
-          try { store.put(it); totalSaved++; } catch {}
+          try {
+            store.put(it);
+            totalSaved++;
+          } catch {}
         }
         for (const key of pmSet) {
           try {
-            const parts = key.split(':::');
-            pm.put({ league: parts[0] || '', stat: parts[1] || '', name: parts[2] || '' });
+            const parts = key.split(":::");
+            pm.put({
+              league: parts[0] || "",
+              stat: parts[1] || "",
+              name: parts[2] || "",
+            });
           } catch {}
         }
         await txDone(tx);
@@ -299,7 +334,7 @@ self.onmessage = async (e: MessageEvent) => {
     // flush playerCounts to PLAYERS_STORE in one transaction (deferred if desired)
     if (!fastImport && playerCounts.size > 0) {
       try {
-        const tx2 = db.transaction(PLAYERS_STORE, 'readwrite');
+        const tx2 = db.transaction(PLAYERS_STORE, "readwrite");
         const ps = tx2.objectStore(PLAYERS_STORE);
         for (const [name, cnt] of playerCounts.entries()) {
           try {
@@ -317,13 +352,22 @@ self.onmessage = async (e: MessageEvent) => {
     }
 
     // final progress and done
-    if (pendingCount > 0) self.postMessage({ type: 'chunk', count: pendingCount, progress: 1 });
+    if (pendingCount > 0)
+      self.postMessage({ type: "chunk", count: pendingCount, progress: 1 });
     // if fastImport, indicate that index rebuild is needed
-    self.postMessage({ type: 'done', total: totalSaved, indexDirty: fastImport ? true : false });
+    self.postMessage({
+      type: "done",
+      total: totalSaved,
+      indexDirty: fastImport ? true : false,
+    });
   } catch (err: any) {
-    try { self.postMessage({ type: 'error', message: err?.message || String(err) }); } catch {}
+    try {
+      self.postMessage({ type: "error", message: err?.message || String(err) });
+    } catch {}
   } finally {
-    try { if (db) db.close(); } catch {}
+    try {
+      if (db) db.close();
+    } catch {}
   }
 };
 
