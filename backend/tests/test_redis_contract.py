@@ -1,6 +1,3 @@
-import importlib
-
-
 def test_cache_helpers_exist():
     from backend.services import cache
 

@@ -4,12 +4,13 @@ Revision ID: 0004_create_player_stats_hypertable
 Revises: 0003_add_indexes
 Create Date: 2025-11-11 19:40:00.000000
 """
-from alembic import op
+
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '0004_player_stats_ht'
-down_revision = '0003_add_indexes'
+revision = "0004_player_stats_ht"
+down_revision = "0003_add_indexes"
 branch_labels = None
 depends_on = None
 
@@ -17,40 +18,54 @@ depends_on = None
 def upgrade() -> None:
     # Only run Timescale/Postgres-specific SQL on a Postgres dialect.
     bind = op.get_bind()
-    if bind.dialect.name != 'postgresql':
+    if bind.dialect.name != "postgresql":
         # Non-Postgres DB (e.g., SQLite in CI/dev) - skip hypertable/index creation.
-        print('Skipping Timescale hypertable/index creation: non-postgres dialect detected')
+        print(
+            "Skipping Timescale hypertable/index creation: non-postgres dialect detected"
+        )
         return
 
     # Convert existing `player_stats` table to a TimescaleDB hypertable if the extension is available.
     # NOTE: Installing the extension in production may require DBA privileges; ensure it's enabled before running.
     # Check whether the TimescaleDB helper function exists before calling it. Some test/dev Postgres
     # instances won't have Timescale installed, so skip gracefully when absent.
-    check_sql = sa.text("SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname='create_hypertable');")
+    check_sql = sa.text(
+        "SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname='create_hypertable');"
+    )
     try:
         exists = bool(bind.execute(check_sql).scalar())
     except Exception:
         exists = False
 
     if not exists:
-        print('TimescaleDB create_hypertable not available; skipping hypertable creation')
+        print(
+            "TimescaleDB create_hypertable not available; skipping hypertable creation"
+        )
     else:
         # Use `created_at` as the hypertable time column (existing timestamp on player_stats).
-        op.execute("SELECT create_hypertable('player_stats','created_at', if_not_exists => TRUE);")
+        op.execute(
+            "SELECT create_hypertable('player_stats','created_at', if_not_exists => TRUE);"
+        )
 
     # Create production-grade indexes concurrently to avoid locking large tables.
     # Use autocommit_block so CONCURRENTLY index creation is executed outside a transaction.
     ctx = op.get_context()
     with ctx.autocommit_block():
-        op.execute("CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_player_stats_player_created_at ON player_stats (player_id, created_at);")
-        op.execute("CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_player_stats_created_at ON player_stats (created_at);")
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_player_stats_player_created_at ON player_stats (player_id, created_at);"
+        )
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_player_stats_created_at ON player_stats (created_at);"
+        )
 
 
 def downgrade() -> None:
     # Drop the indexes created above. Use CONCURRENTLY to avoid table locks.
     ctx = op.get_context()
     with ctx.autocommit_block():
-        op.execute("DROP INDEX CONCURRENTLY IF EXISTS ix_player_stats_player_created_at;")
+        op.execute(
+            "DROP INDEX CONCURRENTLY IF EXISTS ix_player_stats_player_created_at;"
+        )
         op.execute("DROP INDEX CONCURRENTLY IF EXISTS ix_player_stats_created_at;")
 
     # Note: We intentionally do not attempt to "undo" a hypertable conversion here. Rolling back a hypertable

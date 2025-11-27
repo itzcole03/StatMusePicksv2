@@ -6,19 +6,20 @@ The function `features_for_player` returns per-game aggregates or None
 when tracking data is not available. This is lightweight and safe for
 dev/test environments.
 """
+
 from __future__ import annotations
 
-from typing import Dict, Any, List, Optional
+import csv
 import json
 import os
-import csv
 from statistics import mean
+from typing import Any, Dict, List, Optional
 
 
 def _sanitize_name(name: str) -> str:
     # replace spaces with underscore first, then keep alnum/_/- characters
-    base = (name or "").strip().lower().replace(' ', '_')
-    return "".join(c for c in base if c.isalnum() or c in ('_', '-'))
+    base = (name or "").strip().lower().replace(" ", "_")
+    return "".join(c for c in base if c.isalnum() or c in ("_", "-"))
 
 
 def _default_data_dir() -> str:
@@ -26,7 +27,9 @@ def _default_data_dir() -> str:
     return os.path.join(base, "data", "tracking")
 
 
-def _load_tracking_file(player_name: str, data_dir: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
+def _load_tracking_file(
+    player_name: str, data_dir: Optional[str] = None
+) -> Optional[List[Dict[str, Any]]]:
     data_dir = data_dir or _default_data_dir()
     name = _sanitize_name(player_name)
     candidates = [f"{name}.json", f"{name}.csv", f"{name}.parquet"]
@@ -34,8 +37,8 @@ def _load_tracking_file(player_name: str, data_dir: Optional[str] = None) -> Opt
         path = os.path.join(data_dir, c)
         if os.path.exists(path):
             try:
-                if path.endswith('.json'):
-                    with open(path, 'r', encoding='utf-8') as fh:
+                if path.endswith(".json"):
+                    with open(path, "r", encoding="utf-8") as fh:
                         data = json.load(fh)
                         if isinstance(data, list):
                             return data
@@ -45,36 +48,47 @@ def _load_tracking_file(player_name: str, data_dir: Optional[str] = None) -> Opt
                                 if isinstance(v, list):
                                     return v
                 # CSV reading: prefer pandas if available, else fall back to csv.DictReader
-                if path.endswith('.csv'):
+                if path.endswith(".csv"):
                     try:
                         import pandas as _pd
 
                         df = _pd.read_csv(path)
                         # convert NaNs to None and return list of dicts
-                        df = df.where(_pd.notnull(df), None) if hasattr(df, 'where') else df
-                        return df.to_dict(orient='records')
+                        df = (
+                            df.where(_pd.notnull(df), None)
+                            if hasattr(df, "where")
+                            else df
+                        )
+                        return df.to_dict(orient="records")
                     except Exception:
                         # pandas not available or read failed; fallback
                         try:
                             rows = []
-                            with open(path, 'r', encoding='utf-8') as fh:
+                            with open(path, "r", encoding="utf-8") as fh:
                                 reader = csv.DictReader(fh)
                                 for r in reader:
                                     # convert empty strings to None
-                                    row = {k: (v if v != '' else None) for k, v in r.items()}
+                                    row = {
+                                        k: (v if v != "" else None)
+                                        for k, v in r.items()
+                                    }
                                     rows.append(row)
                             return rows
                         except Exception:
                             return None
 
                 # Parquet reading: use pandas if available
-                if path.endswith('.parquet'):
+                if path.endswith(".parquet"):
                     try:
                         import pandas as _pd
 
                         df = _pd.read_parquet(path)
-                        df = df.where(_pd.notnull(df), None) if hasattr(df, 'where') else df
-                        return df.to_dict(orient='records')
+                        df = (
+                            df.where(_pd.notnull(df), None)
+                            if hasattr(df, "where")
+                            else df
+                        )
+                        return df.to_dict(orient="records")
                     except Exception:
                         return None
             except Exception:
@@ -101,7 +115,7 @@ def _parse_float(v: Any) -> Optional[float]:
         if s == "":
             return None
         # handle percentage like '52%'
-        if s.endswith('%'):
+        if s.endswith("%"):
             s = s[:-1]
         fv = float(s)
         return fv
@@ -123,7 +137,11 @@ def _normalize_pct(value: Optional[float]) -> Optional[float]:
         return None
 
 
-def features_for_player(player_name: str, seasons: Optional[List[str]] = None, data_dir: Optional[str] = None) -> Dict[str, Optional[float]]:
+def features_for_player(
+    player_name: str,
+    seasons: Optional[List[str]] = None,
+    data_dir: Optional[str] = None,
+) -> Dict[str, Optional[float]]:
     """Compute tracking-derived features for a player from JSON rows.
 
     Recognized keys per-row (best-effort):
@@ -159,9 +177,9 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
     for g in games:
         # speed conversions - accept multiple common column names
         s = None
-        speed_keys_mph = ('avg_speed_mph', 'speed_mph', 'spd_mph')
-        speed_keys_mps = ('avg_speed_mps', 'speed_mps', 'spd_mps')
-        speed_keys_raw = ('avg_speed', 'speed')
+        speed_keys_mph = ("avg_speed_mph", "speed_mph", "spd_mph")
+        speed_keys_mps = ("avg_speed_mps", "speed_mps", "spd_mps")
+        speed_keys_raw = ("avg_speed", "speed")
         for k in speed_keys_mph:
             val = _parse_float(g.get(k))
             if val is not None:
@@ -184,8 +202,13 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
 
         # distance - accept meters or miles
         d = None
-        dist_keys_m = ('distance_m', 'distance_meters', 'distanceMeters', 'dist_m')
-        dist_keys_miles = ('distance_miles', 'distance_mile', 'distance_mi', 'dist_miles')
+        dist_keys_m = ("distance_m", "distance_meters", "distanceMeters", "dist_m")
+        dist_keys_miles = (
+            "distance_miles",
+            "distance_mile",
+            "distance_mi",
+            "dist_miles",
+        )
         for k in dist_keys_m:
             val = _parse_float(g.get(k))
             if val is not None:
@@ -201,7 +224,13 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
             distances.append(d)
 
         # touches per game - accept several column names
-        touch_keys = ('touches', 'touch_count', 'touches_count', 'touches_per_game', 'touches_pg')
+        touch_keys = (
+            "touches",
+            "touch_count",
+            "touches_count",
+            "touches_per_game",
+            "touches_pg",
+        )
         for k in touch_keys:
             val = _parse_float(g.get(k))
             if val is not None:
@@ -209,7 +238,13 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
                 break
 
         # time of possession (seconds)
-        time_keys = ('time_of_possession_sec', 'possession_sec', 'time_poss_sec', 'time_poss', 'possession_time_sec')
+        time_keys = (
+            "time_of_possession_sec",
+            "possession_sec",
+            "time_poss_sec",
+            "time_poss",
+            "possession_time_sec",
+        )
         for k in time_keys:
             val = _parse_float(g.get(k))
             if val is not None:
@@ -218,7 +253,14 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
 
         # expected FG% / shot quality — accept many keys and normalize to 0-1
         exp_keys = (
-            'exp_fg_pct', 'expected_fg_pct', 'expected_fg', 'exp_fg', 'xg', 'exp_fg_percent', 'expected_fg_percent', 'exp_fg_perc'
+            "exp_fg_pct",
+            "expected_fg_pct",
+            "expected_fg",
+            "exp_fg",
+            "xg",
+            "exp_fg_percent",
+            "expected_fg_percent",
+            "exp_fg_perc",
         )
         for k in exp_keys:
             val = _parse_float(g.get(k))
@@ -244,20 +286,24 @@ def features_for_player(player_name: str, seasons: Optional[List[str]] = None, d
         "shot_quality": _safe_mean(exp_fg),
     }
     # merge canonical keys as well
-    result.update({
-        "avg_speed_mph": _safe_mean(speeds),
-        "distance_miles_per_game": _safe_mean(distances),
-        "touches_per_game": _safe_mean(touches),
-        "time_possession_sec_per_game": _safe_mean(time_poss),
-        "exp_fg_pct": _safe_mean(exp_fg),
-    })
+    result.update(
+        {
+            "avg_speed_mph": _safe_mean(speeds),
+            "distance_miles_per_game": _safe_mean(distances),
+            "touches_per_game": _safe_mean(touches),
+            "time_possession_sec_per_game": _safe_mean(time_poss),
+            "exp_fg_pct": _safe_mean(exp_fg),
+        }
+    )
     return result
 
 
 def create_default_service():
     class S:
         @staticmethod
-        def features_for_player(name: str, seasons=None, data_dir: Optional[str] = None):
+        def features_for_player(
+            name: str, seasons=None, data_dir: Optional[str] = None
+        ):
             return features_for_player(name, seasons=seasons, data_dir=data_dir)
 
     return S()

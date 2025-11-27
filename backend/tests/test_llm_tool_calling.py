@@ -12,7 +12,12 @@ def test_tool_call_flow(monkeypatch):
             calls["generate"] += 1
             if calls["generate"] == 1:
                 # instruct the service to call the web_search tool
-                return {"tool_call": {"name": "web_search", "arguments": {"query": "PlayerX injury"}}}
+                return {
+                    "tool_call": {
+                        "name": "web_search",
+                        "arguments": {"query": "PlayerX injury"},
+                    }
+                }
             # second call: return a structured JSON-like dict matching the Pydantic schema
             return {
                 "injury_status": "questionable",
@@ -23,7 +28,9 @@ def test_tool_call_flow(monkeypatch):
             }
 
     # patch the client used inside llm_feature_service
-    monkeypatch.setattr("backend.services.llm_feature_service.get_default_client", lambda: FakeClient())
+    monkeypatch.setattr(
+        "backend.services.llm_feature_service.get_default_client", lambda: FakeClient()
+    )
 
     # patch web_search to a deterministic string and record calls
     web_calls = {}

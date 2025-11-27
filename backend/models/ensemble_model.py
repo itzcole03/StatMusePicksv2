@@ -4,12 +4,13 @@ Provides a simple averaged ensemble that trains each component and returns
 the weighted average prediction. Optional XGBoost support (if installed)
 is used when available.
 """
-from typing import Optional, Dict, List
+
 import os
+from typing import Dict, List, Optional
+
 import joblib
 import numpy as np
 import pandas as pd
-
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge
 from sklearn.model_selection import KFold
@@ -21,13 +22,19 @@ except Exception:
 
 try:
     import xgboost as xgb  # type: ignore
+
     XGBOOST_AVAILABLE = True
 except Exception:
     XGBOOST_AVAILABLE = False
 
 
 class EnsembleModel:
-    def __init__(self, rf_params: Optional[Dict] = None, en_params: Optional[Dict] = None, weights: Optional[List[float]] = None):
+    def __init__(
+        self,
+        rf_params: Optional[Dict] = None,
+        en_params: Optional[Dict] = None,
+        weights: Optional[List[float]] = None,
+    ):
         self.rf_params = rf_params or {"n_estimators": 100, "random_state": 0}
         self.en_params = en_params or {"alpha": 1.0, "l1_ratio": 0.5, "random_state": 0}
         self.weights = weights
@@ -102,13 +109,19 @@ class EnsembleModel:
     @classmethod
     def load(cls, path: str) -> "EnsembleModel":
         data = joblib.load(path)
-        inst = cls(rf_params=data.get("rf_params"), en_params=data.get("en_params"), weights=data.get("weights"))
+        inst = cls(
+            rf_params=data.get("rf_params"),
+            en_params=data.get("en_params"),
+            weights=data.get("weights"),
+        )
         inst.rf = data.get("rf")
         inst.en = data.get("en")
         inst.xgb_model = data.get("xgb_model")
         return inst
 
-    def get_feature_importances(self, feature_names: Optional[List[str]] = None) -> Dict[str, float]:
+    def get_feature_importances(
+        self, feature_names: Optional[List[str]] = None
+    ) -> Dict[str, float]:
         """Return feature importances from RandomForest; if feature_names not provided,
         use indices as strings."""
         if self.rf is None:
@@ -127,7 +140,10 @@ class StackingEnsemble:
     Usage: instantiate with base model factories or prebuilt sklearn estimators,
     call `train(X, y)` then `predict(X)`.
     """
-    def __init__(self, base_models: Optional[List] = None, meta_model=None, n_folds: int = 5):
+
+    def __init__(
+        self, base_models: Optional[List] = None, meta_model=None, n_folds: int = 5
+    ):
         # base_models: list of (name, estimator) tuples
         self.base_models = base_models or []
         self.meta_model = meta_model or Ridge(alpha=1.0)
@@ -136,12 +152,14 @@ class StackingEnsemble:
 
     def train(self, X, y):
         import numpy as _np
+
         if not isinstance(X, (list, tuple)):
             import pandas as _pd
+
             if not isinstance(X, _pd.DataFrame):
                 X = _pd.DataFrame(X)
 
-        X_vals = X.values if hasattr(X, 'values') else _np.asarray(X)
+        X_vals = X.values if hasattr(X, "values") else _np.asarray(X)
         y_vals = _np.asarray(list(y))
 
         # Out-of-fold predictions for meta training
@@ -173,9 +191,11 @@ class StackingEnsemble:
 
     def predict(self, X):
         import numpy as _np
+
         if not self.fitted:
             raise RuntimeError("StackingEnsemble not trained")
         import pandas as _pd
+
         if not isinstance(X, _pd.DataFrame):
             X = _pd.DataFrame(X)
         X_vals = X.values
@@ -189,16 +209,23 @@ class StackingEnsemble:
         d = os.path.dirname(path)
         if d and not os.path.exists(d):
             os.makedirs(d, exist_ok=True)
-        joblib.dump({
-            'base_models': self.base_models,
-            'meta_model': self.meta_model,
-            'n_folds': self.n_folds,
-            'fitted': self.fitted,
-        }, path)
+        joblib.dump(
+            {
+                "base_models": self.base_models,
+                "meta_model": self.meta_model,
+                "n_folds": self.n_folds,
+                "fitted": self.fitted,
+            },
+            path,
+        )
 
     @classmethod
     def load(cls, path: str):
         data = joblib.load(path)
-        inst = cls(base_models=data.get('base_models'), meta_model=data.get('meta_model'), n_folds=data.get('n_folds', 5))
-        inst.fitted = data.get('fitted', False)
+        inst = cls(
+            base_models=data.get("base_models"),
+            meta_model=data.get("meta_model"),
+            n_folds=data.get("n_folds", 5),
+        )
+        inst.fitted = data.get("fitted", False)
         return inst

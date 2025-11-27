@@ -5,19 +5,18 @@ simple lag features for each player, trains an ensemble via
 `backend.services.training_pipeline.train_player_model`, saves models and
 reports per-player MAE on val/test splits.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_absolute_error
 
-from backend.services.training_pipeline import train_player_model, save_model
+from backend.services.training_pipeline import save_model, train_player_model
 
 
 def safe_name(name: str) -> str:
@@ -58,7 +57,9 @@ def load_splits(manifest_path: Path) -> dict:
 def main(manifest: str, n_players: int, out_dir: str):
     manifest_path = Path(manifest)
     parts = load_splits(manifest_path)
-    combined = pd.concat([parts["train"], parts["val"], parts["test"]], ignore_index=True)
+    combined = pd.concat(
+        [parts["train"], parts["val"], parts["test"]], ignore_index=True
+    )
 
     players = combined["player"].unique().tolist()
     players = players[:n_players]
@@ -76,9 +77,13 @@ def main(manifest: str, n_players: int, out_dir: str):
         player_df = build_lag_features(player_df)
 
         # split back
-        train_df = player_df[player_df["_split"] == "train"].drop(columns=["_split"]).copy()
+        train_df = (
+            player_df[player_df["_split"] == "train"].drop(columns=["_split"]).copy()
+        )
         val_df = player_df[player_df["_split"] == "val"].drop(columns=["_split"]).copy()
-        test_df = player_df[player_df["_split"] == "test"].drop(columns=["_split"]).copy()
+        test_df = (
+            player_df[player_df["_split"] == "test"].drop(columns=["_split"]).copy()
+        )
 
         if train_df.shape[0] < 8:
             print(f"Skipping {player}: not enough training rows ({train_df.shape[0]})")
@@ -115,11 +120,28 @@ def main(manifest: str, n_players: int, out_dir: str):
         yval_pred = predict_df(model, val_df)
         ytest_pred = predict_df(model, test_df)
 
-        val_mae = float(mean_absolute_error(y_val, yval_pred)) if y_val.size and yval_pred.size else None
-        test_mae = float(mean_absolute_error(y_test, ytest_pred)) if y_test.size and ytest_pred.size else None
+        val_mae = (
+            float(mean_absolute_error(y_val, yval_pred))
+            if y_val.size and yval_pred.size
+            else None
+        )
+        test_mae = (
+            float(mean_absolute_error(y_test, ytest_pred))
+            if y_test.size and ytest_pred.size
+            else None
+        )
 
-        print(f"Player: {player} train_rows={train_df.shape[0]} val_rows={val_df.shape[0]} test_rows={test_df.shape[0]} val_mae={val_mae} test_mae={test_mae}")
-        summary.append({"player": player, "val_mae": val_mae, "test_mae": test_mae, "model_path": str(model_path)})
+        print(
+            f"Player: {player} train_rows={train_df.shape[0]} val_rows={val_df.shape[0]} test_rows={test_df.shape[0]} val_mae={val_mae} test_mae={test_mae}"
+        )
+        summary.append(
+            {
+                "player": player,
+                "val_mae": val_mae,
+                "test_mae": test_mae,
+                "model_path": str(model_path),
+            }
+        )
 
     out_sum = manifest_path.parent / "smoke_train_summary.json"
     with open(out_sum, "w", encoding="utf8") as fh:
@@ -129,8 +151,16 @@ def main(manifest: str, n_players: int, out_dir: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--manifest", required=True, help="Path to dataset manifest.json")
-    parser.add_argument("--players", type=int, default=5, help="Number of players to train")
-    parser.add_argument("--out-dir", default="backend/models_store/smoke", help="Directory to save models")
+    parser.add_argument(
+        "--manifest", required=True, help="Path to dataset manifest.json"
+    )
+    parser.add_argument(
+        "--players", type=int, default=5, help="Number of players to train"
+    )
+    parser.add_argument(
+        "--out-dir",
+        default="backend/models_store/smoke",
+        help="Directory to save models",
+    )
     args = parser.parse_args()
     main(args.manifest, args.players, args.out_dir)

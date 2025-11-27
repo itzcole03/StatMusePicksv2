@@ -20,8 +20,8 @@ import os
 import sys
 import tempfile
 
-from alembic.config import Config
 from alembic import command
+from alembic.config import Config
 from alembic.script import ScriptDirectory
 
 
@@ -53,7 +53,9 @@ def main(argv=None):
         return 2
     if len(heads) > 1:
         print("ERROR: multiple alembic heads found:", heads)
-        print("This indicates divergent migration branches. Run `alembic merge` to combine heads.")
+        print(
+            "This indicates divergent migration branches. Run `alembic merge` to combine heads."
+        )
         return 2
 
     # Choose a disposable sqlite file if none provided

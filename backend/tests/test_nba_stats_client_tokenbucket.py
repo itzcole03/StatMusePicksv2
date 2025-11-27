@@ -1,7 +1,5 @@
-import time
 import threading
-
-import pytest
+import time
 
 from backend.services import nba_stats_client as ns
 

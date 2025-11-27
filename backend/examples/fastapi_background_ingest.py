@@ -4,12 +4,13 @@ from an existing asyncio event loop (background task).
 This is a minimal example: adapt logging, error handling and scheduling
 policy to your ops requirements.
 """
+
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from datetime import date
 
 from fastapi import FastAPI
-from contextlib import asynccontextmanager
 
 from backend.services import data_ingestion_service as dis
 

@@ -4,9 +4,6 @@ Run from the repository root with PYTHONPATH set to the project root.
 Example:
     $env:PYTHONPATH = "${PWD}"; python backend/scripts/check_model_registry.py
 """
-import os
-import json
-import sys
 
 from backend.services.model_registry import ModelRegistry
 
@@ -23,5 +20,5 @@ def main():
     print(f"Cache keys: {cached}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

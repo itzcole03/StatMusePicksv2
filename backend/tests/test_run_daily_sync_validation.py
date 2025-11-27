@@ -2,8 +2,6 @@ import sys
 import types
 from datetime import date
 
-import pytest
-
 from backend.services import data_ingestion_service as dis
 
 
@@ -12,8 +10,20 @@ def test_run_daily_sync_validation_filters(monkeypatch, tmp_path):
     fake = types.SimpleNamespace()
 
     fake.fetch_yesterday_games = lambda: [
-        {"game_id": "g1", "game_date": "2025-11-12T00:00:00", "away_team": "BOS", "home_team": None, "value": 10},
-        {"game_id": "g2", "game_date": "2025-11-12T00:00:00", "away_team": "NYK", "home_team": "LAL", "value": 12},
+        {
+            "game_id": "g1",
+            "game_date": "2025-11-12T00:00:00",
+            "away_team": "BOS",
+            "home_team": None,
+            "value": 10,
+        },
+        {
+            "game_id": "g2",
+            "game_date": "2025-11-12T00:00:00",
+            "away_team": "NYK",
+            "home_team": "LAL",
+            "value": 12,
+        },
     ]
 
     sys.modules["backend.services.nba_stats_client"] = fake

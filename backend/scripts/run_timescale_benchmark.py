@@ -18,20 +18,28 @@ from datetime import datetime, timedelta, timezone
 import psycopg2
 from psycopg2.extras import execute_batch
 
-
 DEFAULT_ROWS = 100000
 CHUNK_SIZE = 2000
 
 
-def connect(dbname="statmuse_timescale", host="localhost", port=5433, user="postgres", password="postgres"):
-    conn = psycopg2.connect(dbname=dbname, user=user, password=password, host=host, port=port)
+def connect(
+    dbname="statmuse_timescale",
+    host="localhost",
+    port=5433,
+    user="postgres",
+    password="postgres",
+):
+    conn = psycopg2.connect(
+        dbname=dbname, user=user, password=password, host=host, port=port
+    )
     conn.autocommit = True
     return conn
 
 
 def setup_tables(conn):
     cur = conn.cursor()
-    cur.execute("""
+    cur.execute(
+        """
     CREATE TABLE IF NOT EXISTS player_stats_regular (
         id SERIAL PRIMARY KEY,
         player_id INTEGER NOT NULL,
@@ -41,9 +49,11 @@ def setup_tables(conn):
         game_date DATE NOT NULL,
         created_at TIMESTAMPTZ DEFAULT now()
     );
-    """)
+    """
+    )
 
-    cur.execute("""
+    cur.execute(
+        """
     CREATE TABLE IF NOT EXISTS player_stats_hypertable (
         id SERIAL PRIMARY KEY,
         player_id INTEGER NOT NULL,
@@ -53,22 +63,31 @@ def setup_tables(conn):
         game_date DATE NOT NULL,
         created_at TIMESTAMPTZ DEFAULT now()
     );
-    """)
+    """
+    )
 
     # create hypertable if not exists
     try:
-        cur.execute("SELECT create_hypertable('player_stats_hypertable','game_date', if_not_exists => TRUE);")
+        cur.execute(
+            "SELECT create_hypertable('player_stats_hypertable','game_date', if_not_exists => TRUE);"
+        )
     except Exception:
         # Some versions use if_not_exists := true
         try:
-            cur.execute("SELECT create_hypertable('player_stats_hypertable','game_date', if_not_exists := true);")
+            cur.execute(
+                "SELECT create_hypertable('player_stats_hypertable','game_date', if_not_exists := true);"
+            )
         except Exception:
             # ignore if cannot create (maybe already hypertable)
             pass
 
     # Indexes used in production-like workloads
-    cur.execute("CREATE INDEX IF NOT EXISTS ix_regular_player_game_date ON player_stats_regular (player_id, game_date);")
-    cur.execute("CREATE INDEX IF NOT EXISTS ix_hypertable_player_game_date ON player_stats_hypertable (player_id, game_date);")
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS ix_regular_player_game_date ON player_stats_regular (player_id, game_date);"
+    )
+    cur.execute(
+        "CREATE INDEX IF NOT EXISTS ix_hypertable_player_game_date ON player_stats_hypertable (player_id, game_date);"
+    )
     cur.close()
 
 
@@ -91,12 +110,12 @@ def populate(conn, rows):
     cur = conn.cursor()
     total = rows
     players = 500  # number of unique players to simulate
-    stat_types = ['points', 'rebounds', 'assists']
+    stat_types = ["points", "rebounds", "assists"]
     base_date = datetime.now(timezone.utc)
 
     insert_sql = "INSERT INTO {table} (player_id, game_id, stat_type, value, game_date) VALUES (%s,%s,%s,%s,%s)"
 
-    for table in ('player_stats_regular', 'player_stats_hypertable'):
+    for table in ("player_stats_regular", "player_stats_hypertable"):
         print(f"Populating {table} with {rows} rows...")
         start = time.time()
         inserted = 0
@@ -125,15 +144,26 @@ def run_queries(conn):
     thirty_days_ago = today - timedelta(days=30)
 
     queries = [
-        ("Regular: avg value for player last 30 days",
-         "SELECT AVG(value) FROM player_stats_regular WHERE player_id = %s AND game_date >= %s", (player_id, thirty_days_ago)),
-        ("Hypertable: avg value for player last 30 days",
-         "SELECT AVG(value) FROM player_stats_hypertable WHERE player_id = %s AND game_date >= %s", (player_id, thirty_days_ago)),
-
-        ("Regular: range scan by date",
-         "SELECT player_id, AVG(value) FROM player_stats_regular WHERE game_date BETWEEN %s AND %s GROUP BY player_id ORDER BY AVG(value) DESC LIMIT 10", (thirty_days_ago, today)),
-        ("Hypertable: range scan by date",
-         "SELECT player_id, AVG(value) FROM player_stats_hypertable WHERE game_date BETWEEN %s AND %s GROUP BY player_id ORDER BY AVG(value) DESC LIMIT 10", (thirty_days_ago, today)),
+        (
+            "Regular: avg value for player last 30 days",
+            "SELECT AVG(value) FROM player_stats_regular WHERE player_id = %s AND game_date >= %s",
+            (player_id, thirty_days_ago),
+        ),
+        (
+            "Hypertable: avg value for player last 30 days",
+            "SELECT AVG(value) FROM player_stats_hypertable WHERE player_id = %s AND game_date >= %s",
+            (player_id, thirty_days_ago),
+        ),
+        (
+            "Regular: range scan by date",
+            "SELECT player_id, AVG(value) FROM player_stats_regular WHERE game_date BETWEEN %s AND %s GROUP BY player_id ORDER BY AVG(value) DESC LIMIT 10",
+            (thirty_days_ago, today),
+        ),
+        (
+            "Hypertable: range scan by date",
+            "SELECT player_id, AVG(value) FROM player_stats_hypertable WHERE game_date BETWEEN %s AND %s GROUP BY player_id ORDER BY AVG(value) DESC LIMIT 10",
+            (thirty_days_ago, today),
+        ),
     ]
 
     results = []
@@ -151,7 +181,9 @@ def run_queries(conn):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--rows", type=int, default=DEFAULT_ROWS, help="Total rows to insert per table")
+    parser.add_argument(
+        "--rows", type=int, default=DEFAULT_ROWS, help="Total rows to insert per table"
+    )
     args = parser.parse_args()
 
     conn = connect()
@@ -166,5 +198,5 @@ def main():
     conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

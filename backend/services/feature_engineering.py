@@ -22,10 +22,11 @@ Behavioral notes:
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Optional
-import numpy as np
 import math
 from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+import numpy as np
 
 
 def recent_stats_from_games(
@@ -55,7 +56,13 @@ def recent_stats_from_games(
     values = [float(v) for v in values]
     n = len(values)
     if n == 0:
-        return {"mean": None, "median": None, "std": None, "sample_size": 0, "trend_slope": None}
+        return {
+            "mean": None,
+            "median": None,
+            "std": None,
+            "sample_size": 0,
+            "trend_slope": None,
+        }
 
     arr = np.array(values)
     mean = float(arr.mean())
@@ -69,10 +76,18 @@ def recent_stats_from_games(
         slope, _ = np.polyfit(x, arr, 1)
         trend_slope = float(slope)
 
-    return {"mean": mean, "median": median, "std": std, "sample_size": n, "trend_slope": trend_slope}
+    return {
+        "mean": mean,
+        "median": median,
+        "std": std,
+        "sample_size": n,
+        "trend_slope": trend_slope,
+    }
 
 
-def rolling_averages(recent_games: List[Dict[str, Any]], stat_field: str = "statValue") -> Dict[str, Optional[float]]:
+def rolling_averages(
+    recent_games: List[Dict[str, Any]], stat_field: str = "statValue"
+) -> Dict[str, Optional[float]]:
     """Compute a few small rolling statistics from recent games.
 
     The function returns a dict containing the last 3/5/10 averages and an
@@ -161,7 +176,10 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     phi2 = math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
     dlambda = math.radians(lon2 - lon1)
-    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    a = (
+        math.sin(dphi / 2) ** 2
+        + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    )
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     return R * c
 
@@ -187,22 +205,41 @@ def _is_rival(team_abbrev: Optional[str], opp_abbrev: Optional[str]) -> bool:
         return False
 
 
-def _add_contextual_features(features: Dict[str, Any], player_ctx: Dict[str, Any], opponent_ctx: Optional[Dict[str, Any]] = None):
+def _add_contextual_features(
+    features: Dict[str, Any],
+    player_ctx: Dict[str, Any],
+    opponent_ctx: Optional[Dict[str, Any]] = None,
+):
     """Enrich features dict with contextual features: playoff, rivalry, national TV, travel distance, altitude."""
     ctx = player_ctx.get("contextualFactors") or {}
     # Playoff flag
-    is_playoff = bool(ctx.get("isPlayoff") or ctx.get("gameType") == "Playoffs" or player_ctx.get("gameType") == "Playoffs")
+    is_playoff = bool(
+        ctx.get("isPlayoff")
+        or ctx.get("gameType") == "Playoffs"
+        or player_ctx.get("gameType") == "Playoffs"
+    )
     features["is_playoff"] = 1 if is_playoff else 0
 
     # National TV / big game indicator
-    national = bool(ctx.get("isNationalTV") or ctx.get("nationalTelecast") or ctx.get("isNational"))
+    national = bool(
+        ctx.get("isNationalTV") or ctx.get("nationalTelecast") or ctx.get("isNational")
+    )
     features["is_national_tv"] = 1 if national else 0
 
     # Rivalry
-    team_abbrev = ctx.get("teamAbbrev") or player_ctx.get("team") or player_ctx.get("teamAbbrev") or player_ctx.get("teamId")
+    team_abbrev = (
+        ctx.get("teamAbbrev")
+        or player_ctx.get("team")
+        or player_ctx.get("teamAbbrev")
+        or player_ctx.get("teamId")
+    )
     opp_abbrev = None
     if opponent_ctx:
-        opp_abbrev = opponent_ctx.get("abbrev") or opponent_ctx.get("team") or opponent_ctx.get("teamId")
+        opp_abbrev = (
+            opponent_ctx.get("abbrev")
+            or opponent_ctx.get("team")
+            or opponent_ctx.get("teamId")
+        )
     else:
         opp_abbrev = ctx.get("opponentAbbrev") or player_ctx.get("opponent")
     features["is_rivalry"] = 1 if _is_rival(team_abbrev, opp_abbrev) else 0
@@ -214,7 +251,11 @@ def _add_contextual_features(features: Dict[str, Any], player_ctx: Dict[str, Any
     opp_alt = 0.0
     if coords_team and coords_opp:
         try:
-            travel_km = float(_haversine_km(coords_team[0], coords_team[1], coords_opp[0], coords_opp[1]))
+            travel_km = float(
+                _haversine_km(
+                    coords_team[0], coords_team[1], coords_opp[0], coords_opp[1]
+                )
+            )
             opp_alt = float(coords_opp[2] or 0.0)
         except Exception:
             travel_km = 0.0
@@ -230,6 +271,7 @@ def _add_contextual_features(features: Dict[str, Any], player_ctx: Dict[str, Any
     except Exception:
         pass
     return features
+
 
 # -------------------------------------------------------------------------
 
@@ -263,7 +305,11 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
         "last10_avg": rolls["last10"] or player_context.get("seasonAvg"),
         "ema_0_3": rolls["ema_alpha_0_3"] or player_context.get("seasonAvg"),
         # back-to-back indicator: 1 when daysRest == 0, else 0 (derived from contextualFactors)
-        "is_back_to_back": 1 if (player_context.get("contextualFactors", {}).get("daysRest") == 0) else 0,
+        "is_back_to_back": (
+            1
+            if (player_context.get("contextualFactors", {}).get("daysRest") == 0)
+            else 0
+        ),
     }
 
     # Simple imputation for missing numeric values
@@ -299,29 +345,46 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
     except Exception:
         season_agg = {}
 
-    features.update({
-        # prefer canonical advanced fields, fall back to computed proxies when present
-        "multi_PER": float(adv_agg.get("PER") or adv_agg.get("PER_proxy") or 0.0),
-        "multi_WS": float(adv_agg.get("WS") or adv_agg.get("WS_proxy_per_game") or 0.0),
-        "multi_TS_PCT": float(adv_agg.get("TS_PCT") or 0.0),
-        "multi_USG_PCT": float(adv_agg.get("USG_PCT") or 0.0),
-        "multi_season_PTS_avg": float(season_agg.get("PTS") or 0.0),
-        "multi_season_count": int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
-    })
+    features.update(
+        {
+            # prefer canonical advanced fields, fall back to computed proxies when present
+            "multi_PER": float(adv_agg.get("PER") or adv_agg.get("PER_proxy") or 0.0),
+            "multi_WS": float(
+                adv_agg.get("WS") or adv_agg.get("WS_proxy_per_game") or 0.0
+            ),
+            "multi_TS_PCT": float(adv_agg.get("TS_PCT") or 0.0),
+            "multi_USG_PCT": float(adv_agg.get("USG_PCT") or 0.0),
+            "multi_season_PTS_avg": float(season_agg.get("PTS") or 0.0),
+            "multi_season_count": (
+                int(len(multi_season_stats))
+                if isinstance(multi_season_stats, dict)
+                else 0
+            ),
+        }
+    )
     # Include multi-season BPM when available (or 0.0)
     try:
-        multi_bpm = adv_agg.get("BPM") or adv_agg.get("BPM_48") or adv_agg.get("BPM_approx") or 0.0
+        multi_bpm = (
+            adv_agg.get("BPM")
+            or adv_agg.get("BPM_48")
+            or adv_agg.get("BPM_approx")
+            or 0.0
+        )
     except Exception:
         multi_bpm = 0.0
-    features.update({
-        "multi_BPM": float(multi_bpm),
-    })
+    features.update(
+        {
+            "multi_BPM": float(multi_bpm),
+        }
+    )
     # Additional advanced/team aggregated metrics
-    features.update({
-        "multi_PIE": float(adv_agg.get("PIE") or 0.0),
-        "multi_off_rating": float(adv_agg.get("OFF_RATING") or 0.0),
-        "multi_def_rating": float(adv_agg.get("DEF_RATING") or 0.0),
-    })
+    features.update(
+        {
+            "multi_PIE": float(adv_agg.get("PIE") or 0.0),
+            "multi_off_rating": float(adv_agg.get("OFF_RATING") or 0.0),
+            "multi_def_rating": float(adv_agg.get("DEF_RATING") or 0.0),
+        }
+    )
 
     # Attempt league-level normalization (z-score) for advanced stats when
     # a season can be inferred from the provided multi-season stats. This
@@ -346,23 +409,24 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
                 pts_vals = []
                 for pid, stats in league_map.items():
                     try:
-                        if 'PER' in stats:
-                            per_vals.append(float(stats['PER']))
+                        if "PER" in stats:
+                            per_vals.append(float(stats["PER"]))
                     except Exception:
                         pass
                     try:
-                        if 'TS_PCT' in stats:
-                            ts_vals.append(float(stats['TS_PCT']))
+                        if "TS_PCT" in stats:
+                            ts_vals.append(float(stats["TS_PCT"]))
                     except Exception:
                         pass
                     try:
                         # some league mappings include per-game PTS under other keys; skip if absent
-                        if 'PTS' in stats:
-                            pts_vals.append(float(stats['PTS']))
+                        if "PTS" in stats:
+                            pts_vals.append(float(stats["PTS"]))
                     except Exception:
                         pass
 
                 import math
+
                 def _z(v, vals):
                     try:
                         if v is None:
@@ -378,21 +442,27 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
 
                 # produce z-scored features for PER and TS_PCT
                 try:
-                    features['multi_PER_z'] = _z(features.get('multi_PER'), per_vals)
+                    features["multi_PER_z"] = _z(features.get("multi_PER"), per_vals)
                 except Exception:
-                    features['multi_PER_z'] = 0.0
+                    features["multi_PER_z"] = 0.0
                 try:
-                    features['multi_TS_pct_z'] = _z(features.get('multi_TS_PCT'), ts_vals)
+                    features["multi_TS_pct_z"] = _z(
+                        features.get("multi_TS_PCT"), ts_vals
+                    )
                 except Exception:
-                    features['multi_TS_pct_z'] = 0.0
+                    features["multi_TS_pct_z"] = 0.0
     except Exception:
         # non-fatal; if normalization fails just continue with raw features
         pass
     # Player-context features (contract year, All-Star, recent awards, trade sentiment)
     try:
         # contract end year heuristics
-        contract = player_context.get('contract') or {}
-        end_year = contract.get('end_year') or contract.get('contractEndYear') or player_context.get('contractEndYear')
+        contract = player_context.get("contract") or {}
+        end_year = (
+            contract.get("end_year")
+            or contract.get("contractEndYear")
+            or player_context.get("contractEndYear")
+        )
         current_year = datetime.now().year
         is_contract_year = 0
         try:
@@ -401,34 +471,44 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
                     is_contract_year = 1
         except Exception:
             is_contract_year = 0
-        features['is_contract_year'] = is_contract_year
+        features["is_contract_year"] = is_contract_year
 
         # All-Star indicator
-        is_all_star = 1 if (player_context.get('isAllStar') or player_context.get('allStar') or player_context.get('all_star')) else 0
-        features['is_all_star'] = is_all_star
+        is_all_star = (
+            1
+            if (
+                player_context.get("isAllStar")
+                or player_context.get("allStar")
+                or player_context.get("all_star")
+            )
+            else 0
+        )
+        features["is_all_star"] = is_all_star
 
         # Recent awards count (list expected under 'awards')
-        awards = player_context.get('awards') or []
+        awards = player_context.get("awards") or []
         try:
-            features['recent_awards_count'] = int(len(awards))
+            features["recent_awards_count"] = int(len(awards))
         except Exception:
-            features['recent_awards_count'] = 0
+            features["recent_awards_count"] = 0
 
         # Trade rumor / transfer sentiment from existing LLM extraction if available
         # Reuse previously-extracted llm_feats when present in player_context
-        llm_feats = player_context.get('llm_features') or {}
+        llm_feats = player_context.get("llm_features") or {}
         trade_sent = 0.0
         try:
-            trade_sent = float(llm_feats.get('trade_sentiment') or llm_feats.get('trade_sent') or 0.0)
+            trade_sent = float(
+                llm_feats.get("trade_sentiment") or llm_feats.get("trade_sent") or 0.0
+            )
         except Exception:
             trade_sent = 0.0
-        features['trade_sentiment'] = trade_sent
+        features["trade_sentiment"] = trade_sent
     except Exception:
         # non-fatal
-        features['is_contract_year'] = 0
-        features['is_all_star'] = 0
-        features['recent_awards_count'] = 0
-        features['trade_sentiment'] = 0.0
+        features["is_contract_year"] = 0
+        features["is_all_star"] = 0
+        features["recent_awards_count"] = 0
+        features["trade_sentiment"] = 0.0
 
     # Add contextual Phase 3 features (playoff, rivalry, national TV, travel, altitude)
     try:
@@ -437,27 +517,33 @@ def engineer_features(player_context: Dict[str, Any]) -> Dict[str, Any]:
         pass
 
     return features
-    
+
+
 """Feature engineering helpers for player predictions.
 
 This module provides lightweight functions used by the ML service and
 eventually the training pipeline. Keep functions pure and data-frame
 friendly so they can be tested independently.
 """
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 import numpy as np
 import pandas as pd
 
 # Opt-in to pandas future behavior to avoid the downcasting warning during fillna
 try:
-    pd.set_option('future.no_silent_downcasting', True)
+    pd.set_option("future.no_silent_downcasting", True)
 except Exception:
     # Older pandas versions may not provide this option; ignore failures.
     pass
 
 
-def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3, 5, 10]) -> Dict:
-    values = [g.get("statValue") for g in recent_games if g.get("statValue") is not None]
+def calculate_rolling_averages(
+    recent_games: List[Dict], windows: List[int] = [3, 5, 10]
+) -> Dict:
+    values = [
+        g.get("statValue") for g in recent_games if g.get("statValue") is not None
+    ]
     out = {}
     for w in windows:
         if w > 0 and len(values) > 0:
@@ -494,7 +580,7 @@ def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3
     for w in windows:
         key_base = f"last_{w}"
         if len(values) >= 1:
-            slice_vals = values[:w] if len(values) >= w else values[:len(values)]
+            slice_vals = values[:w] if len(values) >= w else values[: len(values)]
             arr = np.array(slice_vals, dtype=float)
             out[f"{key_base}_std"] = float(arr.std(ddof=0)) if arr.size > 0 else None
             out[f"{key_base}_min"] = float(arr.min()) if arr.size > 0 else None
@@ -534,7 +620,9 @@ def calculate_rolling_averages(recent_games: List[Dict], windows: List[int] = [3
     return out
 
 
-def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -> pd.DataFrame:
+def engineer_features(
+    player_data: Dict, opponent_data: Optional[Dict] = None
+) -> pd.DataFrame:
     recent = player_data.get("recentGames") or []
     rolling = calculate_rolling_averages(recent)
 
@@ -542,10 +630,16 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
         "recent_mean": None,
         "recent_std": None,
         "season_avg": player_data.get("seasonAvg"),
-        "is_home": 1 if player_data.get("contextualFactors", {}).get("homeAway") == "home" else 0,
+        "is_home": (
+            1
+            if player_data.get("contextualFactors", {}).get("homeAway") == "home"
+            else 0
+        ),
         "days_rest": player_data.get("contextualFactors", {}).get("daysRest") or 0,
         # explicit back-to-back indicator: 1 when days_rest == 0, else 0
-        "is_back_to_back": 1 if (player_data.get("contextualFactors", {}).get("daysRest") == 0) else 0,
+        "is_back_to_back": (
+            1 if (player_data.get("contextualFactors", {}).get("daysRest") == 0) else 0
+        ),
     }
 
     vals = [g.get("statValue") for g in recent if g.get("statValue") is not None]
@@ -556,10 +650,10 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
     features.update(rolling)
 
     # Multi-season aggregated features (if present on the player_data)
-    multi_adv = player_data.get('advancedStatsMulti') or {}
-    multi_season_stats = player_data.get('seasonStatsMulti') or {}
+    multi_adv = player_data.get("advancedStatsMulti") or {}
+    multi_season_stats = player_data.get("seasonStatsMulti") or {}
     try:
-        adv_agg = multi_adv.get('aggregated', {}) if isinstance(multi_adv, dict) else {}
+        adv_agg = multi_adv.get("aggregated", {}) if isinstance(multi_adv, dict) else {}
     except Exception:
         adv_agg = {}
 
@@ -583,25 +677,40 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
     except Exception:
         season_agg = {}
 
-    features.update({
-        'multi_PER': float(adv_agg.get('PER') or adv_agg.get('PER_proxy') or 0.0),
-        'multi_WS': float(adv_agg.get('WS') or adv_agg.get('WS_proxy_per_game') or 0.0),
-        'multi_TS_PCT': float(adv_agg.get('TS_PCT') or 0.0),
-        'multi_USG_PCT': float(adv_agg.get('USG_PCT') or 0.0),
-        'multi_season_PTS_avg': float(season_agg.get('PTS') or 0.0),
-        'multi_season_count': int(len(multi_season_stats)) if isinstance(multi_season_stats, dict) else 0,
-    })
+    features.update(
+        {
+            "multi_PER": float(adv_agg.get("PER") or adv_agg.get("PER_proxy") or 0.0),
+            "multi_WS": float(
+                adv_agg.get("WS") or adv_agg.get("WS_proxy_per_game") or 0.0
+            ),
+            "multi_TS_PCT": float(adv_agg.get("TS_PCT") or 0.0),
+            "multi_USG_PCT": float(adv_agg.get("USG_PCT") or 0.0),
+            "multi_season_PTS_avg": float(season_agg.get("PTS") or 0.0),
+            "multi_season_count": (
+                int(len(multi_season_stats))
+                if isinstance(multi_season_stats, dict)
+                else 0
+            ),
+        }
+    )
     # include aggregated BPM when available
     try:
-        features['multi_BPM'] = float(adv_agg.get('BPM') or adv_agg.get('BPM_48') or adv_agg.get('BPM_approx') or 0.0)
+        features["multi_BPM"] = float(
+            adv_agg.get("BPM")
+            or adv_agg.get("BPM_48")
+            or adv_agg.get("BPM_approx")
+            or 0.0
+        )
     except Exception:
-        features['multi_BPM'] = 0.0
+        features["multi_BPM"] = 0.0
     # Additional advanced/team aggregated metrics (DataFrame path)
-    features.update({
-        'multi_PIE': float(adv_agg.get('PIE') or 0.0),
-        'multi_off_rating': float(adv_agg.get('OFF_RATING') or 0.0),
-        'multi_def_rating': float(adv_agg.get('DEF_RATING') or 0.0),
-    })
+    features.update(
+        {
+            "multi_PIE": float(adv_agg.get("PIE") or 0.0),
+            "multi_off_rating": float(adv_agg.get("OFF_RATING") or 0.0),
+            "multi_def_rating": float(adv_agg.get("DEF_RATING") or 0.0),
+        }
+    )
 
     # Attempt league-level normalization (z-score) similar to dict path
     try:
@@ -621,17 +730,18 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
                 ts_vals = []
                 for pid, stats in league_map.items():
                     try:
-                        if 'PER' in stats:
-                            per_vals.append(float(stats['PER']))
+                        if "PER" in stats:
+                            per_vals.append(float(stats["PER"]))
                     except Exception:
                         pass
                     try:
-                        if 'TS_PCT' in stats:
-                            ts_vals.append(float(stats['TS_PCT']))
+                        if "TS_PCT" in stats:
+                            ts_vals.append(float(stats["TS_PCT"]))
                     except Exception:
                         pass
 
                 import math
+
                 def _z(v, vals):
                     try:
                         if v is None:
@@ -645,15 +755,19 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
                     except Exception:
                         return 0.0
 
-                features['multi_PER_z'] = _z(features.get('multi_PER'), per_vals)
-                features['multi_TS_pct_z'] = _z(features.get('multi_TS_PCT'), ts_vals)
+                features["multi_PER_z"] = _z(features.get("multi_PER"), per_vals)
+                features["multi_TS_pct_z"] = _z(features.get("multi_TS_PCT"), ts_vals)
     except Exception:
         pass
 
     # --- Player-context features (DataFrame path)
     try:
-        contract = player_data.get('contract') or {}
-        end_year = contract.get('end_year') or contract.get('contractEndYear') or player_data.get('contractEndYear')
+        contract = player_data.get("contract") or {}
+        end_year = (
+            contract.get("end_year")
+            or contract.get("contractEndYear")
+            or player_data.get("contractEndYear")
+        )
         current_year = datetime.now().year
         is_contract_year = 0
         try:
@@ -662,51 +776,70 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
                     is_contract_year = 1
         except Exception:
             is_contract_year = 0
-        features['is_contract_year'] = is_contract_year
+        features["is_contract_year"] = is_contract_year
 
-        is_all_star = 1 if (player_data.get('isAllStar') or player_data.get('allStar') or player_data.get('all_star')) else 0
-        features['is_all_star'] = is_all_star
+        is_all_star = (
+            1
+            if (
+                player_data.get("isAllStar")
+                or player_data.get("allStar")
+                or player_data.get("all_star")
+            )
+            else 0
+        )
+        features["is_all_star"] = is_all_star
 
-        awards = player_data.get('awards') or []
+        awards = player_data.get("awards") or []
         try:
-            features['recent_awards_count'] = int(len(awards))
+            features["recent_awards_count"] = int(len(awards))
         except Exception:
-            features['recent_awards_count'] = 0
+            features["recent_awards_count"] = 0
 
         # trade sentiment from llm fetch result above
         try:
-            features['trade_sentiment'] = float(features.get('trade_sentiment') or 0.0)
+            features["trade_sentiment"] = float(features.get("trade_sentiment") or 0.0)
         except Exception:
-            features['trade_sentiment'] = 0.0
+            features["trade_sentiment"] = 0.0
     except Exception:
-        features['is_contract_year'] = 0
-        features['is_all_star'] = 0
-        features['recent_awards_count'] = 0
-        features['trade_sentiment'] = 0.0
+        features["is_contract_year"] = 0
+        features["is_all_star"] = 0
+        features["recent_awards_count"] = 0
+        features["trade_sentiment"] = 0.0
 
     # --- Phase 3 wiring: attempt to enrich features with advanced metrics and LLM-derived features
     try:
         # Advanced metrics (PER, TS%, USG%, ORtg/DRtg) fetched when available
-        from backend.services.advanced_metrics_service import create_default_service as _create_adv
+        from backend.services.advanced_metrics_service import (
+            create_default_service as _create_adv,
+        )
 
         adv_svc = _create_adv()
-        pid = player_data.get('player_id') or player_data.get('playerId') or player_data.get('playerName')
+        pid = (
+            player_data.get("player_id")
+            or player_data.get("playerId")
+            or player_data.get("playerName")
+        )
         if pid:
             try:
                 adv = adv_svc.fetch_advanced_metrics(str(pid))
                 if adv:
                     # merge into features using safe keys
-                    features['adv_PER'] = float(adv.get('PER') or 0.0)
-                    features['adv_WS'] = float(adv.get('WS') or 0.0)
-                    features['adv_TS_pct'] = float(adv.get('TS_pct') or 0.0)
-                    features['adv_USG_pct'] = float(adv.get('USG_pct') or 0.0)
-                    features['adv_ORtg'] = float(adv.get('ORtg') or 0.0)
-                    features['adv_DRtg'] = float(adv.get('DRtg') or 0.0)
+                    features["adv_PER"] = float(adv.get("PER") or 0.0)
+                    features["adv_WS"] = float(adv.get("WS") or 0.0)
+                    features["adv_TS_pct"] = float(adv.get("TS_pct") or 0.0)
+                    features["adv_USG_pct"] = float(adv.get("USG_pct") or 0.0)
+                    features["adv_ORtg"] = float(adv.get("ORtg") or 0.0)
+                    features["adv_DRtg"] = float(adv.get("DRtg") or 0.0)
                     # BPM (or approximate BPM) when available
                     try:
-                        features['adv_BPM'] = float(adv.get('BPM') or adv.get('BPM_48') or adv.get('BPM_approx') or 0.0)
+                        features["adv_BPM"] = float(
+                            adv.get("BPM")
+                            or adv.get("BPM_48")
+                            or adv.get("BPM_approx")
+                            or 0.0
+                        )
                     except Exception:
-                        features['adv_BPM'] = 0.0
+                        features["adv_BPM"] = 0.0
             except Exception:
                 # non-fatal: continue if service call fails
                 pass
@@ -716,41 +849,64 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
 
     try:
         # LLM-derived qualitative features: injury sentiment, morale, motivation
-        from backend.services.llm_feature_service import create_default_service as _create_llm
+        from backend.services.llm_feature_service import (
+            create_default_service as _create_llm,
+        )
 
         llm_svc = _create_llm()
+
         # text_fetcher: prefer prepopulated summary in player_data, fallback to empty
         def _text_fetcher(name: str) -> str:
-            return player_data.get('news_summary') or player_data.get('news') or ""
+            return player_data.get("news_summary") or player_data.get("news") or ""
 
-        pname = player_data.get('playerName') or player_data.get('player_name') or str(player_data.get('player_id') or '')
+        pname = (
+            player_data.get("playerName")
+            or player_data.get("player_name")
+            or str(player_data.get("player_id") or "")
+        )
         try:
             # Prefer the structured JSON path when available
             text_context = _text_fetcher(pname)
-            if hasattr(llm_svc, 'extract_from_text'):
+            if hasattr(llm_svc, "extract_from_text"):
                 try:
                     structured = llm_svc.extract_from_text(pname, text_context)
                 except Exception:
                     structured = None
                 if structured:
                     # structured keys from QualitativeFeatures: news_sentiment, morale_score, motivation, trade_sentiment
-                    features.update({
-                        'injury_sentiment': float(structured.get('news_sentiment') or 0.0),
-                        'morale_score': float(structured.get('morale_score') or 0.0),
-                        'motivation': float(structured.get('motivation') or 0.0),
-                        'trade_sentiment': float(structured.get('trade_sentiment') or 0.0),
-                    })
+                    features.update(
+                        {
+                            "injury_sentiment": float(
+                                structured.get("news_sentiment") or 0.0
+                            ),
+                            "morale_score": float(
+                                structured.get("morale_score") or 0.0
+                            ),
+                            "motivation": float(structured.get("motivation") or 0.0),
+                            "trade_sentiment": float(
+                                structured.get("trade_sentiment") or 0.0
+                            ),
+                        }
+                    )
                     raise StopIteration  # skip fallback when structured succeeded
 
             # fallback: older fetch_news_and_extract which may use heuristics or provider text parsing
-            llm_feats = llm_svc.fetch_news_and_extract(pname, 'news_v1', _text_fetcher)
+            llm_feats = llm_svc.fetch_news_and_extract(pname, "news_v1", _text_fetcher)
             if llm_feats:
-                features.update({
-                    'injury_sentiment': float(llm_feats.get('injury_sentiment') or 0.0),
-                    'morale_score': float(llm_feats.get('morale_score') or 0.0),
-                    'motivation': float(llm_feats.get('motivation') or 0.0),
-                    'trade_sentiment': float(llm_feats.get('trade_sentiment') or llm_feats.get('trade_sent') or 0.0),
-                })
+                features.update(
+                    {
+                        "injury_sentiment": float(
+                            llm_feats.get("injury_sentiment") or 0.0
+                        ),
+                        "morale_score": float(llm_feats.get("morale_score") or 0.0),
+                        "motivation": float(llm_feats.get("motivation") or 0.0),
+                        "trade_sentiment": float(
+                            llm_feats.get("trade_sentiment")
+                            or llm_feats.get("trade_sent")
+                            or 0.0
+                        ),
+                    }
+                )
         except StopIteration:
             # structured path succeeded; continue
             pass
@@ -782,13 +938,15 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
     # Phase 3: attempt to enrich features with player-tracking derived metrics.
     # This import is defensive so environments without tracking data won't fail.
     try:
-        from backend.services.player_tracking_service import features_for_player as _trk_features_for_player
+        from backend.services.player_tracking_service import (
+            features_for_player as _trk_features_for_player,
+        )
 
         pname = (
-            player_data.get('playerName')
-            or player_data.get('player_name')
-            or player_data.get('playerId')
-            or player_data.get('player_id')
+            player_data.get("playerName")
+            or player_data.get("player_name")
+            or player_data.get("playerId")
+            or player_data.get("player_id")
             or None
         )
         if pname:
@@ -821,7 +979,9 @@ def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -
     return df
 
 
-def _calculate_opponent_adjusted(recent_games: List[Dict], opponent_data: Optional[Dict]) -> Dict:
+def _calculate_opponent_adjusted(
+    recent_games: List[Dict], opponent_data: Optional[Dict]
+) -> Dict:
     """Compute opponent-adjusted features from recent games and current opponent.
 
     Returns keys:
@@ -847,7 +1007,11 @@ def _calculate_opponent_adjusted(recent_games: List[Dict], opponent_data: Option
         return out
 
     # Gather opponent def ratings from recent games when available
-    opp_ratings = [g.get("opponentDefRating") for g in recent_games if g.get("opponentDefRating") is not None]
+    opp_ratings = [
+        g.get("opponentDefRating")
+        for g in recent_games
+        if g.get("opponentDefRating") is not None
+    ]
     opp_ratings = [float(x) for x in opp_ratings]
 
     # Current opponent defensive rating (if provided)
@@ -855,7 +1019,11 @@ def _calculate_opponent_adjusted(recent_games: List[Dict], opponent_data: Option
     current_team_id = None
     if opponent_data:
         current_opp_def = opponent_data.get("defensiveRating")
-        current_team_id = opponent_data.get("teamId") or opponent_data.get("team") or opponent_data.get("abbrev")
+        current_team_id = (
+            opponent_data.get("teamId")
+            or opponent_data.get("team")
+            or opponent_data.get("abbrev")
+        )
 
     # Stats for various buckets
     vals_vs_current = []
@@ -871,7 +1039,11 @@ def _calculate_opponent_adjusted(recent_games: List[Dict], opponent_data: Option
         opp_def = g.get("opponentDefRating")
 
         # games vs current opponent
-        if current_team_id is not None and opp_id is not None and str(opp_id) == str(current_team_id):
+        if (
+            current_team_id is not None
+            and opp_id is not None
+            and str(opp_id) == str(current_team_id)
+        ):
             vals_vs_current.append(float(stat))
             # record last game info (first occurrence is most recent because recent_games are ordered newest-first)
             if out["last_game_vs_current_opponent_date"] is None:
@@ -906,7 +1078,9 @@ def _calculate_opponent_adjusted(recent_games: List[Dict], opponent_data: Option
 # Compatibility wrapper expected by training scripts
 class FeatureEngineering:
     @staticmethod
-    def engineer_features(player_data: Dict, opponent_data: Optional[Dict] = None) -> pd.DataFrame:
+    def engineer_features(
+        player_data: Dict, opponent_data: Optional[Dict] = None
+    ) -> pd.DataFrame:
         """Compatibility shim: returns the same DataFrame as the module-level function."""
         return engineer_features(player_data, opponent_data)
 
@@ -930,7 +1104,9 @@ CONTEXTUAL_FEATURE_KEYS = [
 ]
 
 
-def analyze_contextual_feature_importance(df: pd.DataFrame, target_col: str = "target", n_estimators: int = 50) -> "pd.Series[float]":
+def analyze_contextual_feature_importance(
+    df: pd.DataFrame, target_col: str = "target", n_estimators: int = 50
+) -> "pd.Series[float]":
     """Compute importance scores for known contextual features against the target.
 
     Uses a small RandomForestRegressor on the contextual columns present in `df`.
@@ -969,7 +1145,9 @@ def analyze_contextual_feature_importance(df: pd.DataFrame, target_col: str = "t
         return pd.Series(dtype=float)
 
 
-def prune_contextual_features(df: pd.DataFrame, target_col: str = "target", threshold: float = 0.01) -> (pd.DataFrame, list):
+def prune_contextual_features(
+    df: pd.DataFrame, target_col: str = "target", threshold: float = 0.01
+) -> (pd.DataFrame, list):
     """Remove contextual features whose importance is below `threshold`.
 
     Returns a tuple: (pruned_df, kept_feature_list). If analysis cannot be

@@ -2,13 +2,16 @@
 
 Falls back gracefully when `xgboost` is not installed.
 """
+
 from typing import Optional
+
 import joblib
 import numpy as np
 import pandas as pd
 
 try:
     import xgboost as xgb  # type: ignore
+
     XGBOOST_AVAILABLE = True
 except Exception:
     xgb = None
@@ -33,7 +36,13 @@ class XGBoostModel:
         self.num_boost_round = int(num_boost_round)
         self.booster = None
 
-    def train(self, X: pd.DataFrame, y, eval_set: Optional[tuple] = None, early_stopping_rounds: Optional[int] = None):
+    def train(
+        self,
+        X: pd.DataFrame,
+        y,
+        eval_set: Optional[tuple] = None,
+        early_stopping_rounds: Optional[int] = None,
+    ):
         if not XGBOOST_AVAILABLE:
             raise ImportError("xgboost is not available in this environment")
         if not isinstance(X, pd.DataFrame):
@@ -42,9 +51,17 @@ class XGBoostModel:
         evallist = []
         if eval_set is not None:
             X_val, y_val = eval_set
-            dval = xgb.DMatrix(pd.DataFrame(X_val).values, label=np.asarray(list(y_val)))
-            evallist = [(dval, 'eval')]
-        self.booster = xgb.train(self.params, dtrain, num_boost_round=self.num_boost_round, evals=evallist, early_stopping_rounds=early_stopping_rounds)
+            dval = xgb.DMatrix(
+                pd.DataFrame(X_val).values, label=np.asarray(list(y_val))
+            )
+            evallist = [(dval, "eval")]
+        self.booster = xgb.train(
+            self.params,
+            dtrain,
+            num_boost_round=self.num_boost_round,
+            evals=evallist,
+            early_stopping_rounds=early_stopping_rounds,
+        )
 
     def predict(self, X: pd.DataFrame):
         if not XGBOOST_AVAILABLE:
@@ -76,7 +93,7 @@ class XGBoostModel:
         # Use TreeExplainer for XGBoost boosters
         try:
             explainer = shap.TreeExplainer(self.booster)
-            dmat = xgb.DMatrix(X.values)
+            xgb.DMatrix(X.values)
             shap_values = explainer.shap_values(X.values)
             expected = explainer.expected_value
             return expected, shap_values
@@ -84,11 +101,20 @@ class XGBoostModel:
             return None, None
 
     def save(self, path: str):
-        joblib.dump({"params": self.params, "num_boost_round": self.num_boost_round, "booster": self.booster}, path)
+        joblib.dump(
+            {
+                "params": self.params,
+                "num_boost_round": self.num_boost_round,
+                "booster": self.booster,
+            },
+            path,
+        )
 
     @classmethod
     def load(cls, path: str):
         data = joblib.load(path)
-        inst = cls(params=data.get("params"), num_boost_round=data.get("num_boost_round", 100))
+        inst = cls(
+            params=data.get("params"), num_boost_round=data.get("num_boost_round", 100)
+        )
         inst.booster = data.get("booster")
         return inst
