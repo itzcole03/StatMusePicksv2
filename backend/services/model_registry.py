@@ -70,6 +70,309 @@ class ModelRegistry:
             logger.exception("Failed to compute HMAC for %s", file_path)
             return None
 
+    def _write_versioned_model(self, player_name: str, model, version: Optional[str]) -> tuple[str, str, str]:
+        """Write versioned model artifact and return (versioned_path, legacy_path, ver_id)."""
+        safe = player_name.replace(" ", "_")
+        import datetime
+        import uuid
+
+        ver_id = version or datetime.datetime.now(datetime.timezone.utc).strftime("v%Y%m%dT%H%M%SZ")
+        uid = uuid.uuid4().hex[:12]
+        player_dir = os.path.join(self.model_dir, safe)
+        version_dir = os.path.join(player_dir, "versions", f"{ver_id}_{uid}")
+        os.makedirs(version_dir, exist_ok=True)
+        versioned_path = os.path.join(version_dir, "model.pkl")
+        joblib.dump(model, versioned_path)
+        logger.info("Saved versioned model for %s to %s", player_name, versioned_path)
+        artifact_sig = self._compute_hmac(versioned_path)
+        legacy_path = self._model_path(player_name)
+        return versioned_path, legacy_path, ver_id
+
+    def _write_legacy_model(self, player_name: str, model, legacy_path: str) -> None:
+        try:
+            joblib.dump(model, legacy_path)
+        except Exception:
+            logger.debug("Failed to write flat compatibility model for %s", player_name)
+
+    def _cache_model(self, player_name: str, model) -> None:
+        try:
+            self._loaded_models[player_name] = model
+        except Exception:
+            logger.exception("Failed to cache model in-memory for %s", player_name)
+
+    def _invalidate_prediction_caches(self, player_name: str) -> None:
+        try:
+            from backend.services import cache as cache_module
+
+            def _cleanup_prefix(prefix: str):
+                try:
+                    cache_module.redis_delete_prefix_sync(prefix)
+                except Exception:
+                    logger.exception("Failed to delete cache prefix %s for %s", prefix, player_name)
+                try:
+                    if hasattr(cache_module, "_fallback_store"):
+                        for k in list(cache_module._fallback_store.keys()):
+                            if k.startswith(prefix):
+                                try:
+                                    del cache_module._fallback_store[k]
+                                except Exception:
+                                    pass
+                except Exception:
+                    logger.exception("Best-effort prefix cleanup failed for %s with prefix %s", player_name, prefix)
+
+            _cleanup_prefix(f"predict:{player_name}:")
+            _cleanup_prefix(f"prediction:{player_name}:")
+            _cleanup_prefix(f"player_context:{player_name}:")
+        except Exception:
+            logger.exception("Cache module not available for invalidation")
+
+    def _persist_metadata_db(self, player_name: str, model, version: Optional[str], legacy_path: str, notes: Optional[str], artifact_sig: str) -> Optional[str]:
+        """Persist ModelMetadata row and return mlflow run_id when available."""
+        run_id = None
+        try:
+            from backend.models.model_metadata import ModelMetadata  # local import
+
+            raw_db = os.environ.get("DATABASE_URL")
+            sync_url = _sync_db_url(raw_db)
+            engine = create_engine(sync_url, future=True)
+            with engine.begin() as conn:
+                kept_val = None
+                try:
+                    kept = getattr(model, "_kept_contextual_features", None)
+                    kept_val = list(kept) if kept is not None else None
+                except Exception:
+                    kept_val = None
+
+                ins_kwargs = dict(
+                    name=player_name,
+                    version=version,
+                    path=os.path.abspath(legacy_path),
+                    notes=notes,
+                )
+
+                try:
+                    import mlflow
+
+                    run = mlflow.active_run()
+                    if run is not None and getattr(run.info, "run_id", None):
+                        run_id = run.info.run_id
+                        try:
+                            if ins_kwargs.get("notes") is None:
+                                ins_kwargs["notes"] = {"mlflow_run_id": run_id}
+                            else:
+                                try:
+                                    parsed = (
+                                        json.loads(ins_kwargs["notes"]) if isinstance(ins_kwargs["notes"], str) else ins_kwargs["notes"]
+                                    )
+                                    if isinstance(parsed, dict):
+                                        parsed["mlflow_run_id"] = run_id
+                                        ins_kwargs["notes"] = parsed
+                                    else:
+                                        ins_kwargs["notes"] = {"orig_notes": ins_kwargs["notes"], "mlflow_run_id": run_id}
+                                except Exception:
+                                    ins_kwargs["notes"] = {"orig_notes": ins_kwargs["notes"], "mlflow_run_id": run_id}
+                        except Exception:
+                            pass
+                except Exception:
+                    run_id = None
+
+                if kept_val is not None:
+                    ins_kwargs["kept_contextual_features"] = kept_val
+                try:
+                    featlist_val = getattr(model, "_feature_list", None)
+                    if featlist_val is not None:
+                        ins_kwargs["feature_list"] = list(featlist_val)
+                except Exception:
+                    pass
+
+                try:
+                    if engine.dialect.name == "postgresql":
+                        try:
+                            insert_stmt = pg_dialect.insert(ModelMetadata.__table__).values(**ins_kwargs)
+                            do_update = insert_stmt.on_conflict_do_update(index_elements=["name", "version"], set_=ins_kwargs)
+                            conn.execute(do_update)
+                        except Exception:
+                            sel = ModelMetadata.__table__.select().where((ModelMetadata.__table__.c.name == player_name) & (ModelMetadata.__table__.c.version == version))
+                            existing = conn.execute(sel).first()
+                            if existing is not None:
+                                upd = (ModelMetadata.__table__.update().where(ModelMetadata.__table__.c.id == existing.id).values(**ins_kwargs))
+                                conn.execute(upd)
+                            else:
+                                ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
+                                conn.execute(ins)
+                    else:
+                        sel = ModelMetadata.__table__.select().where((ModelMetadata.__table__.c.name == player_name) & (ModelMetadata.__table__.c.version == version))
+                        existing = conn.execute(sel).first()
+                        if existing is not None:
+                            upd = (ModelMetadata.__table__.update().where(ModelMetadata.__table__.c.id == existing.id).values(**ins_kwargs))
+                            conn.execute(upd)
+                        else:
+                            ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
+                            conn.execute(ins)
+                except Exception:
+                    try:
+                        if ("kept_contextual_features" in ins_kwargs and ins_kwargs["kept_contextual_features"] is not None):
+                            ins_kwargs["kept_contextual_features"] = json.dumps(ins_kwargs["kept_contextual_features"])
+                        if ("feature_list" in ins_kwargs and ins_kwargs["feature_list"] is not None):
+                            ins_kwargs["feature_list"] = json.dumps(ins_kwargs["feature_list"])
+                        ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
+                        conn.execute(ins)
+                    except Exception:
+                        logger.exception("Failed to insert or update ModelMetadata for %s", player_name)
+            logger.info("Inserted ModelMetadata row for %s", player_name)
+        except Exception:
+            logger.exception("Failed to persist ModelMetadata for %s", player_name)
+        return run_id
+
+    def _write_sidecars(self, player_name: str, model, version: Optional[str], versioned_path: str, legacy_path: str, artifact_sig: str, run_id: Optional[str], notes: Optional[str]) -> None:
+        try:
+            meta = {"name": player_name, "version": version, "notes": notes}
+            kept = None
+            try:
+                kept = getattr(model, "_kept_contextual_features", None)
+            except Exception:
+                kept = None
+            if kept is not None:
+                meta["kept_contextual_features"] = list(kept)
+            featlist = None
+            try:
+                featlist = getattr(model, "_feature_list", None)
+            except Exception:
+                featlist = None
+            if featlist is not None:
+                meta["feature_list"] = list(featlist)
+                try:
+                    _js = json.dumps(list(featlist), separators=(",", ":"))
+                    checksum = hashlib.sha256(_js.encode("utf-8")).hexdigest()
+                    meta["feature_list_checksum"] = checksum
+                except Exception as exc:
+                    logger.debug("Failed to compute feature_list checksum: %s", exc)
+
+            try:
+                if run_id is not None:
+                    meta["mlflow_run_id"] = run_id
+                    try:
+                        if meta.get("notes") is None:
+                            meta["notes"] = {"mlflow_run_id": run_id}
+                        else:
+                            try:
+                                parsed = (json.loads(meta["notes"]) if isinstance(meta["notes"], str) else meta["notes"])
+                                if isinstance(parsed, dict):
+                                    parsed["mlflow_run_id"] = run_id
+                                    meta["notes"] = parsed
+                                else:
+                                    meta["notes"] = {"orig_notes": meta["notes"], "mlflow_run_id": run_id}
+                            except Exception:
+                                meta["notes"] = {"orig_notes": meta["notes"], "mlflow_run_id": run_id}
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            try:
+                import json as _json
+
+                if featlist is not None:
+                    if meta.get("notes") is None:
+                        meta["notes"] = {"feature_list": list(featlist)}
+                    else:
+                        try:
+                            parsed = (_json.loads(meta["notes"]) if isinstance(meta["notes"], str) else meta["notes"])
+                            if isinstance(parsed, dict):
+                                parsed["feature_list"] = list(featlist)
+                                meta["notes"] = parsed
+                            else:
+                                meta["notes"] = {"orig_notes": meta["notes"], "feature_list": list(featlist)}
+                        except Exception:
+                            meta["notes"] = {"orig_notes": meta["notes"], "feature_list": list(featlist)}
+            except Exception:
+                pass
+
+            try:
+                if "feature_list" in meta and "feature_list_checksum" not in meta:
+                    _js = json.dumps(list(meta.get("feature_list", [])), separators=(",", ":"))
+                    meta["feature_list_checksum"] = hashlib.sha256(_js.encode("utf-8")).hexdigest()
+            except Exception:
+                pass
+
+            try:
+                if artifact_sig is not None:
+                    meta["artifact_sig"] = artifact_sig
+            except Exception:
+                pass
+
+            sidecar_versioned = os.path.splitext(versioned_path)[0] + "_metadata.json"
+            with open(sidecar_versioned, "w", encoding="utf-8") as fh:
+                json.dump(meta, fh, indent=2)
+
+            try:
+                legacy_sidecar = os.path.splitext(legacy_path)[0] + "_metadata.json"
+                with open(legacy_sidecar, "w", encoding="utf-8") as fh:
+                    json.dump(meta, fh, indent=2)
+            except Exception:
+                logger.debug("Failed to write legacy sidecar for %s", player_name)
+            logger.info("Wrote model sidecar metadata to %s", sidecar_versioned)
+        except Exception:
+            logger.exception("Failed to write model sidecar metadata for %s", player_name)
+
+    def load_model(self, player_name: str):
+        # Prefer per-player versioned model if present
+        safe = player_name.replace(" ", "_")
+        player_dir = os.path.join(self.model_dir, safe)
+        chosen_model = None
+        # look for versions/*/model.pkl and pick newest by mtime
+        try:
+            versions_dir = os.path.join(player_dir, "versions")
+            if os.path.isdir(versions_dir):
+                candidate_files = []
+                for root, dirs, files in os.walk(versions_dir):
+                    for f in files:
+                        if f == "model.pkl":
+                            candidate_files.append(os.path.join(root, f))
+                if candidate_files:
+                    chosen_model = max(candidate_files, key=os.path.getmtime)
+        except Exception:
+            logger.exception("Error scanning versioned models for %s", player_name)
+
+        # fallback to legacy flat path
+        if chosen_model is None:
+            legacy = self._model_path(player_name)
+            if os.path.exists(legacy):
+                chosen_model = legacy
+            else:
+                return None
+
+        try:
+            # verify signature if signing key set
+            sidecar = os.path.splitext(chosen_model)[0] + "_metadata.json"
+            if os.path.exists(sidecar) and os.environ.get("MODEL_ARTIFACT_SIGNING_KEY"):
+                try:
+                    with open(sidecar, "r", encoding="utf-8") as fh:
+                        md = json.load(fh)
+                    expected = md.get("artifact_sig")
+                    if expected is not None:
+                        actual = self._compute_hmac(chosen_model)
+                        if actual is None or actual != expected:
+                            raise RuntimeError(
+                                "Artifact signature mismatch for %s" % player_name
+                            )
+                except Exception:
+                    logger.exception(
+                        "Artifact signature verification failed for %s", player_name
+                    )
+                    raise
+
+            model = joblib.load(chosen_model)
+            # cache for future quick access
+            try:
+                self._loaded_models[player_name] = model
+            except Exception:
+                logger.exception("Failed to cache loaded model for %s", player_name)
+            return model
+        except Exception:
+            logger.exception("Failed to load model for %s", player_name)
+            return None
+
     def save_model(
         self,
         player_name: str,
@@ -88,400 +391,14 @@ class ModelRegistry:
         import datetime
         import uuid
 
-        # use timezone-aware UTC timestamp to avoid deprecated utcnow
-        ver_id = version or datetime.datetime.now(datetime.timezone.utc).strftime("v%Y%m%dT%H%M%SZ")
-        # use uuid to avoid collisions for same-version tradeoffs
-        uid = uuid.uuid4().hex[:12]
-        player_dir = os.path.join(self.model_dir, safe)
-        version_dir = os.path.join(player_dir, "versions", f"{ver_id}_{uid}")
-        os.makedirs(version_dir, exist_ok=True)
-        versioned_path = os.path.join(version_dir, "model.pkl")
-        joblib.dump(model, versioned_path)
-        logger.info("Saved versioned model for %s to %s", player_name, versioned_path)
-
-        # compute artifact signature if signing key present
+        # Delegate pieces to helpers for clarity and testability
+        versioned_path, legacy_path, ver_id = self._write_versioned_model(player_name, model, version)
         artifact_sig = self._compute_hmac(versioned_path)
-
-        # Also write the legacy flat path for backward compatibility
-        legacy_path = self._model_path(player_name)
-        try:
-            joblib.dump(model, legacy_path)
-        except Exception:
-            logger.debug("Failed to write flat compatibility model for %s", player_name)
-
-        # Cache the model in-memory so services can use it without reloading
-        try:
-            self._loaded_models[player_name] = model
-        except Exception:
-            logger.exception("Failed to cache model in-memory for %s", player_name)
-
-        # Invalidate any prediction/player-context caches related to this player.
-        try:
-            from backend.services import cache as cache_module
-
-            # FastAPI endpoint uses `predict:` prefix; keep `prediction:` as a fallback
-            try:
-                cache_module.redis_delete_prefix_sync(f"predict:{player_name}:")
-            except Exception:
-                logger.exception(
-                    "Failed to delete predict cache prefix for %s", player_name
-                )
-
-            # Best-effort: also remove keys from the in-process fallback store so
-            # invalidation is visible to async readers in environments without
-            # a real Redis server (useful for tests and local dev).
-            try:
-                prefix = f"predict:{player_name}:"
-                if hasattr(cache_module, "_fallback_store"):
-                    for k in list(cache_module._fallback_store.keys()):
-                        if k.startswith(prefix):
-                            try:
-                                del cache_module._fallback_store[k]
-                            except Exception:
-                                pass
-            except Exception:
-                logger.exception(
-                    "Best-effort predict prefix cleanup failed for %s", player_name
-                )
-
-            try:
-                cache_module.redis_delete_prefix_sync(f"prediction:{player_name}:")
-            except Exception:
-                logger.exception(
-                    "Failed to delete prediction cache prefix for %s", player_name
-                )
-
-            try:
-                prefix = f"prediction:{player_name}:"
-                if hasattr(cache_module, "_fallback_store"):
-                    for k in list(cache_module._fallback_store.keys()):
-                        if k.startswith(prefix):
-                            try:
-                                del cache_module._fallback_store[k]
-                            except Exception:
-                                pass
-            except Exception:
-                logger.exception(
-                    "Best-effort prediction prefix cleanup failed for %s", player_name
-                )
-
-            try:
-                cache_module.redis_delete_prefix_sync(f"player_context:{player_name}:")
-            except Exception:
-                logger.exception(
-                    "Failed to delete player_context cache prefix for %s", player_name
-                )
-            try:
-                prefix = f"player_context:{player_name}:"
-                if hasattr(cache_module, "_fallback_store"):
-                    for k in list(cache_module._fallback_store.keys()):
-                        if k.startswith(prefix):
-                            try:
-                                del cache_module._fallback_store[k]
-                            except Exception:
-                                pass
-            except Exception:
-                logger.exception(
-                    "Best-effort player_context prefix cleanup failed for %s",
-                    player_name,
-                )
-        except Exception:
-            logger.exception("Cache module not available for invalidation")
-
-        # Attempt to persist metadata into DB. Do this with a short-lived
-        # synchronous engine so this function can be called from sync code.
-        try:
-            from backend.models.model_metadata import ModelMetadata  # local import
-
-            raw_db = os.environ.get("DATABASE_URL")
-            sync_url = _sync_db_url(raw_db)
-            engine = create_engine(sync_url, future=True)
-            with engine.begin() as conn:
-                # If the model object carries `_kept_contextual_features`, attempt
-                # to persist it into the DB JSON column. For DBs that don't
-                # support native JSON, fall back to storing a JSON string.
-                kept = None
-                try:
-                    kept = getattr(model, "_kept_contextual_features", None)
-                    if kept is not None:
-                        # Normalize to a plain list
-                        kept_val = list(kept)
-                    else:
-                        kept_val = None
-                except Exception:
-                    kept_val = None
-
-                ins_kwargs = dict(
-                    name=player_name,
-                    version=version,
-                    # For backward compatibility store the legacy (flat)
-                    # model path in the DB so existing tests and callers
-                    # that expect `*_player.pkl` continue to work.
-                    path=os.path.abspath(legacy_path),
-                    notes=notes,
-                )
-                # Attach mlflow run_id into notes for traceability when available
-                run_id = None
-                try:
-                    import mlflow
-
-                    run = mlflow.active_run()
-                    if run is not None and getattr(run.info, "run_id", None):
-                        run_id = run.info.run_id
-                        try:
-                            if ins_kwargs.get("notes") is None:
-                                ins_kwargs["notes"] = {"mlflow_run_id": run_id}
-                            else:
-                                try:
-                                    parsed = (
-                                        json.loads(ins_kwargs["notes"])
-                                        if isinstance(ins_kwargs["notes"], str)
-                                        else ins_kwargs["notes"]
-                                    )
-                                    if isinstance(parsed, dict):
-                                        parsed["mlflow_run_id"] = run_id
-                                        ins_kwargs["notes"] = parsed
-                                    else:
-                                        ins_kwargs["notes"] = {
-                                            "orig_notes": ins_kwargs["notes"],
-                                            "mlflow_run_id": run_id,
-                                        }
-                                except Exception:
-                                    ins_kwargs["notes"] = {
-                                        "orig_notes": ins_kwargs["notes"],
-                                        "mlflow_run_id": run_id,
-                                    }
-                        except Exception:
-                            pass
-                except Exception:
-                    run_id = None
-                if kept_val is not None:
-                    ins_kwargs["kept_contextual_features"] = kept_val
-                # include explicit feature_list column when available
-                try:
-                    featlist_val = getattr(model, "_feature_list", None)
-                    if featlist_val is not None:
-                        ins_kwargs["feature_list"] = list(featlist_val)
-                except Exception:
-                    pass
-
-                try:
-                    # If Postgres, use native upsert for atomicity
-                    if engine.dialect.name == "postgresql":
-                        try:
-                            insert_stmt = pg_dialect.insert(
-                                ModelMetadata.__table__
-                            ).values(**ins_kwargs)
-                            do_update = insert_stmt.on_conflict_do_update(
-                                index_elements=["name", "version"],
-                                set_=ins_kwargs,
-                            )
-                            conn.execute(do_update)
-                        except Exception:
-                            # fallback to select+insert
-                            sel = ModelMetadata.__table__.select().where(
-                                (ModelMetadata.__table__.c.name == player_name)
-                                & (ModelMetadata.__table__.c.version == version)
-                            )
-                            existing = conn.execute(sel).first()
-                            if existing is not None:
-                                upd = (
-                                    ModelMetadata.__table__.update()
-                                    .where(ModelMetadata.__table__.c.id == existing.id)
-                                    .values(**ins_kwargs)
-                                )
-                                conn.execute(upd)
-                            else:
-                                ins = ModelMetadata.__table__.insert().values(
-                                    **ins_kwargs
-                                )
-                                conn.execute(ins)
-                    else:
-                        # Generic DB: try select then insert/update (best-effort)
-                        sel = ModelMetadata.__table__.select().where(
-                            (ModelMetadata.__table__.c.name == player_name)
-                            & (ModelMetadata.__table__.c.version == version)
-                        )
-                        existing = conn.execute(sel).first()
-                        if existing is not None:
-                            upd = (
-                                ModelMetadata.__table__.update()
-                                .where(ModelMetadata.__table__.c.id == existing.id)
-                                .values(**ins_kwargs)
-                            )
-                            conn.execute(upd)
-                        else:
-                            ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
-                            conn.execute(ins)
-                except Exception:
-                    # Fallback: try serializing JSON-like fields and retry insert
-                    try:
-                        if (
-                            "kept_contextual_features" in ins_kwargs
-                            and ins_kwargs["kept_contextual_features"] is not None
-                        ):
-                            ins_kwargs["kept_contextual_features"] = json.dumps(
-                                ins_kwargs["kept_contextual_features"]
-                            )
-                        if (
-                            "feature_list" in ins_kwargs
-                            and ins_kwargs["feature_list"] is not None
-                        ):
-                            ins_kwargs["feature_list"] = json.dumps(
-                                ins_kwargs["feature_list"]
-                            )
-                        ins = ModelMetadata.__table__.insert().values(**ins_kwargs)
-                        conn.execute(ins)
-                    except Exception:
-                        logger.exception(
-                            "Failed to insert or update ModelMetadata for %s",
-                            player_name,
-                        )
-            logger.info("Inserted ModelMetadata row for %s", player_name)
-        except Exception:
-            logger.exception("Failed to persist ModelMetadata for %s", player_name)
-
-        # Save a compact JSON sidecar next to the model file containing
-        # additional metadata such as kept contextual features. This avoids
-        # requiring a DB migration and provides an easy way to inspect
-        # model-specific feature choices later.
-        try:
-            meta = {
-                "name": player_name,
-                "version": version,
-                "notes": notes,
-            }
-            # If model object carries a kept contextual features attribute,
-            # record it in the sidecar for later inspection.
-            kept = None
-            try:
-                kept = getattr(model, "_kept_contextual_features", None)
-            except Exception:
-                kept = None
-            if kept is not None:
-                meta["kept_contextual_features"] = list(kept)
-            # include canonical feature list when available
-            featlist = None
-            try:
-                featlist = getattr(model, "_feature_list", None)
-            except Exception:
-                featlist = None
-            if featlist is not None:
-                meta["feature_list"] = list(featlist)
-                # compute and include deterministic checksum for quick validation
-                try:
-                    _js = json.dumps(list(featlist), separators=(",", ":"))
-                    checksum = hashlib.sha256(_js.encode("utf-8")).hexdigest()
-                    meta["feature_list_checksum"] = checksum
-                except Exception as exc:
-                    logger.debug("Failed to compute feature_list checksum: %s", exc)
-
-            # include mlflow run id in sidecar for traceability
-            try:
-                if run_id is not None:
-                    meta["mlflow_run_id"] = run_id
-                    # also merge into notes
-                    try:
-                        if meta.get("notes") is None:
-                            meta["notes"] = {"mlflow_run_id": run_id}
-                        else:
-                            try:
-                                parsed = (
-                                    json.loads(meta["notes"])
-                                    if isinstance(meta["notes"], str)
-                                    else meta["notes"]
-                                )
-                                if isinstance(parsed, dict):
-                                    parsed["mlflow_run_id"] = run_id
-                                    meta["notes"] = parsed
-                                else:
-                                    meta["notes"] = {
-                                        "orig_notes": meta["notes"],
-                                        "mlflow_run_id": run_id,
-                                    }
-                            except Exception:
-                                meta["notes"] = {
-                                    "orig_notes": meta["notes"],
-                                    "mlflow_run_id": run_id,
-                                }
-                    except Exception:
-                        pass
-            except Exception:
-                pass
-
-            # If feature list present and notes is a string, attempt to merge into notes for DB visibility
-            try:
-                import json as _json
-
-                if featlist is not None:
-                    if meta.get("notes") is None:
-                        meta["notes"] = {"feature_list": list(featlist)}
-                    else:
-                        # try to parse existing notes if JSON-like, else attach
-                        try:
-                            parsed = (
-                                _json.loads(meta["notes"])
-                                if isinstance(meta["notes"], str)
-                                else meta["notes"]
-                            )
-                            if isinstance(parsed, dict):
-                                parsed["feature_list"] = list(featlist)
-                                meta["notes"] = parsed
-                            else:
-                                meta["notes"] = {
-                                    "orig_notes": meta["notes"],
-                                    "feature_list": list(featlist),
-                                }
-                        except Exception:
-                            meta["notes"] = {
-                                "orig_notes": meta["notes"],
-                                "feature_list": list(featlist),
-                            }
-            except Exception:
-                pass
-
-            import json
-
-            # Ensure checksum present in sidecar (compute again to be robust)
-            try:
-                if "feature_list" in meta and "feature_list_checksum" not in meta:
-                    _js = json.dumps(
-                        list(meta.get("feature_list", [])), separators=(",", ":")
-                    )
-                    meta["feature_list_checksum"] = hashlib.sha256(
-                        _js.encode("utf-8")
-                    ).hexdigest()
-            except Exception:
-                pass
-
-            # Attach artifact signature when available
-            try:
-                if artifact_sig is not None:
-                    meta["artifact_sig"] = artifact_sig
-            except Exception:
-                pass
-
-            # Write sidecar next to versioned artifact
-            sidecar_versioned = os.path.splitext(versioned_path)[0] + "_metadata.json"
-            with open(sidecar_versioned, "w", encoding="utf-8") as fh:
-                json.dump(meta, fh, indent=2)
-
-            # Also write legacy sidecar next to flat path for compatibility
-            try:
-                legacy_sidecar = os.path.splitext(legacy_path)[0] + "_metadata.json"
-                with open(legacy_sidecar, "w", encoding="utf-8") as fh:
-                    json.dump(meta, fh, indent=2)
-            except Exception:
-                logger.debug("Failed to write legacy sidecar for %s", player_name)
-            logger.info("Wrote model sidecar metadata to %s", sidecar_versioned)
-        except Exception:
-            logger.exception(
-                "Failed to write model sidecar metadata for %s", player_name
-            )
-
-    def load_model(self, player_name: str):
-        # Prefer per-player versioned model if present
-        safe = player_name.replace(" ", "_")
+        self._write_legacy_model(player_name, model, legacy_path)
+        self._cache_model(player_name, model)
+        self._invalidate_prediction_caches(player_name)
+        run_id = self._persist_metadata_db(player_name, model, version, legacy_path, notes, artifact_sig)
+        self._write_sidecars(player_name, model, version, versioned_path, legacy_path, artifact_sig, run_id, notes)
         player_dir = os.path.join(self.model_dir, safe)
         chosen_model = None
         # look for versions/*/model.pkl and pick newest by mtime
